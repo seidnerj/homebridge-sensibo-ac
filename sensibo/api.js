@@ -10,6 +10,8 @@ function getToken(username, password, storage) {
 	return new Promise(async (resolve, reject) => {
 		const token = await storage.getItem('token')
 
+		// TODO: what happens if returned token doesn't work? E.g. password change... should token be "checked" for validity?
+		// TODO: Looks like Token expiry might be 15 years?!
 		if (token && token.username && token.username === username && new Date().getTime() < token.expirationDate) {
 			log.easyDebug('Found valid token in storage')
 			resolve(token.key)
@@ -88,9 +90,11 @@ function fixResponse(results) {
 }
 
 async function apiRequest(method, url, data) {
-	// TODO: Authorization header (token) expiry isn't checked... could result in API failures
-	// Looks like Token expiry might be 15 years?!
+	// TODO: Authorization header (login token) expiry isn't checked... could result in API failures
+	// Though it does look like Token expiry might be 15 years?!
 	// maybe https://www.thedutchlab.com/en/insights/using-axios-interceptors-for-refreshing-your-api-token
+
+	// TODO: could add auto-retry for timeouts etc
 	if (!axios.defaults?.params?.apiKey && !axios.defaults?.headers?.Authorization) {
 		log.easyDebug('apiReqest error: No API Token or Authorization Header found')
 
@@ -168,7 +172,7 @@ module.exports = async function (platform) {
 	this.password = platform.password
 	this.storage = platform.storage
 
-	// TODO: can we use getToken instead? I think this only runs during first load...
+	// Pretty sure the below only runs during first load...
 	if (platform.apiKey) {
 		axios.defaults.params = {
 			integration: integrationName,

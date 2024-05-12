@@ -57,6 +57,10 @@ class SensiboACPlatform {
 		this.externalHumiditySensor = config['externalHumiditySensor'] || false
 		this.locationsToInclude = config['locationsToInclude'] || []
 
+		if (this.disableDry || this.disableFan) {
+			this.log('The disableDry and disableFan options have been deprecated, please use modesToExclude instead. See README.md for more details')
+		}
+
 		this.modesToExclude = config['modesToExclude']?.map(mode => {
 			return mode.toUpperCase()
 		}) || []
@@ -90,12 +94,15 @@ class SensiboACPlatform {
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 
 		// define debug method to output debug logs when enabled in the config
+		// TODO: add a "dev" mode to the logger?
+		// this.log.devDebug?
 		this.log.easyDebug = (...content) => {
 			if (this.debug) {
 				this.log(content.reduce((previous, current) => {
 					return previous + ' ' + current
 				}))
 			} else {
+				// I think this bubbles up to "platform" and then logs iff the homebridge debug log is enabled?
 				this.log.debug(content.reduce((previous, current) => {
 					return previous + ' ' + current
 				}))

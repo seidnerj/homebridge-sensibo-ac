@@ -17,6 +17,7 @@ function characteristicToMode(characteristic) {
 	}
 }
 
+// TODO: do we need this? Why would 'value' ever be outside correct range?
 function sanitize(service, characteristic, value) {
 	const minAllowed = service.getCharacteristic(Characteristic[characteristic]).props.minValue
 	const maxAllowed = service.getCharacteristic(Characteristic[characteristic]).props.maxValue
@@ -46,6 +47,8 @@ function updateClimateReact(device, enableClimateReactAutoSetup) {
 	if (!enableClimateReactAutoSetup) {
 		return
 	}
+
+	// If nothing has changed should we skip...? Like we do in StateHandler for SET?
 
 	const smartModeState = device.state.smartMode
 

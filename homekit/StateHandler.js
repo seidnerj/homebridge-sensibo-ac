@@ -242,6 +242,7 @@ module.exports = (device, platform) => {
 						log.easyDebug(`${device.name} - setProcessing is true, skipping refreshState() after Climate React SET`)
 					}
 
+					log.easyDebug(`${device.name} - deleting smartMode.running`)
 					delete state.smartMode.running
 				})()
 

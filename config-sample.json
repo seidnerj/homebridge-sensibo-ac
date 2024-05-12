@@ -9,6 +9,7 @@
 	"platforms": [
 		{
 			"platform": "SensiboAC",
+			"auth": "api-key",
 			"apiKey": "***************",
 			"allowRepeatedCommands": false,
 			"carbonDioxideAlertThreshold": 1500,

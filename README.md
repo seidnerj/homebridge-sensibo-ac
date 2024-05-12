@@ -226,9 +226,9 @@ Note: Setting `"syncButtonInAccessory": true` by itself will create the switch, 
 
 The current relative humidity, as reported by the Sensibo device, are shown within the Home app under Climate.
 
-To remove **Humidity** readings from the Home app, add `"disableHumidity": true` to your config.
+To remove AC accessory **Humidity** readings from the Home app, add `"disableHumidity": true` to your config.
 
-Note: If you have Dry mode (dehumidifier) enabled, Humidity will always be shown.
+Note: If you have Dry mode (dehumidifier) enabled, Humidity will always be shown. Additionally, currently room sensors always add Humidity readings.
 
 To show the **Humidity** reading as a separate sensor, add `"externalHumiditySensor": true` to your config.
 
@@ -295,6 +295,8 @@ To enable the **history storage** feature, add `"enableHistoryStorage": true` to
 ## Troubleshooting and Debug
 
 Start by turning on debug logs, this is done by adding `"debug": true` to your config, saving and restarting Homebridge. This will print additional info in the Homebridge Console Logs, which will give more details on what's happening and may help isolate the issue.
+
+Note: Remember to remove any personal information, including tokens and ids, before sharing payloads or logs.
 
 If you are having issues with a particular Sensibo acessory, you could try removing just that accessory from the Homebridge cache (rather than having to reset all of Homebridge which will remove *all* accessories).
 
