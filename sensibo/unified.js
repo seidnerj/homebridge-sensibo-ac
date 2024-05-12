@@ -13,10 +13,12 @@ function fanLevelToHK(value, fanLevels) {
 	return Math.round(100 * valueIndex / totalLevels)
 }
 
+// TODO: use Utils version instead
 function toCelsius(value) {
 	return (value - 32) / 1.8
 }
 
+// TODO: move all functions in to Utils
 module.exports = {
 
 	deviceInformation: device => {

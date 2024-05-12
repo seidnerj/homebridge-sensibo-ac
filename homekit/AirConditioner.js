@@ -205,9 +205,6 @@ class AirConditioner {
 			.on('get', this.stateManager.get.ACActive)
 			.on('set', this.stateManager.set.ACActive)
 
-		// TODO: get/set above is calling ACActive... expects it to be just Active
-		// this.addCharacteristicToService('HeaterCooler', 'Active')
-
 		this.addCharacteristicToService('HeaterCooler', 'CurrentHeaterCoolerState', null, false)
 
 		const validModes = []
@@ -248,7 +245,7 @@ class AirConditioner {
 
 		if (validModes.length > 0 && !validModes.includes(currentValue)) {
 			const tempValidModes = [...validModes] // make a shallow copy
-			const newMinValue = Math.min(...validModes)
+			const newMinValue = Math.min(...validModes) // validModes is an array of numbers (enums) that represent modes in HomeKit
 
 			this.log.easyDebug(`${this.name} - Temporarily including current value ${currentValue} to prevent warning,`
 						+ ` then updating value to new minimum of ${newMinValue}`)

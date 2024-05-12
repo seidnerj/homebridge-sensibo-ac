@@ -1,12 +1,37 @@
+// FIXME: This files location should move...
+// TODO: move unifed.js funcs in to here
 module.exports = (device, platform) => {
 	const Characteristic = platform.api.hap.Characteristic
 	const log = platform.log
 
 	return {
 
+		/**
+		 * Convert degrees F to degrees C
+		 * @param  {Number} degreesF The degrees in F to convert
+		 * @returns {Number}         The degrees in C
+		 */
+		toCelsius: (degreesF) => {
+			const degressC = (degreesF - 32) / 1.8
+
+			log.easyDebug(`${device.name} - Utils toCelsius - degreesF: ${degreesF}, degressC: ${degressC}`)
+
+			return degressC
+		},
+
+		// TODO: if this doesn't update accessory value, do we need to make sure state also doesn't get changed?
+
 		// TODO: round numbers to 0 or 1 decimals?
 		// Probably should be done when _calling_ updateValue rather than in it? (So it's not "hidden" functionality)
 		// E.g. humidity should be a full percentage, temp seems to support 1 decimal
+		// Note: some rounding is occurring below using minStep
+
+		/**
+		 * Checks the given Service for the given Characteristic, if found, validates the newValue and updates the Characteristic with it
+		 * @param  {String}        serviceName        The Service to update
+		 * @param  {String}        characteristicName The Characteristic to update
+		 * @param  {Number|String} newValue           The value that the Characteristic should be set to
+		 */
 		updateValue: (serviceName, characteristicName, newValue) => {
 			// log.easyDebug(`${device.name} - updateValue: ${newValue} for characteristic ${characteristicName} on service ${serviceName}`)
 			// Could we use .validateUserInput or .validateClientSuppliedValue from HAP Characteristics definition? Probably not as both are private...
@@ -45,14 +70,14 @@ module.exports = (device, platform) => {
 				log.easyDebug(`${device.name} - '${newValue}' is not a number for characteristic ${characteristicName} (expected format '${format}') on service ${serviceName}... continuing`)
 			}
 
-			// TODO: CurrentTemperature value being returned seems to need rounding?
-			// e.g. "22.60000000000001"
-
 			if (validValues && !validValues.includes(newValue)) {
 				log.easyDebug(`${device.name} - '${newValue}' not in validValues: ${validValues} for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
 
 				return
 			}
+
+			// TODO: CurrentTemperature value being returned seems to need rounding?
+			// e.g. "22.60000000000001"
 
 			if (minStep) {
 				const roundedValue = minStep < 1 ? Math.round((newValue + Number.EPSILON) * 10) / 10 : Math.round(newValue + Number.EPSILON)
@@ -82,10 +107,6 @@ module.exports = (device, platform) => {
 			log.easyDebug(`${device.name} - Setting '${newValue}' for characteristic ${characteristicName} on service ${serviceName}, value was '${currentValue}'`)
 			characteristic.updateValue(newValue)
 
-			return
-		},
-
-		test: () => {
 			return
 		}
 
