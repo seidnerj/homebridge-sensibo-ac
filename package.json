@@ -1,7 +1,7 @@
 {
   "displayName": "Sensibo for Homebridge",
   "name": "homebridge-sensibo-ac",
-  "version": "2.5.0-alpha.2",
+  "version": "2.5.0-alpha.3",
   "description": "Homebridge plugin for Sensibo - Smart AC Control",
   "license": "GNU",
   "repository": {
@@ -29,16 +29,16 @@
     "homebridge": "^1.7.0"
   },
   "dependencies": {
-    "axios": "^1.6.5",
+    "axios": "^1.6.8",
     "fakegato-history": "^0.6.4",
     "node-persist": "^3.1.3"
   },
   "devDependencies": {
     "@eslint/js": "^8.53.0",
-    "@stylistic/eslint-plugin": "^1.5.3",
-    "eslint": "^8.56.0",
-    "homebridge": "^1.7.0",
-    "nodemon": "^3.0.2"
+    "@stylistic/eslint-plugin": "^1.8.1",
+    "eslint": "^8.57.0",
+    "homebridge": "^1.8.1",
+    "nodemon": "^3.1.0"
   },
   "scripts": {
     "lint": "eslint .",
