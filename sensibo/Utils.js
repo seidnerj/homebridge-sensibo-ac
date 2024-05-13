@@ -12,11 +12,24 @@ module.exports = (device, platform) => {
 		 * @returns {Number}         The degrees in C
 		 */
 		toCelsius: (degreesF) => {
-			const degressC = (degreesF - 32) / 1.8
+			const degreesC = (degreesF - 32) / 1.8
 
-			log.easyDebug(`${device.name} - Utils toCelsius - degreesF: ${degreesF}, degressC: ${degressC}`)
+			log.easyDebug(`${device.name} - Utils toCelsius - degreesF: ${degreesF}, degreesC: ${degreesC}`)
 
-			return degressC
+			return degreesC
+		},
+
+		/**
+		 * Convert degrees C to degrees F
+		 * @param  {Number} degreesC The degrees in C to convert
+		 * @returns {Number}         The degrees in F
+		 */
+		toFahrenheit: (degreesC) => {
+			const degreesF = Math.round((degreesC * 1.8) + 32)
+
+			log.easyDebug(`${device.name} - Utils toFahrenheit - degreesC: ${degreesC}, degreesF: ${degreesF}`)
+
+			return degreesF
 		},
 
 		// TODO: if this doesn't update accessory value, do we need to make sure state also doesn't get changed?
