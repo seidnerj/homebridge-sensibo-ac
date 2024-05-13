@@ -52,6 +52,7 @@ module.exports = {
 
 	capabilities: (device, platform) => {
 		const capabilities = {}
+		const roomName = device.room?.name ?? device.roomName
 
 		for (const [key, modeCapabilities] of Object.entries(device.remoteCapabilities.modes)) {
 			// Mode options are COOL, HEAT, AUTO, FAN, DRY
@@ -60,23 +61,28 @@ module.exports = {
 			capabilities[mode] = {}
 
 			if (!['DRY','FAN'].includes(mode)) {
-				capabilities[mode].homeAppEnabled = true
+				capabilities[mode].homeKitSupported = true
 			}
 
-			// set temperatures min & max
-			platform.log.easyDebug(`Capabilities, temperature scales available, C: ${'C' in modeCapabilities.temperatures} F: ${'F' in modeCapabilities.temperatures}`)
+			platform.log.easyDebug(`${roomName} - Mode: ${mode} - Temperature scales, C: ${'C' in modeCapabilities.temperatures} F: ${'F' in modeCapabilities.temperatures}`)
 
-			// TODO: check if we even need to bother setting F below because it's never used...
+			if ('C' in modeCapabilities.temperatures || 'F' in modeCapabilities.temperatures) {
+				capabilities[mode].temperatures = {}
+			}
+
+			// set min & max temperatures
 			if (modeCapabilities.temperatures?.C) {
-				capabilities[mode].temperatures = {
-					C: {
-						min: Math.min(...modeCapabilities.temperatures.C.values),
-						max: Math.max(...modeCapabilities.temperatures.C.values)
-					},
-					F: {
-						min: Math.min(...modeCapabilities.temperatures.F.values),
-						max: Math.max(...modeCapabilities.temperatures.F.values)
-					}
+				capabilities[mode].temperatures.C = {
+					min: Math.min(...modeCapabilities.temperatures.C.values),
+					max: Math.max(...modeCapabilities.temperatures.C.values)
+				}
+			}
+
+			// TODO: check if we actaully need F, does Sensibo always return C if it has F?
+			if (modeCapabilities.temperatures?.F) {
+				capabilities[mode].temperatures.F = {
+					min: Math.min(...modeCapabilities.temperatures.F.values),
+					max: Math.max(...modeCapabilities.temperatures.F.values)
 				}
 			}
 
@@ -119,7 +125,7 @@ module.exports = {
 				capabilities[mode].light = true
 			}
 
-			platform.log.easyDebug(`Mode: ${mode}, Capabilities: `)
+			platform.log.easyDebug(`${roomName} - Mode: ${mode}, Capabilities: `)
 			platform.log.easyDebug(capabilities[mode])
 		}
 

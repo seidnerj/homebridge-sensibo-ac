@@ -201,6 +201,8 @@ class AirConditioner {
 			this.HeaterCoolerService.removeCharacteristic(Characteristic.CurrentRelativeHumidity)
 		}
 
+		// TODO: change to:
+		// this.addCharacteristicToService('HeaterCooler', 'Active', null, true)
 		this.HeaterCoolerService.getCharacteristic(Characteristic.Active)
 			.on('get', this.stateManager.get.ACActive)
 			.on('set', this.stateManager.set.ACActive)
@@ -208,21 +210,54 @@ class AirConditioner {
 		this.addCharacteristicToService('HeaterCooler', 'CurrentHeaterCoolerState', null, false)
 
 		const validModes = []
-		const modeProps = {}
 
 		for (const mode in this.capabilities) {
-			if (this.capabilities[mode].homeAppEnabled && !this.modesToExclude.includes(mode) && !validModes.includes(mode)) {
-				validModes.push(Characteristic.TargetHeaterCoolerState[mode])
+			if (this.capabilities[mode].homeKitSupported != true) {
+				continue
+			}
 
-				modeProps[mode] = {
-					minValue: this.capabilities[mode].temperatures[CELSIUS_UNIT].min,
-					maxValue: this.capabilities[mode].temperatures[CELSIUS_UNIT].max,
-					minStep: this.temperatureStep
+			if (this.modesToExclude.includes(mode)) {
+				continue
+			}
+
+			if (validModes.includes(mode)) {
+				continue
+			}
+
+			validModes.push(Characteristic.TargetHeaterCoolerState[mode])
+
+			let modeProps = false
+
+			if (this.capabilities[mode].temperatures) {
+				if (this.capabilities[mode].temperatures[CELSIUS_UNIT]) {
+					modeProps = {
+						minValue: this.capabilities[mode].temperatures[CELSIUS_UNIT].min,
+						maxValue: this.capabilities[mode].temperatures[CELSIUS_UNIT].max,
+						minStep: this.temperatureStep
+					}
+				} else if (this.capabilities[mode].temperatures[FAHRENHEIT_UNIT]) {
+					modeProps = {
+						minValue: this.Utils.toCelsius(this.capabilities[mode].temperatures[FAHRENHEIT_UNIT].min),
+						maxValue: this.Utils.toCelsius(this.capabilities[mode].temperatures[FAHRENHEIT_UNIT].max),
+						minStep: this.temperatureStep
+					}
 				}
+			}
 
-				// TODO: can we add directly from here and remove more logic below?
-				// this.addCharacteristicToService('HeaterCooler', 'CoolingThresholdTemperature', props)
-				// this.addCharacteristicToService('HeaterCooler', 'HeatingThresholdTemperature', props)
+			if (modeProps) {
+				if (mode === 'COOL') {
+					this.addCharacteristicToService('HeaterCooler', 'CoolingThresholdTemperature', modeProps)
+				} else if (mode === 'HEAT') {
+					this.addCharacteristicToService('HeaterCooler', 'HeatingThresholdTemperature', modeProps)
+				} else if (mode === 'AUTO') {
+					if (!this.capabilities.COOL || this.modesToExclude.includes('COOL')) {
+						this.addCharacteristicToService('HeaterCooler', 'CoolingThresholdTemperature', modeProps)
+					}
+
+					if (!this.capabilities.HEAT || this.modesToExclude.includes('HEAT')) {
+						this.addCharacteristicToService('HeaterCooler', 'HeatingThresholdTemperature', modeProps)
+					}
+				}
 			}
 		}
 
@@ -256,24 +291,6 @@ class AirConditioner {
 		}
 
 		this.addCharacteristicToService('HeaterCooler', 'TargetHeaterCoolerState', { validValues: validModes })
-
-		if (this.capabilities.COOL && !this.modesToExclude.includes('COOL')) {
-			this.addCharacteristicToService('HeaterCooler', 'CoolingThresholdTemperature', modeProps.COOL)
-		}
-
-		if (this.capabilities.HEAT && !this.modesToExclude.includes('HEAT')) {
-			this.addCharacteristicToService('HeaterCooler', 'HeatingThresholdTemperature', modeProps.HEAT)
-		}
-
-		if (this.capabilities.AUTO?.temperatures && !this.modesToExclude.includes('AUTO')) {
-			if (!this.capabilities.COOL || this.modesToExclude.includes('COOL')) {
-				this.addCharacteristicToService('HeaterCooler', 'CoolingThresholdTemperature', modeProps.AUTO)
-			}
-
-			if (!this.capabilities.HEAT || this.modesToExclude.includes('HEAT')) {
-				this.addCharacteristicToService('HeaterCooler', 'HeatingThresholdTemperature', modeProps.AUTO)
-			}
-		}
 
 		if (!this.disableVerticalSwing && ((this.capabilities.COOL && this.capabilities.COOL.verticalSwing) || (this.capabilities.HEAT && this.capabilities.HEAT.verticalSwing))) {
 			this.HeaterCoolerService.getCharacteristic(Characteristic.SwingMode)
