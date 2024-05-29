@@ -1,73 +1,88 @@
-let Characteristic, Service
+// eslint-disable-next-line no-unused-vars
+const homebridge = require('homebridge')
+// eslint-disable-next-line no-unused-vars
+const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
+// eslint-disable-next-line no-unused-vars
+const AirConditioner = require('./AirConditioner')
+// eslint-disable-next-line no-unused-vars
+const Classes = require('../classes')
+const SensiboAccessory = require('./SensiboAccessory')
 
-class SyncButton {
+class SyncButton extends SensiboAccessory {
 
+	/**
+	 * @param {AirConditioner} airConditioner
+	 * @param {SensiboACPlatform} platform
+	 */
 	constructor(airConditioner, platform) {
-		Service = platform.api.hap.Service
-		Characteristic = platform.api.hap.Characteristic
+		const namePrefix = airConditioner.room.name
+		const nameSuffix = 'AC Sync'
+		const type = 'SyncButton'
 
-		this.log = airConditioner.log
-		this.api = airConditioner.api
-		this.id = airConditioner.id
-		this.model = airConditioner.model + '_sync'
+		super(platform, airConditioner.id, namePrefix, nameSuffix, type, '_sync')
+
+		/** @type {typeof homebridge.Service} */
+		this.Service = platform.api.hap.Service
+		/** @type {typeof homebridge.Characteristic} */
+		this.Characteristic = platform.api.hap.Characteristic
+
+		this.productModel = airConditioner.productModel + '_sync'
 		this.serial = airConditioner.serial + '_sync'
 		this.manufacturer = airConditioner.manufacturer
-		this.roomName = airConditioner.roomName
-		this.name = this.roomName + ' AC Sync'
-		this.type = 'SyncButton'
+		this.room = airConditioner.room
 
+		/** @type {Classes.InternalAcState} */
 		this.state = airConditioner.state
-		this.stateManager = airConditioner.stateManager
+		this.StateManager = airConditioner.StateManager
 
-		this.UUID = this.api.hap.uuid.generate(this.id + '_sync')
-		this.accessory = platform.cachedAccessories.find(accessory => {
+		this.platformAccessory = platform.cachedAccessories.find(accessory => {
 			return accessory.UUID === this.UUID
 		})
 
-		if (!this.accessory) {
-			this.log(`Creating New ${platform.PLATFORM_NAME} ${this.type} Accessory in the ${this.roomName}`)
-			this.accessory = new this.api.platformAccessory(this.name, this.UUID)
-			this.accessory.context.type = this.type
-			this.accessory.context.deviceId = this.id
+		if (!this.platformAccessory) {
+			this.log.info(`Creating New ${platform.platformName} ${this.type} Accessory in the ${this.room.name}`)
+			this.platformAccessory = new this.api.platformAccessory(this.name, this.UUID)
+			this.platformAccessory.context.type = this.type
+			this.platformAccessory.context.deviceId = this.id
 
-			platform.cachedAccessories.push(this.accessory)
+			platform.cachedAccessories.push(this.platformAccessory)
 
 			// register the accessory
-			this.api.registerPlatformAccessories(platform.PLUGIN_NAME, platform.PLATFORM_NAME, [this.accessory])
+			this.api.registerPlatformAccessories(platform.pluginName, platform.platformName, [this.platformAccessory])
 		}
 
-		this.accessory.context.roomName = this.roomName
+		this.platformAccessory.context.roomName = this.room.name
 
-		let informationService = this.accessory.getService(Service.AccessoryInformation)
+		let informationService = this.platformAccessory.getService(this.Service.AccessoryInformation)
 
 		if (!informationService) {
-			informationService = this.accessory.addService(Service.AccessoryInformation)
+			informationService = this.platformAccessory.addService(this.Service.AccessoryInformation)
 		}
 
 		informationService
-			.setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
-			.setCharacteristic(Characteristic.Model, this.model)
-			.setCharacteristic(Characteristic.SerialNumber, this.serial)
+			.setCharacteristic(this.Characteristic.Manufacturer, this.manufacturer)
+			.setCharacteristic(this.Characteristic.Model, this.productModel)
+			.setCharacteristic(this.Characteristic.SerialNumber, this.serial)
 
 		this.addSyncButtonService()
 	}
 
 	addSyncButtonService() {
-		this.log.easyDebug(`${this.name} - Adding SyncButtonService`)
+		this.easyDebug(`${this.name} - Adding SyncButtonService`)
 
-		this.SyncButtonService = this.accessory.getService(Service.Switch)
+		this.SyncButtonService = this.platformAccessory.getService(this.Service.Switch)
 		if (!this.SyncButtonService) {
-			this.SyncButtonService = this.accessory.addService(Service.Switch, this.name, this.type)
+			this.SyncButtonService = this.platformAccessory.addService(this.Service.Switch, this.name, this.type)
 		}
 
-		this.SyncButtonService.getCharacteristic(Characteristic.On)
-			.on('get', this.stateManager.get.SyncButton)
+		this.SyncButtonService.getCharacteristic(this.Characteristic.On)
+			.on('get', this.StateManager.get.SyncButton)
 			// TODO: see if below annoymous function can be moved to StateManager.js
 			.on('set', (state, callback) => {
-				this.stateManager.set.SyncButton(state, callback)
+				this.StateManager.set.SyncButton(state, callback)
 				setTimeout(() => {
-					// TODO: move to Utils?
-					this.SyncButtonService.getCharacteristic(Characteristic.On).updateValue(0)
+					// TODO: updateValue via this.Utils.updateValue?
+					this.SyncButtonService.getCharacteristic(this.Characteristic.On).updateValue(0)
 				}, 1000)
 			})
 	}

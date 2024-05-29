@@ -1,0 +1,14 @@
+{
+    "compileOnSave": false,
+    "compilerOptions": {
+        "noEmit": true,
+        "allowJs": true,
+        "checkJs": true,
+        "target": "ESNext",
+        "resolveJsonModule": true,
+        "module": "NodeNext",
+        "moduleResolution": "nodenext",
+        "typeRoots": ["./**/*.d.ts"]
+    },
+    "include": ["./homekit", "./sensibo", "./index.js",]
+}

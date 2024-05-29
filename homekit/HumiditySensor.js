@@ -1,78 +1,93 @@
-let Characteristic, Service
+// eslint-disable-next-line no-unused-vars
+const homebridge = require('homebridge')
+// eslint-disable-next-line no-unused-vars
+const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
+// eslint-disable-next-line no-unused-vars
+const AirConditioner = require('./AirConditioner')
+// eslint-disable-next-line no-unused-vars
+const Classes = require('../classes')
+const SensiboAccessory = require('./SensiboAccessory')
 
-class HumiditySensor {
+class HumiditySensor extends SensiboAccessory {
 
-	constructor(airConditioner, platform) {
-		Service = platform.api.hap.Service
-		Characteristic = platform.api.hap.Characteristic
+	/**
+	 * @param {AirConditioner} device
+	 * @param {SensiboACPlatform} platform
+	 */
+	constructor(device, platform) {
+		const namePrefix = device.room.name
+		const nameSuffix = 'Humidity'
+		const type = 'HumiditySensor'
+
+		super(platform, device.id, namePrefix, nameSuffix, type, '_humidity')
+
+		/** @type {typeof homebridge.Service} */
+		this.Service = platform.api.hap.Service
+		/** @type {typeof homebridge.Characteristic} */
+		this.Characteristic = platform.api.hap.Characteristic
 
 		this.Utils = require('../sensibo/Utils')(this, platform)
 
-		this.log = airConditioner.log
-		this.api = airConditioner.api
-		this.id = airConditioner.id
-		this.model = airConditioner.model + '_humidity'
-		this.serial = airConditioner.serial + '_humidity'
-		this.manufacturer = airConditioner.manufacturer
-		this.roomName = airConditioner.roomName
-		this.name = this.roomName + ' Humidity'
-		this.type = 'HumiditySensor'
+		this.productModel = device.productModel + '_humidity'
+		this.serial = device.serial + '_humidity'
+		this.manufacturer = device.manufacturer
+		this.room = device.room
 
-		this.state = airConditioner.state
-		this.stateManager = airConditioner.stateManager
+		/** @type {Classes.InternalAcState} */
+		this.state = device.state
+		this.StateManager = device.StateManager
 
-		this.UUID = this.api.hap.uuid.generate(this.id + '_humidity')
-		this.accessory = platform.cachedAccessories.find(accessory => {
+		this.platformAccessory = platform.cachedAccessories.find(accessory => {
 			return accessory.UUID === this.UUID
 		})
 
-		if (!this.accessory) {
-			this.log(`Creating New ${platform.PLATFORM_NAME} ${this.type} Accessory in the ${this.roomName}`)
-			this.accessory = new this.api.platformAccessory(this.name, this.UUID)
-			this.accessory.context.type = this.type
-			this.accessory.context.deviceId = this.id
+		if (!this.platformAccessory) {
+			this.log.info(`Creating New ${platform.platformName} ${this.type} Accessory in the ${this.room.name}`)
+			this.platformAccessory = new this.api.platformAccessory(this.name, this.UUID)
+			this.platformAccessory.context.type = this.type
+			this.platformAccessory.context.deviceId = this.id
 
-			platform.cachedAccessories.push(this.accessory)
+			platform.cachedAccessories.push(this.platformAccessory)
 
 			// register the accessory
-			this.api.registerPlatformAccessories(platform.PLUGIN_NAME, platform.PLATFORM_NAME, [this.accessory])
+			this.api.registerPlatformAccessories(platform.pluginName, platform.platformName, [this.platformAccessory])
 		}
 
 		if (platform.enableHistoryStorage) {
-			const FakeGatoHistoryService = require('fakegato-history')(this.api)
+			const fakeGatoHistoryService = require('fakegato-history')(this.api)
 
-			this.loggingService = new FakeGatoHistoryService('weather', this.accessory, {
+			this.loggingService = new fakeGatoHistoryService('weather', this.platformAccessory, {
 				storage: 'fs',
 				path: platform.persistPath
 			})
 		}
 
-		this.accessory.context.roomName = this.roomName
+		this.platformAccessory.context.roomName = this.room.name
 
-		let informationService = this.accessory.getService(Service.AccessoryInformation)
+		let informationService = this.platformAccessory.getService(this.Service.AccessoryInformation)
 
 		if (!informationService) {
-			informationService = this.accessory.addService(Service.AccessoryInformation)
+			informationService = this.platformAccessory.addService(this.Service.AccessoryInformation)
 		}
 
 		informationService
-			.setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
-			.setCharacteristic(Characteristic.Model, this.model)
-			.setCharacteristic(Characteristic.SerialNumber, this.serial)
+			.setCharacteristic(this.Characteristic.Manufacturer, this.manufacturer)
+			.setCharacteristic(this.Characteristic.Model, this.productModel)
+			.setCharacteristic(this.Characteristic.SerialNumber, this.serial)
 
 		this.addHumiditySensorService()
 	}
 
 	addHumiditySensorService() {
-		this.log.easyDebug(`${this.name} - Adding HumiditySensorService`)
+		this.easyDebug(`${this.name} - Adding HumiditySensorService`)
 
-		this.HumiditySensorService = this.accessory.getService(Service.HumiditySensor)
+		this.HumiditySensorService = this.platformAccessory.getService(this.Service.HumiditySensor)
 		if (!this.HumiditySensorService) {
-			this.HumiditySensorService = this.accessory.addService(Service.HumiditySensor, this.name, this.type)
+			this.HumiditySensorService = this.platformAccessory.addService(this.Service.HumiditySensor, this.name, this.type)
 		}
 
-		this.HumiditySensorService.getCharacteristic(Characteristic.CurrentRelativeHumidity)
-			.on('get', this.stateManager.get.CurrentRelativeHumidity)
+		this.HumiditySensorService.getCharacteristic(this.Characteristic.CurrentRelativeHumidity)
+			.on('get', this.StateManager.get.CurrentRelativeHumidity)
 	}
 
 	updateHomeKit() {
