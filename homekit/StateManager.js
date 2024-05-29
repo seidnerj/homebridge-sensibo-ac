@@ -1,610 +1,783 @@
-let Characteristic
-
-function toFahrenheit(value) {
-	return Math.round((value * 1.8) + 32)
-}
-
-function characteristicToMode(characteristic) {
-	switch (characteristic) {
-		case Characteristic.TargetHeaterCoolerState.AUTO:
-			return 'AUTO'
-
-		case Characteristic.TargetHeaterCoolerState.COOL:
-			return 'COOL'
-
-		case Characteristic.TargetHeaterCoolerState.HEAT:
-			return 'HEAT'
-	}
-}
-
-// TODO: do we need this? Why would 'value' ever be outside correct range?
-function sanitize(service, characteristic, value) {
-	const minAllowed = service.getCharacteristic(Characteristic[characteristic]).props.minValue
-	const maxAllowed = service.getCharacteristic(Characteristic[characteristic]).props.maxValue
-	const validValues = service.getCharacteristic(Characteristic[characteristic]).props.validValues
-	const currentValue = service.getCharacteristic(Characteristic[characteristic]).value
-
-	if (value !== 0 && (typeof value === 'undefined' || !value)) {
-		return currentValue
-	}
-
-	if (validValues && !validValues.includes(value)) {
-		return currentValue
-	}
-
-	if (minAllowed && value < minAllowed) {
-		return currentValue
-	}
-
-	if (maxAllowed && value > maxAllowed) {
-		return currentValue
-	}
-
-	return value
-}
-
-function updateClimateReact(device, enableClimateReactAutoSetup) {
-	if (!enableClimateReactAutoSetup) {
-		return
-	}
-
-	// If nothing has changed should we skip...? Like we do in StateHandler for SET?
-
-	const smartModeState = device.state.smartMode
-
-	smartModeState.type = 'temperature'
-	smartModeState.highTemperatureWebhook = null
-	smartModeState.lowTemperatureWebhook = null
-
-	if (device.state.mode === 'COOL') {
-		smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)
-		smartModeState.highTemperatureState = {
-			on: true,
-			targetTemperature: device.state.targetTemperature,
-			temperatureUnit: device.temperatureUnit,
-			mode: device.state.mode,
-			fanSpeed: device.state.fanSpeed,
-			swing: device.state.verticalSwing,
-			horizontalSwing: device.state.horizontalSwing,
-			light: device.state.light
-		}
-
-		smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)
-		smartModeState.lowTemperatureState = {
-			on: false,
-			targetTemperature: device.state.targetTemperature,
-			temperatureUnit: device.temperatureUnit,
-			mode: device.state.mode,
-			fanSpeed: device.state.fanSpeed,
-			swing: device.state.verticalSwing,
-			horizontalSwing: device.state.horizontalSwing,
-			light: device.state.light
-		}
-	} else if (device.state.mode === 'HEAT') {
-		smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)
-		smartModeState.highTemperatureState = {
-			on: false,
-			targetTemperature: device.state.targetTemperature,
-			temperatureUnit: device.temperatureUnit,
-			mode: device.state.mode,
-			fanSpeed: device.state.fanSpeed,
-			swing: device.state.verticalSwing,
-			horizontalSwing: device.state.horizontalSwing,
-			light: device.state.light
-		}
-
-		smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)
-		smartModeState.lowTemperatureState = {
-			on: true,
-			targetTemperature: device.state.targetTemperature,
-			temperatureUnit: device.temperatureUnit,
-			mode: device.state.mode,
-			fanSpeed: device.state.fanSpeed,
-			swing: device.state.verticalSwing,
-			horizontalSwing: device.state.horizontalSwing,
-			light: device.state.light
-		}
-	}
-
-	// StateHandler is invoked as a Proxy, and therefore overwrites/intercepts the default get()/set() commands [traps]
-	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
-
-	// NOTE: device.state is of "type" StateHandler. When one of its properties is "set" (e.g. device.state.<property> = <val>),
-	//       that's where we actually send commands to the appropriate Sensibo devices. If a property is not set, the aformentioned
-	//       code will not execute and the changes would not take effect.
-	//
-	//       For example, if we set a property of smartMode directly, e.g. device.state.smartMode.enabled = true, StateHandler's
-	//       setter will not get called and so any changes will not take effect. This is why we MUST update a device's property as
-	//       a whole, and do it only once (otherwise's the setter will get called multiple times which will send repeated commands
-	//       to the Sensibo devices).
-	device.state.smartMode = smartModeState
-}
+// eslint-disable-next-line no-unused-vars
+const homebridge = require('homebridge')
+// eslint-disable-next-line no-unused-vars
+const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
+// eslint-disable-next-line no-unused-vars
+const SensiboAccessory = require('./SensiboAccessory')
+const AirConditioner = require('./AirConditioner')
+const RoomSensor = require('./RoomSensor')
 
 // TODO: perhaps make this a class?
+/**
+ * @param {SensiboAccessory} device
+ * @param {SensiboACPlatform} platform
+ */
 module.exports = (device, platform) => {
-	Characteristic = platform.api.hap.Characteristic
-	const log = platform.log
+	/** @type {typeof homebridge.Characteristic} */
+	this.Characteristic = platform.api.hap.Characteristic
+	const easyDebug = platform.easyDebug
 	const enableClimateReactAutoSetup = platform.enableClimateReactAutoSetup
+
+	/**
+	 * @param {number} value
+	 */
+	this.toFahrenheit = function(value) {
+		return Math.round((value * 1.8) + 32)
+	}
+
+	/**
+	 *
+	 * @param {homebridge.CharacteristicValue} characteristic
+	 */
+	this.characteristicToMode = function (characteristic) {
+		switch (characteristic) {
+			case this.Characteristic.TargetHeaterCoolerState.AUTO:
+				return 'AUTO'
+
+			case this.Characteristic.TargetHeaterCoolerState.COOL:
+				return 'COOL'
+
+			case this.Characteristic.TargetHeaterCoolerState.HEAT:
+				return 'HEAT'
+		}
+	}
+
+	// TODO: do we need this? Why would 'value' ever be outside correct range?
+	/**
+	 *
+	 * @param {homebridge.Service} service
+	 * @param {string} characteristic
+	 * @returns
+	 */
+	this.sanitize = function(service, characteristic, value) {
+		const minAllowed = service.getCharacteristic(this.Characteristic[characteristic]).props.minValue
+		const maxAllowed = service.getCharacteristic(this.Characteristic[characteristic]).props.maxValue
+		const validValues = service.getCharacteristic(this.Characteristic[characteristic]).props.validValues
+		const currentValue = service.getCharacteristic(this.Characteristic[characteristic]).value
+
+		if (value !== 0 && (typeof(value) === 'undefined' || !value)) {
+			return currentValue
+		}
+
+		if (validValues && !validValues.includes(value)) {
+			return currentValue
+		}
+
+		if (minAllowed && value < minAllowed) {
+			return currentValue
+		}
+
+		if (maxAllowed && value > maxAllowed) {
+			return currentValue
+		}
+
+		return value
+	}
+
+	/**
+	 *
+	 * @param {AirConditioner} device
+	 * @param {boolean} enableClimateReactAutoSetup
+	 */
+	this.updateClimateReact = function(device, enableClimateReactAutoSetup) {
+		if (!enableClimateReactAutoSetup) {
+			return
+		}
+
+		// If nothing has changed should we skip...? Like we do in StateHandler for SET?
+
+		const smartModeState = device.state.smartMode
+
+		smartModeState.type = 'temperature'
+		smartModeState.highTemperatureWebhook = null
+		smartModeState.lowTemperatureWebhook = null
+
+		if (device.state.mode === 'COOL') {
+			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)
+			smartModeState.highTemperatureState = {
+				on: true,
+				targetTemperature: device.state.targetTemperature,
+				temperatureUnit: device.temperatureUnit,
+				mode: device.state.mode,
+				fanSpeed: device.state.fanSpeed,
+				swing: device.state.verticalSwing,
+				horizontalSwing: device.state.horizontalSwing,
+				light: device.state.light ? 'on' : 'off'
+			}
+
+			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)
+			smartModeState.lowTemperatureState = {
+				on: false,
+				targetTemperature: device.state.targetTemperature,
+				temperatureUnit: device.temperatureUnit,
+				mode: device.state.mode,
+				fanSpeed: device.state.fanSpeed,
+				swing: device.state.verticalSwing,
+				horizontalSwing: device.state.horizontalSwing,
+				light: device.state.light ? 'on' : 'off'
+			}
+		} else if (device.state.mode === 'HEAT') {
+			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)
+			smartModeState.highTemperatureState = {
+				on: false,
+				targetTemperature: device.state.targetTemperature,
+				temperatureUnit: device.temperatureUnit,
+				mode: device.state.mode,
+				fanSpeed: device.state.fanSpeed,
+				swing: device.state.verticalSwing,
+				horizontalSwing: device.state.horizontalSwing,
+				light: device.state.light ? 'on' : 'off'
+			}
+
+			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)
+			smartModeState.lowTemperatureState = {
+				on: true,
+				targetTemperature: device.state.targetTemperature,
+				temperatureUnit: device.temperatureUnit,
+				mode: device.state.mode,
+				fanSpeed: device.state.fanSpeed,
+				swing: device.state.verticalSwing,
+				horizontalSwing: device.state.horizontalSwing,
+				light: device.state.light ? 'on' : 'off'
+			}
+		}
+
+		// StateHandler is invoked as a Proxy, and therefore overwrites/intercepts the default get()/set() commands [traps]
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
+
+		// NOTE: device.state is of "type" StateHandler. When one of its properties is "set" (e.g. device.state.<property> = <val>),
+		//       that's where we actually send commands to the appropriate Sensibo devices. If a property is not set, the aformentioned
+		//       code will not execute and the changes would not take effect.
+		//
+		//       For example, if we set a property of smartMode directly, e.g. device.state.smartMode.enabled = true, StateHandler's
+		//       setter will not get called and so any changes will not take effect. This is why we MUST update a device's property as
+		//       a whole, and do it only once (otherwise's the setter will get called multiple times which will send repeated commands
+		//       to the Sensibo devices).
+		device.state.smartMode = smartModeState
+	}
 
 	return {
 
 		get: {
 			// TODO: refactor this similar to PureActive below?
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			ACActive: (callback) => {
 				const active = device.state.active
 				const mode = device.state.mode
 
 				if (!active || mode === 'FAN' || mode === 'DRY') {
-					log.easyDebug(device.name, '(GET) - AC Active State: false')
+					easyDebug(device.name, '(GET) - AC Active State: false')
 
 					callback(null, 0)
 				} else {
-					log.easyDebug(device.name, '(GET) - AC Active State: true')
+					easyDebug(device.name, '(GET) - AC Active State: true')
 
 					callback(null, 1)
 				}
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			PureActive: (callback) => {
 				const active = device.state.active
 
-				log.easyDebug(`${device.name} (GET) - Pure Active State: ${active}`)
+				easyDebug(`${device.name} (GET) - Pure Active State: ${active}`)
 
 				callback(null, active ? 1 : 0)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentAirPurifierState: (callback) => {
 				const active = device.state.active
 
-				log.easyDebug(`${device.name} (GET) - Pure Current State: ${active ? 'PURIFYING_AIR' : 'INACTIVE'}`)
+				easyDebug(`${device.name} (GET) - Pure Current State: ${active ? 'PURIFYING_AIR' : 'INACTIVE'}`)
 
 				callback(null, active ? 2 : 0)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			TargetAirPurifierState: (callback) => {
 				const pureBoost = device.state.pureBoost
 
-				log.easyDebug(`${device.name} (GET) - Pure Target State (Boost): ${pureBoost ? 'AUTO' : 'MANUAL'}`)
+				easyDebug(`${device.name} (GET) - Pure Target State (Boost): ${pureBoost ? 'AUTO' : 'MANUAL'}`)
 
 				callback(null, pureBoost ? 1 : 0)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentHeaterCoolerState: (callback) => {
 				const active = device.state.active
 				const mode = device.state.mode
 				const targetTemp = device.state.targetTemperature
 				const currentTemp = device.state.currentTemperature
 
-				log.easyDebug(device.name, '(GET) - Current HeaterCooler State:', active ? mode : 'OFF')
+				easyDebug(device.name, '(GET) - Current HeaterCooler State:', active ? mode : 'OFF')
 
 				if (!active || mode === 'FAN' || mode === 'DRY') {
-					callback(null, Characteristic.CurrentHeaterCoolerState.INACTIVE)
+					callback(null, this.Characteristic.CurrentHeaterCoolerState.INACTIVE)
 				} else if (mode === 'COOL') {
-					callback(null, Characteristic.CurrentHeaterCoolerState.COOLING)
+					callback(null, this.Characteristic.CurrentHeaterCoolerState.COOLING)
 				} else if (mode === 'HEAT') {
-					callback(null, Characteristic.CurrentHeaterCoolerState.HEATING)
+					callback(null, this.Characteristic.CurrentHeaterCoolerState.HEATING)
 				} else if (currentTemp > targetTemp) {
-					callback(null, Characteristic.CurrentHeaterCoolerState.COOLING)
+					callback(null, this.Characteristic.CurrentHeaterCoolerState.COOLING)
 				} else {
-					callback(null, Characteristic.CurrentHeaterCoolerState.HEATING)
+					callback(null, this.Characteristic.CurrentHeaterCoolerState.HEATING)
 				}
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			TargetHeaterCoolerState: (callback) => {
+				if (!(device instanceof AirConditioner)) {
+					easyDebug(device.name, `(GET) - Target HeaterCooler State: ${device.name} is not an instance of AirConditioner!`)
+
+					return
+				}
+
 				const active = device.state.active
 				const mode = device.state.mode
 
-				log.easyDebug(device.name, '(GET) - Target HeaterCooler State:', active ? mode : 'OFF')
+				easyDebug(device.name, '(GET) - Target HeaterCooler State:', active ? mode : 'OFF')
 				if (!active || mode === 'FAN' || mode === 'DRY') {
-					const lastMode = device.HeaterCoolerService.getCharacteristic(Characteristic.TargetHeaterCoolerState).value
+					const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
 
 					callback(null, lastMode)
 				} else {
-					callback(null, sanitize(device.HeaterCoolerService, 'TargetHeaterCoolerState', Characteristic.TargetHeaterCoolerState[mode]))
+					callback(null, this.sanitize(device.HeaterCoolerService, 'TargetHeaterCoolerState', this.Characteristic.TargetHeaterCoolerState[mode]))
 				}
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentTemperature: (callback) => {
+				if (!(device instanceof AirConditioner || device instanceof RoomSensor)) {
+					easyDebug(device.name, `(GET) - Current Temperature State: ${device.name} is not an instance of AirConditioner or RoomSensor!`)
+
+					return
+				}
+
 				const currentTemp = device.state.currentTemperature
 
 				if (device.usesFahrenheit) {
-					log.easyDebug(device.name, '(GET) - Current Temperature:', toFahrenheit(currentTemp) + 'ºF')
+					easyDebug(device.name, '(GET) - Current Temperature:', this.toFahrenheit(currentTemp) + 'ºF')
 				} else {
-					log.easyDebug(device.name, '(GET) - Current Temperature:', currentTemp + 'ºC')
+					easyDebug(device.name, '(GET) - Current Temperature:', currentTemp + 'ºC')
 				}
 
 				callback(null, currentTemp)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CoolingThresholdTemperature: (callback) => {
-				const targetTemp = sanitize(device.HeaterCoolerService, 'CoolingThresholdTemperature', device.state.targetTemperature)
+				if (!(device instanceof AirConditioner)) {
+					easyDebug(device.name, `(GET) - Target Cooling Temperature: ${device.name} is not an instance of AirConditioner!`)
+
+					return
+				}
+
+				const targetTemp = this.sanitize(device.HeaterCoolerService, 'CoolingThresholdTemperature', device.state.targetTemperature)
 
 				if (device.usesFahrenheit) {
-					log.easyDebug(device.name, '(GET) - Target Cooling Temperature:', toFahrenheit(targetTemp) + 'ºF')
+					easyDebug(device.name, '(GET) - Target Cooling Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
 				} else {
-					log.easyDebug(device.name, '(GET) - Target Cooling Temperature:', targetTemp + 'ºC')
+					easyDebug(device.name, '(GET) - Target Cooling Temperature:', targetTemp + 'ºC')
 				}
 
 				callback(null, targetTemp)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			HeatingThresholdTemperature: (callback) => {
-				const targetTemp = sanitize(device.HeaterCoolerService, 'HeatingThresholdTemperature', device.state.targetTemperature)
+				if (!(device instanceof AirConditioner)) {
+					easyDebug(device.name, `(GET) - Target Heating Temperature: ${device.name} is not an instance of AirConditioner!`)
+
+					return
+				}
+
+				const targetTemp = this.sanitize(device.HeaterCoolerService, 'HeatingThresholdTemperature', device.state.targetTemperature)
 
 				if (device.usesFahrenheit) {
-					log.easyDebug(device.name, '(GET) - Target Heating Temperature:', toFahrenheit(targetTemp) + 'ºF')
+					easyDebug(device.name, '(GET) - Target Heating Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
 				} else {
-					log.easyDebug(device.name, '(GET) - Target Heating Temperature:', targetTemp + 'ºC')
+					easyDebug(device.name, '(GET) - Target Heating Temperature:', targetTemp + 'ºC')
 				}
 
 				callback(null, targetTemp)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			TemperatureDisplayUnits: (callback) => {
-				log.easyDebug(device.name, '(GET) - Temperature Display Units:', device.temperatureUnit)
+				if (!(device instanceof AirConditioner || device instanceof RoomSensor)) {
+					easyDebug(device.name, `(GET) - Temperature Display Units: ${device.name} is not an instance of AirConditioner or RoomSensor!`)
 
-				callback(null, device.usesFahrenheit ? Characteristic.TemperatureDisplayUnits.FAHRENHEIT : Characteristic.TemperatureDisplayUnits.CELSIUS)
+					return
+				}
+
+				easyDebug(device.name, '(GET) - Temperature Display Units:', device.temperatureUnit)
+
+				callback(null, device.usesFahrenheit ? this.Characteristic.TemperatureDisplayUnits.FAHRENHEIT : this.Characteristic.TemperatureDisplayUnits.CELSIUS)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentRelativeHumidity: (callback) => {
-				log.easyDebug(device.name, '(GET) - Current Relative Humidity:', device.state.relativeHumidity, '%')
+				easyDebug(device.name, '(GET) - Current Relative Humidity:', device.state.relativeHumidity, '%')
 
 				callback(null, device.state.relativeHumidity)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			ACSwing: (callback) => {
 				const swing = device.state.verticalSwing
 
-				log.easyDebug(device.name, '(GET) - AC Swing:', swing)
+				easyDebug(device.name, '(GET) - AC Swing:', swing)
 
-				callback(null, Characteristic.SwingMode[swing])
+				callback(null, this.Characteristic.SwingMode[swing])
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			ACRotationSpeed: (callback) => {
 				const fanSpeed = device.state.fanSpeed ?? 0
 
-				log.easyDebug(device.name, '(GET) - AC Rotation Speed:', fanSpeed + '%')
+				easyDebug(device.name, '(GET) - AC Rotation Speed:', fanSpeed + '%')
 
 				callback(null, fanSpeed)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			PureRotationSpeed: (callback) => {
 				const fanSpeed = device.state.fanSpeed
 
-				log.easyDebug(device.name, '(GET) - Pure Rotation Speed:', fanSpeed + '%')
+				easyDebug(device.name, '(GET) - Pure Rotation Speed:', fanSpeed + '%')
 
 				callback(null, fanSpeed)
 			},
 
 			// FILTER
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FilterChangeIndication: (callback) => {
 				const filterChange = device.state.filterChange
 
-				log.easyDebug(device.name, '(GET) - Filter Change Indication:', filterChange)
+				easyDebug(device.name, '(GET) - Filter Change Indication:', filterChange)
 
-				callback(null, Characteristic.FilterChangeIndication[filterChange])
+				callback(null, this.Characteristic.FilterChangeIndication[filterChange])
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FilterLifeLevel: (callback) => {
 				const filterLifeLevel = device.state.filterLifeLevel
 
-				log.easyDebug(device.name, '(GET) - Filter Life Level:', filterLifeLevel + '%')
+				easyDebug(device.name, '(GET) - Filter Life Level:', filterLifeLevel + '%')
 
 				callback(null, filterLifeLevel)
 			},
 
 			// FAN
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FanActive: (callback) => {
 				const active = device.state.active
 				const mode = device.state.mode
 
 				if (!active || mode !== 'FAN') {
-					log.easyDebug(device.name, '(GET) - Fan Active State: false')
+					easyDebug(device.name, '(GET) - Fan Active State: false')
 
 					callback(null, 0)
 				} else {
-					log.easyDebug(device.name, '(GET) - Fan Active State: true')
+					easyDebug(device.name, '(GET) - Fan Active State: true')
 
 					callback(null, 1)
 				}
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FanSwing: (callback) => {
 				const swing = device.state.verticalSwing
 
-				log.easyDebug(device.name, '(GET) - Fan Swing:', swing)
+				easyDebug(device.name, '(GET) - Fan Swing:', swing)
 
-				callback(null, Characteristic.SwingMode[swing])
+				callback(null, this.Characteristic.SwingMode[swing])
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FanRotationSpeed: (callback) => {
 				const fanSpeed = device.state.fanSpeed
 
-				log.easyDebug(device.name, '(GET) - Fan Rotation Speed:', fanSpeed + '%')
+				easyDebug(device.name, '(GET) - Fan Rotation Speed:', fanSpeed + '%')
 
 				callback(null, fanSpeed)
 			},
 
 			// DEHUMIDIFIER
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			DryActive: (callback) => {
 				const active = device.state.active
 				const mode = device.state.mode
 
 				if (!active || mode !== 'DRY') {
-					log.easyDebug(device.name, '(GET) - Dry Active State: false')
+					easyDebug(device.name, '(GET) - Dry Active State: false')
 
 					callback(null, 0)
 				} else {
-					log.easyDebug(device.name, '(GET) - Dry Active State: true')
+					easyDebug(device.name, '(GET) - Dry Active State: true')
 
 					callback(null, 1)
 				}
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentHumidifierDehumidifierState: (callback) => {
 				const active = device.state.active
 				const mode = device.state.mode
 
 				if (!active || mode !== 'DRY') {
-					log.easyDebug(device.name, '(GET) - Dry Current Dehumidifier State: INACTIVE')
+					easyDebug(device.name, '(GET) - Dry Current Dehumidifier State: INACTIVE')
 
-					callback(null, Characteristic.CurrentHumidifierDehumidifierState.INACTIVE)
+					callback(null, this.Characteristic.CurrentHumidifierDehumidifierState.INACTIVE)
 				} else {
-					log.easyDebug(device.name, '(GET) - Dry Current Dehumidifier State: DEHUMIDIFYING')
+					easyDebug(device.name, '(GET) - Dry Current Dehumidifier State: DEHUMIDIFYING')
 
-					callback(null, Characteristic.CurrentHumidifierDehumidifierState.DEHUMIDIFYING)
+					callback(null, this.Characteristic.CurrentHumidifierDehumidifierState.DEHUMIDIFYING)
 				}
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			TargetHumidifierDehumidifierState: (callback) => {
-				log.easyDebug(device.name, '(GET) - Target Dehumidifier State: DEHUMIDIFIER')
+				easyDebug(device.name, '(GET) - Target Dehumidifier State: DEHUMIDIFIER')
 
-				callback(null, Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER)
+				callback(null, this.Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			DryRotationSpeed: (callback) => {
 				const fanSpeed = device.state.fanSpeed
 
-				log.easyDebug(device.name, '(GET) - Dry Rotation Speed:', fanSpeed + '%')
+				easyDebug(device.name, '(GET) - Dry Rotation Speed:', fanSpeed + '%')
 
 				callback(null, fanSpeed)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			DrySwing: (callback) => {
 				const swing = device.state.verticalSwing
 
-				log.easyDebug(device.name, '(GET) - Dry Swing:', swing)
+				easyDebug(device.name, '(GET) - Dry Swing:', swing)
 
-				callback(null, Characteristic.SwingMode[swing])
+				callback(null, this.Characteristic.SwingMode[swing])
 			},
 
 			// ROOM SENSOR
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			MotionDetected: (callback) => {
 				const motionDetected = device.state.motionDetected
 
-				log.easyDebug(device.name, '(GET) - Motion Detected:', motionDetected)
+				easyDebug(device.name, '(GET) - Motion Detected:', motionDetected)
 
 				callback(null, motionDetected)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			StatusLowBattery: (callback) => {
 				const lowBattery = device.state.lowBattery
 
-				log.easyDebug(device.name, '(GET) - Status Low Battery:', lowBattery)
+				easyDebug(device.name, '(GET) - Status Low Battery:', lowBattery)
 
-				callback(null, Characteristic.StatusLowBattery[lowBattery])
+				callback(null, this.Characteristic.StatusLowBattery[lowBattery])
 			},
 
 			// HORIZONTAL SWING
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			HorizontalSwing: (callback) => {
 				const horizontalSwing = device.state.horizontalSwing
 
-				log.easyDebug(device.name, '(GET) - Horizontal Swing:', horizontalSwing)
+				easyDebug(device.name, '(GET) - Horizontal Swing:', horizontalSwing)
 
 				callback(null, horizontalSwing === 'SWING_ENABLED')
 			},
 
 			// AIR CONDITIONER/PURIFIER LIGHT
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			LightSwitch: (callback) => {
 				const light = device.state.light
 
-				log.easyDebug(device.name, '(GET) - Light:', light ? 'ON' : 'OFF')
+				easyDebug(device.name, '(GET) - Light:', light ? 'ON' : 'OFF')
 
 				callback(null, light)
 			},
 
 			// CLIMATE REACT
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			ClimateReactSwitch: (callback) => {
 				const smartModeEnabled = device.state.smartMode.enabled
 
-				log.easyDebug(device.name, '(GET) - Climate React Enabled Switch:', smartModeEnabled)
+				easyDebug(device.name, '(GET) - Climate React Enabled Switch:', smartModeEnabled)
 
 				callback(null, smartModeEnabled)
 			},
 
 			// OCCUPANCY SENSOR
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			OccupancyDetected: (callback) => {
 				const occupancy = device.state.occupancy
 
-				log.easyDebug(device.name, '(GET) Occupancy Detected:', occupancy)
+				easyDebug(device.name, '(GET) Occupancy Detected:', occupancy)
 
-				callback(null, Characteristic.OccupancyDetected[occupancy])
+				callback(null, this.Characteristic.OccupancyDetected[occupancy])
 			},
 
 			// Air Quality
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			AirQuality: (callback) => {
 				const airQuality = device.state.airQuality
 
-				log.easyDebug(device.name, '(GET) - Air Quality:', airQuality)
+				easyDebug(device.name, '(GET) - Air Quality:', airQuality)
 
 				callback(null, airQuality)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			VOCDensity: (callback) => {
 				const VOCDensity = device.state.VOCDensity
 
-				log.easyDebug(device.name, '(GET) - Volatile Organic Compound Density:', VOCDensity)
+				easyDebug(device.name, '(GET) - Volatile Organic Compound Density:', VOCDensity)
 
 				callback(null, VOCDensity)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CarbonDioxideDetected: (callback) => {
 				const carbonDioxideDetected = device.state.carbonDioxideDetected
 
-				log.easyDebug(device.name, '(GET) - Carbon Dioxide Detected:', carbonDioxideDetected)
+				easyDebug(device.name, '(GET) - Carbon Dioxide Detected:', carbonDioxideDetected)
 
 				callback(null, carbonDioxideDetected)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CarbonDioxideLevel: (callback) => {
 				const carbonDioxideLevel = device.state.carbonDioxideLevel
 
-				log.easyDebug(device.name, '(GET) - Carbon Dioxide Level:', carbonDioxideLevel)
+				easyDebug(device.name, '(GET) - Carbon Dioxide Level:', carbonDioxideLevel)
 
 				callback(null, carbonDioxideLevel)
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			SyncButton: (callback) => {
-				log.easyDebug(device.name, '(GET) - Sync Button, no state change')
+				easyDebug(device.name, '(GET) - Sync Button, no state change')
 
 				callback(null, false)
 			}
 		},
 
 		set: {
-			ACActive: (state, callback) => {
-				state = !!state
-				log.easyDebug(device.name, '(SET) - AC Active State:', state)
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			ACActive: (value, callback) => {
+				if (!(device instanceof AirConditioner)) {
+					easyDebug(device.name, `(SET) - AC Active State: ${device.name} is not an instance of AirConditioner!`)
 
-				if (state) {
+					return
+				}
+
+				value = !!value
+				easyDebug(device.name, '(SET) - AC Active State:', value)
+
+				if (value) {
 					device.state.active = true
-					const lastMode = device.HeaterCoolerService.getCharacteristic(Characteristic.TargetHeaterCoolerState).value
-					const mode = characteristicToMode(lastMode)
+					const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
+					const mode = this.characteristicToMode(lastMode)
 
-					log.easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
+					easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
 					device.state.mode = mode
 				} else if (device.state.mode === 'COOL' || device.state.mode === 'HEAT' || device.state.mode === 'AUTO') {
 					device.state.active = false
 				}
 
-				updateClimateReact(device, enableClimateReactAutoSetup)
+				this.updateClimateReact(device, enableClimateReactAutoSetup)
 
 				callback()
 			},
 
-			PureActive: (state, callback) => {
-				state = !!state
-				log.easyDebug(device.name, '(SET) - Pure Active State:', state)
-				device.state.active = state
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			PureActive: (value, callback) => {
+				value = !!value
+				easyDebug(device.name, '(SET) - Pure Active State:', value)
+				device.state.active = value
 
-				updateClimateReact(device, enableClimateReactAutoSetup)
-
-				callback()
-			},
-
-			TargetHeaterCoolerState: (state, callback) => {
-				const mode = characteristicToMode(state)
-
-				log.easyDebug(device.name, '(SET) - Target HeaterCooler State:', mode)
-				device.state.mode = mode
-				device.state.active = true
-
-				updateClimateReact(device, enableClimateReactAutoSetup)
-
-				callback()
-			},
-
-			CoolingThresholdTemperature: (targetTemp, callback) => {
-				if (device.usesFahrenheit) {
-					log.easyDebug(device.name, '(SET) - Target Cooling Temperature:', toFahrenheit(targetTemp) + 'ºF')
+				if (device instanceof AirConditioner) {
+					this.updateClimateReact(device, enableClimateReactAutoSetup)
 				} else {
-					log.easyDebug(device.name, '(SET) - Target Cooling Temperature:', targetTemp + 'ºC')
+					easyDebug(device.name, `(SET) - Pure Active State: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
 				}
 
-				const lastMode = device.HeaterCoolerService.getCharacteristic(Characteristic.TargetHeaterCoolerState).value
-				const mode = characteristicToMode(lastMode)
+				callback()
+			},
+
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			TargetHeaterCoolerState: (value, callback) => {
+				const mode = this.characteristicToMode(value)
+
+				easyDebug(device.name, '(SET) - Target HeaterCooler State:', mode)
+				device.state.mode = mode
+				device.state.active = true
+				if (device instanceof AirConditioner) {
+					this.updateClimateReact(device, enableClimateReactAutoSetup)
+				} else {
+					easyDebug(device.name, `(SET) - Target HeaterCooler State: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
+				}
+
+				callback()
+			},
+
+			/**
+			 * param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			CoolingThresholdTemperature: (targetTemp, callback) => {
+				if (!(device instanceof AirConditioner)) {
+					easyDebug(device.name, `(SET) - Target Cooling Temperature: ${device.name} is not an instance of AirConditioner!`)
+
+					return
+				}
+
+				if (device.usesFahrenheit) {
+					easyDebug(device.name, '(SET) - Target Cooling Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
+				} else {
+					easyDebug(device.name, '(SET) - Target Cooling Temperature:', targetTemp + 'ºC')
+				}
+
+				const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
+				const mode = this.characteristicToMode(lastMode)
 
 				device.state.targetTemperature = targetTemp
 				// TODO: do we need the below? Does it turn the unit on if it's currently off?
-				log.easyDebug(device.name, '(SET) - Target HeaterCooler State:', mode)
+				easyDebug(device.name, '(SET) - Target HeaterCooler State:', mode)
 				device.state.active = true
 				device.state.mode = mode
 
-				updateClimateReact(device, enableClimateReactAutoSetup)
+				this.updateClimateReact(device, enableClimateReactAutoSetup)
 
 				callback()
 			},
 
+			/**
+			 * param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
 			HeatingThresholdTemperature: (targetTemp, callback) => {
-				if (device.usesFahrenheit) {
-					log.easyDebug(device.name, '(SET) - Target Heating Temperature:', toFahrenheit(targetTemp) + 'ºF')
-				} else {
-					log.easyDebug(device.name, '(SET) - Target Heating Temperature:', targetTemp + 'ºC')
+				if (!(device instanceof AirConditioner)) {
+					easyDebug(device.name, `(SET) - AC Active State: ${device.name} is not an instance of AirConditioner!`)
+
+					return
 				}
 
-				const lastMode = device.HeaterCoolerService.getCharacteristic(Characteristic.TargetHeaterCoolerState).value
-				const mode = characteristicToMode(lastMode)
+				if (device.usesFahrenheit) {
+					easyDebug(device.name, '(SET) - Target Heating Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
+				} else {
+					easyDebug(device.name, '(SET) - Target Heating Temperature:', targetTemp + 'ºC')
+				}
+
+				const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
+				const mode = this.characteristicToMode(lastMode)
 
 				device.state.targetTemperature = targetTemp
-				log.easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
+				easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
 				device.state.active = true
 				device.state.mode = mode
 
-				updateClimateReact(device, enableClimateReactAutoSetup)
+				this.updateClimateReact(device, enableClimateReactAutoSetup)
 
 				callback()
 			},
 
-			ACSwing: (state, callback) => {
-				state = state === Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
-				log.easyDebug(device.name, '(SET) - AC Swing:', state)
-				device.state.verticalSwing = state
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			ACSwing: (value, callback) => {
+				if (!(device instanceof AirConditioner)) {
+					easyDebug(device.name, `(SET) - HeaterCooler State: ${device.name} is not an instance of AirConditioner!`)
 
-				const lastMode = device.HeaterCoolerService.getCharacteristic(Characteristic.TargetHeaterCoolerState).value
-				const mode = characteristicToMode(lastMode)
+					return
+				}
 
-				log.easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
+				value = value === this.Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
+				easyDebug(device.name, '(SET) - AC Swing:', value)
+				device.state.verticalSwing = value
+
+				const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
+				const mode = this.characteristicToMode(lastMode)
+
+				easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
 				device.state.active = true
 				device.state.mode = mode
 
-				updateClimateReact(device, enableClimateReactAutoSetup)
+				this.updateClimateReact(device, enableClimateReactAutoSetup)
 
 				callback()
 			},
 
-			ACRotationSpeed: (speed, callback) => {
-				log.easyDebug(device.name, '(SET) - AC Rotation Speed:', speed + '%')
-				device.state.fanSpeed = speed
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			ACRotationSpeed: (value, callback) => {
+				if (!(device instanceof AirConditioner)) {
+					easyDebug(device.name, `(SET) - AC Rotation Speed: ${device.name} is not an instance of AirConditioner!`)
 
-				const lastMode = device.HeaterCoolerService.getCharacteristic(Characteristic.TargetHeaterCoolerState).value
-				const mode = characteristicToMode(lastMode)
+					return
+				}
+				if (!(typeof(value) == 'number')) {
+					easyDebug(device.name, `(SET) - AC Rotation Speed: ${value} is not of type number!`)
 
-				log.easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
+					return
+				}
+
+				easyDebug(device.name, '(SET) - AC Rotation Speed:', value + '%')
+				device.state.fanSpeed = value
+
+				const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
+				const mode = this.characteristicToMode(lastMode)
+
+				easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
 				device.state.active = true
 				device.state.mode = mode
 
-				updateClimateReact(device, enableClimateReactAutoSetup)
+				this.updateClimateReact(device, enableClimateReactAutoSetup)
 
 				callback()
 			},
 
-			PureRotationSpeed: (speed, callback) => {
-				if (speed) {
-					log.easyDebug(device.name, '(SET) - Pure Rotation Speed:', speed + '%')
-					device.state.fanSpeed = speed
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			PureRotationSpeed: (value, callback) => {
+				if (value) {
+					easyDebug(device.name, '(SET) - Pure Rotation Speed:', value + '%')
+					device.state.fanSpeed = value
 					device.state.active = true
 				} else {
 					device.state.active = false
 				}
-
-				updateClimateReact(device, enableClimateReactAutoSetup)
+				if (device instanceof AirConditioner) {
+					this.updateClimateReact(device, enableClimateReactAutoSetup)
+				} else {
+					easyDebug(device.name, `(SET) - Pure Rotation Speed: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
+				}
 
 				callback()
 			},
 
 			// FILTER
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			ResetFilterIndication: (value, callback) => {
-				log.easyDebug(device.name, '(SET) - Filter Change Indication: RESET')
+				easyDebug(device.name, '(SET) - Filter Change Indication: RESET')
 				device.state.filterChange = 0
 				device.state.filterLifeLevel = 100
 
@@ -612,12 +785,13 @@ module.exports = (device, platform) => {
 			},
 
 			// FAN
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FanActive: (state, callback) => {
 				state = !!state
-				log.easyDebug(device.name, '(SET) - Fan state Active:', state)
+				easyDebug(device.name, '(SET) - Fan state Active:', state)
 
 				if (state) {
-					log.easyDebug(device.name, '(SET) - Mode to: FAN')
+					easyDebug(device.name, '(SET) - Mode to: FAN')
 					device.state.mode = 'FAN'
 
 					device.state.active = true
@@ -628,35 +802,38 @@ module.exports = (device, platform) => {
 				callback()
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FanSwing: (state, callback) => {
-				state = state === Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
-				log.easyDebug(device.name, '(SET) - Fan Swing:', state)
+				state = state === this.Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
+				easyDebug(device.name, '(SET) - Fan Swing:', state)
 				device.state.verticalSwing = state
 				device.state.active = true
-				log.easyDebug(device.name, '(SET) - Mode to: FAN')
+				easyDebug(device.name, '(SET) - Mode to: FAN')
 				device.state.mode = 'FAN'
 
 				callback()
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FanRotationSpeed: (speed, callback) => {
-				log.easyDebug(device.name, '(SET) - Fan Rotation Speed:', speed + '%')
+				easyDebug(device.name, '(SET) - Fan Rotation Speed:', speed + '%')
 				device.state.fanSpeed = speed
 
 				device.state.active = true
-				log.easyDebug(device.name, '(SET) - Mode to: FAN')
+				easyDebug(device.name, '(SET) - Mode to: FAN')
 				device.state.mode = 'FAN'
 
 				callback()
 			},
 
 			// DEHUMIDIFIER
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			DryActive: (state, callback) => {
 				state = !!state
-				log.easyDebug(device.name, '(SET) - Dry state Active:', state)
+				easyDebug(device.name, '(SET) - Dry state Active:', state)
 				if (state) {
 					device.state.active = true
-					log.easyDebug(device.name, '(SET) - HeaterCooler State: DRY')
+					easyDebug(device.name, '(SET) - HeaterCooler State: DRY')
 					device.state.mode = 'DRY'
 				} else if (device.state.mode === 'DRY') {
 					device.state.active = false
@@ -665,63 +842,76 @@ module.exports = (device, platform) => {
 				callback()
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			TargetHumidifierDehumidifierState: (state, callback) => {
 				device.state.active = true
-				log.easyDebug(device.name, '(SET) - HeaterCooler State: DRY')
+				easyDebug(device.name, '(SET) - HeaterCooler State: DRY')
 				device.state.mode = 'DRY'
 
 				callback()
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			DrySwing: (state, callback) => {
-				state = state === Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
-				log.easyDebug(device.name, '(SET) - Dry Swing:', state)
+				state = state === this.Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
+				easyDebug(device.name, '(SET) - Dry Swing:', state)
 				device.state.verticalSwing = state
 
 				device.state.active = true
-				log.easyDebug(device.name + ' -> Setting Mode to: DRY')
+				easyDebug(device.name + ' -> Setting Mode to: DRY')
 				device.state.mode = 'DRY'
 
 				callback()
 			},
 
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			DryRotationSpeed: (speed, callback) => {
-				log.easyDebug(device.name, '(SET) - Dry Rotation Speed:', speed + '%')
+				easyDebug(device.name, '(SET) - Dry Rotation Speed:', speed + '%')
 				device.state.fanSpeed = speed
 
 				device.state.active = true
-				log.easyDebug(device.name + ' -> Setting Mode to: DRY')
+				easyDebug(device.name + ' -> Setting Mode to: DRY')
 				device.state.mode = 'DRY'
 
 				callback()
 			},
 
 			// HORIZONTAL SWING
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			HorizontalSwing: (state, callback) => {
 				state = state ? 'SWING_ENABLED' : 'SWING_DISABLED'
-				log.easyDebug(device.name, '(SET) - Horizontal Swing Swing:', state)
+				easyDebug(device.name, '(SET) - Horizontal Swing Swing:', state)
 				device.state.horizontalSwing = state
 
-				updateClimateReact(device, enableClimateReactAutoSetup)
+				if (device instanceof AirConditioner) {
+					this.updateClimateReact(device, enableClimateReactAutoSetup)
+				} else{
+					easyDebug(device.name, `(SET) - Horizontal Swing Swing: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
+				}
 
 				callback()
 			},
 
 			// AIR CONDITIONER/PURIFIER LIGHT
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			LightSwitch: (state, callback) => {
-				log.easyDebug(device.name, '(SET) - Light to', state ? 'ON' : 'OFF')
+				easyDebug(device.name, '(SET) - Light to', state ? 'ON' : 'OFF')
 				device.state.light = state
-
-				updateClimateReact(device, enableClimateReactAutoSetup)
+				if (device instanceof AirConditioner) {
+					this.updateClimateReact(device, enableClimateReactAutoSetup)
+				} else {
+					easyDebug(device.name, `(SET) - Light: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
+				}
 
 				callback()
 			},
 
 			// AC SYNC BUTTON
 			// TODO: should be moved to be a 'set' in StateHanlder line 33
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			SyncButton: (state, callback) => {
 				if (state) {
-					log.easyDebug(device.name, '(SYNC) - AC Active State:', device.state.active)
+					easyDebug(device.name, '(SYNC) - AC Active State:', device.state.active)
 					device.state.syncState()
 				}
 
@@ -729,8 +919,9 @@ module.exports = (device, platform) => {
 			},
 
 			// CLIMATE REACT
+			/** @param {homebridge.CharacteristicGetCallback} callback */
 			ClimateReactSwitch: (state, callback) => {
-				log.easyDebug(device.name, '(SET) - Climate React Enabled Switch:', state)
+				easyDebug(device.name, '(SET) - Climate React Enabled Switch:', state)
 				const smartModeState = device.state.smartMode
 
 				smartModeState.enabled = !!state
@@ -743,10 +934,13 @@ module.exports = (device, platform) => {
 			},
 
 			// PURE BOOST
+			/**
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
 			TargetAirPurifierState: (state, callback) => {
 				const pureBoost = !!state
 
-				log.easyDebug(device.name, '(SET) - Pure Target State (Boost):', pureBoost ? 'AUTO' : 'MANUAL')
+				easyDebug(device.name, '(SET) - Pure Target State (Boost):', pureBoost ? 'AUTO' : 'MANUAL')
 				device.state.pureBoost = pureBoost
 
 				callback()

@@ -1,36 +1,50 @@
+// eslint-disable-next-line no-unused-vars
+const homebridge = require('homebridge')
+// eslint-disable-next-line no-unused-vars
+const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
+// eslint-disable-next-line no-unused-vars
+const Classes = require('../classes')
+const SensiboAccessory = require('./SensiboAccessory')
 const unified = require('../sensibo/unified')
-let Characteristic, Service, CELSIUS_UNIT, FAHRENHEIT_UNIT
 
-class AirConditioner {
+class AirConditioner extends SensiboAccessory {
 
+	/**
+	 * @param {import('../types').Device} device
+	 * @param {SensiboACPlatform} platform
+	 */
 	constructor(device, platform) {
-		Service = platform.api.hap.Service
-		Characteristic = platform.api.hap.Characteristic
-		CELSIUS_UNIT = platform.CELSIUS_UNIT
-		FAHRENHEIT_UNIT = platform.FAHRENHEIT_UNIT
+		const deviceInfo = unified.getDeviceInfo(device)
+		const namePrefix = deviceInfo.room.name
+		const nameSuffix = 'AC'
+		const type = 'AirConditioner'
+
+		super(platform, deviceInfo.id, namePrefix, nameSuffix, type, '')
+
+		/** @type {typeof homebridge.Service} */
+		this.Service = platform.api.hap.Service
+		/** @type {typeof homebridge.Characteristic} */
+		this.Characteristic = platform.api.hap.Characteristic
+		/** @type {string} */
+		this.CELSIUS_UNIT = platform.CELSIUS_UNIT
+		/** @type {string} */
+		this.FAHRENHEIT_UNIT = platform.FAHRENHEIT_UNIT
 
 		this.Utils = require('../sensibo/Utils')(this, platform)
 
-		const deviceInfo = unified.deviceInformation(device)
-
-		this.log = platform.log
-		this.api = platform.api
-		this.storage = platform.storage
-		this.cachedState = platform.cachedState
-		this.id = deviceInfo.id
+		/** @type {import('../types').Device} */
+		this.device = device
 		this.appId = deviceInfo.appId
-		this.model = deviceInfo.model
+		this.productModel = deviceInfo.productModel
 		this.serial = deviceInfo.serial
 		this.manufacturer = deviceInfo.manufacturer
-		this.roomName = deviceInfo.roomName
-		this.name = this.roomName + ' AC'
-		this.type = 'AirConditioner'
+		this.room = deviceInfo.room
 		this.disableHumidity = platform.disableHumidity
 		this.modesToExclude = platform.modesToExclude
 		this.temperatureUnit = deviceInfo.temperatureUnit
 		this.climateReactSwitchInAccessory = platform.climateReactSwitchInAccessory
-		this.usesFahrenheit = this.temperatureUnit === FAHRENHEIT_UNIT
-		this.temperatureStep = this.temperatureUnit === FAHRENHEIT_UNIT ? 0.1 : 1
+		this.usesFahrenheit = this.temperatureUnit === this.FAHRENHEIT_UNIT
+		this.temperatureStep = this.temperatureUnit === this.FAHRENHEIT_UNIT ? 0.1 : 1
 		this.disableAirConditioner = platform.disableAirConditioner
 		this.disableDry = platform.disableDry
 		this.disableFan = platform.disableFan
@@ -39,58 +53,66 @@ class AirConditioner {
 		this.disableLightSwitch = platform.disableLightSwitch
 		this.syncButtonInAccessory = platform.syncButtonInAccessory
 		this.filterService = deviceInfo.filterService
-		this.capabilities = unified.capabilities(device, platform)
+		/** @type {import('../types').Capabilities} */
+		this.capabilities = unified.getCapabilities(device, platform)
+		/** @type {import('../types').Measurements} */
+		this.measurements = undefined
 
+		/** @type {ProxyHandler<Classes.InternalAcState>} */
 		const StateHandler = require('./StateHandler')(this, platform)
+		const state = unified.getAcState(device)
 
-		this.state = this.cachedState.devices[this.id] = unified.acState(device)
-		this.state = new Proxy(this.state, StateHandler)
-		this.stateManager = require('./StateManager')(this, platform)
+		this.cachedState.devices[this.id] = state
+		/** @type {Classes.InternalAcState} */
+		this.state = new Proxy(state, StateHandler)
+		this.StateManager = require('./StateManager')(this, platform)
 
-		this.UUID = this.api.hap.uuid.generate(this.id)
-		this.accessory = platform.cachedAccessories.find(accessory => {
-			return accessory.UUID === this.UUID
+		/** @type {undefined|homebridge.PlatformAccessory} */
+		this.platformAccessory = platform.cachedAccessories.find(cachedAccessory => {
+			return cachedAccessory.UUID === this.UUID
 		})
 
-		if (!this.accessory) {
-			this.log(`Creating New ${platform.PLATFORM_NAME} ${this.type} Accessory in the ${this.roomName}`)
-			this.accessory = new this.api.platformAccessory(this.name, this.UUID)
-			this.accessory.context.type = this.type
-			this.accessory.context.deviceId = this.id
+		if (!this.platformAccessory) {
+			this.log.info(`Creating New ${platform.platformName} ${this.type} Accessory in the ${this.room.name}`)
+			this.platformAccessory = new this.api.platformAccessory(this.name, this.UUID)
+			this.platformAccessory.context.type = this.type
+			this.platformAccessory.context.deviceId = this.id
 
-			platform.cachedAccessories.push(this.accessory)
+			platform.cachedAccessories.push(this.platformAccessory)
 
 			// register the accessory
-			this.api.registerPlatformAccessories(platform.PLUGIN_NAME, platform.PLATFORM_NAME, [this.accessory])
+			this.api.registerPlatformAccessories(platform.pluginName, platform.platformName, [this.platformAccessory])
 		}
 
 		if (platform.enableHistoryStorage) {
-			const FakeGatoHistoryService = require('fakegato-history')(this.api)
+			const fakeGatoHistoryService = require('fakegato-history')(this.api)
 
-			this.loggingService = new FakeGatoHistoryService('weather', this.accessory, {
+			this.loggingService = new fakeGatoHistoryService('weather', this.platformAccessory, {
 				storage: 'fs',
 				path: platform.persistPath
 			})
 		}
 
-		this.accessory.context.roomName = this.roomName
+		this.platformAccessory.context.roomName = this.room.name
 
-		let informationService = this.accessory.getService(Service.AccessoryInformation)
+		/** @type {undefined|homebridge.Service} */
+		let informationService = this.platformAccessory.getService(this.Service.AccessoryInformation)
 
 		if (!informationService) {
-			informationService = this.accessory.addService(Service.AccessoryInformation)
+			/** @type {homebridge.Service} */
+			informationService = this.platformAccessory.addService(this.Service.AccessoryInformation)
 		}
 
 		informationService
-			.setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
-			.setCharacteristic(Characteristic.Model, this.model)
-			.setCharacteristic(Characteristic.SerialNumber, this.serial)
+			.setCharacteristic(this.Characteristic.Manufacturer, this.manufacturer)
+			.setCharacteristic(this.Characteristic.Model, this.productModel)
+			.setCharacteristic(this.Characteristic.SerialNumber, this.serial)
 
 		if (!this.disableAirConditioner && (this.capabilities.AUTO || this.capabilities.COOL || this.capabilities.HEAT)) {
 			this.addHeaterCoolerService()
 		} else {
 			if (this.disableAirConditioner) {
-				this.log.easyDebug(`${this.name} - Skipping adding HeaterCooler due to disableAirConditioner: ${this.disableAirConditioner}`)
+				this.easyDebug(`${this.name} - Skipping adding HeaterCooler due to disableAirConditioner: ${this.disableAirConditioner}`)
 			}
 			this.removeHeaterCoolerService()
 		}
@@ -138,48 +160,48 @@ class AirConditioner {
 
 	// TODO: move this in to Utils.js
 	addCharacteristicToService(ServiceName, CharacteristicName, Props = null, Setter = true) {
-		this.log.easyDebug(`${this.name} - Adding ${CharacteristicName} to ${ServiceName}`)
+		this.easyDebug(`${this.name} - Adding ${CharacteristicName} to ${ServiceName}`)
 
-		const service = this.accessory.getService(Service[ServiceName])
-		const characteristic = service?.getCharacteristic(Characteristic[CharacteristicName])
+		const service = this.platformAccessory.getService(this.Service[ServiceName])
+		const characteristic = service?.getCharacteristic(this.Characteristic[CharacteristicName])
 
 		if (!service) {
-			this.log(`ERR: ${this.name} - Service ${ServiceName} doesn't exist on ${this.name}`)
+			this.log.info(`ERR: ${this.name} - Service ${ServiceName} doesn't exist on ${this.name}`)
 
 			return
 		}
 
 		if (!characteristic) {
 			// TODO: I think characteristic will always be true as getCharacteristic always works...
-			this.log(`ERR: ${this.name} - Characteristic ${CharacteristicName} doesn't exist on ${ServiceName}`)
+			this.log.info(`ERR: ${this.name} - Characteristic ${CharacteristicName} doesn't exist on ${ServiceName}`)
 
 			return
 		}
 
 		if (Props) {
 			if (Props.minValue && Props.minValue >= characteristic.props.minValue) {
-				//TODO: updateValue via this.Utils.updateValue?
+				// TODO: updateValue via this.Utils.updateValue?
 				characteristic.updateValue(Props.minValue)
 			}
 			characteristic.setProps(Props)
 		} else {
-			this.log.easyDebug(`${this.name} - Props not set for ${CharacteristicName}, proceeding with defaults`)
+			this.easyDebug(`${this.name} - Props not set for ${CharacteristicName}, proceeding with defaults`)
 		}
 
 		characteristic
-			.on('get', this.stateManager.get[CharacteristicName])
+			.on('get', this.StateManager.get[CharacteristicName])
 
 		if (Setter) {
 			characteristic
-				.on('set', this.stateManager.set[CharacteristicName])
+				.on('set', this.StateManager.set[CharacteristicName])
 		}
 	}
 
 	addHeaterCoolerService() {
-		this.log.easyDebug(`${this.name} - Adding HeaterCoolerService`)
-		this.HeaterCoolerService = this.accessory.getService(Service.HeaterCooler)
+		this.easyDebug(`${this.name} - Adding HeaterCoolerService`)
+		this.HeaterCoolerService = this.platformAccessory.getService(this.Service.HeaterCooler)
 		if (!this.HeaterCoolerService) {
-			this.HeaterCoolerService = this.accessory.addService(Service.HeaterCooler, this.name, 'HeaterCooler')
+			this.HeaterCoolerService = this.platformAccessory.addService(this.Service.HeaterCooler, this.name, 'HeaterCooler')
 		}
 
 		const CurrentTempProps = {
@@ -192,20 +214,22 @@ class AirConditioner {
 		this.addCharacteristicToService('HeaterCooler', 'TemperatureDisplayUnits', null, false)
 
 		if (!this.disableHumidity) {
-			//TODO: check on warning... Humidity isn't a supported Characteristic of HeaterCooler
-			// Could we create a new custom Characteristic?
-			// const customHumidity = new Characteristic('CustomHumidity', this.api.hap.uuid.generate('CustomHumidity'+this.id))
+			// TODO: check on warning... "Humidity isn't a supported Characteristic of HeaterCooler"
+			//       Should we create a new custom Characteristic?
+			// e.g. const customHumidity = new Characteristic('CustomHumidity', this.api.hap.uuid.generate('CustomHumidity' + this.id))
 			this.addCharacteristicToService('HeaterCooler', 'CurrentRelativeHumidity', null, false)
 		} else {
-			this.log.easyDebug(`${this.name} - Removing Humidity characteristic`)
-			this.HeaterCoolerService.removeCharacteristic(Characteristic.CurrentRelativeHumidity)
+			// TODO: WIP trying to find a way to remove the Humidity characteristic immediately
+			this.easyDebug(`${this.name} - Removing Humidity characteristic`)
+			// @ts-ignore
+			this.HeaterCoolerService.removeCharacteristic(this.Characteristic.CurrentRelativeHumidity)
 		}
 
 		// TODO: change to:
 		// this.addCharacteristicToService('HeaterCooler', 'Active', null, true)
-		this.HeaterCoolerService.getCharacteristic(Characteristic.Active)
-			.on('get', this.stateManager.get.ACActive)
-			.on('set', this.stateManager.set.ACActive)
+		this.HeaterCoolerService.getCharacteristic(this.Characteristic.Active)
+			.on('get', this.StateManager.get.ACActive)
+			.on('set', this.StateManager.set.ACActive)
 
 		this.addCharacteristicToService('HeaterCooler', 'CurrentHeaterCoolerState', null, false)
 
@@ -224,21 +248,21 @@ class AirConditioner {
 				continue
 			}
 
-			validModes.push(Characteristic.TargetHeaterCoolerState[mode])
+			validModes.push(this.Characteristic.TargetHeaterCoolerState[mode])
 
-			let modeProps = false
+			let modeProps = undefined
 
 			if (this.capabilities[mode].temperatures) {
-				if (this.capabilities[mode].temperatures[CELSIUS_UNIT]) {
+				if (this.capabilities[mode].temperatures[this.CELSIUS_UNIT]) {
 					modeProps = {
-						minValue: this.capabilities[mode].temperatures[CELSIUS_UNIT].min,
-						maxValue: this.capabilities[mode].temperatures[CELSIUS_UNIT].max,
+						minValue: this.capabilities[mode].temperatures[this.CELSIUS_UNIT].min,
+						maxValue: this.capabilities[mode].temperatures[this.CELSIUS_UNIT].max,
 						minStep: this.temperatureStep
 					}
-				} else if (this.capabilities[mode].temperatures[FAHRENHEIT_UNIT]) {
+				} else if (this.capabilities[mode].temperatures[this.FAHRENHEIT_UNIT]) {
 					modeProps = {
-						minValue: this.Utils.toCelsius(this.capabilities[mode].temperatures[FAHRENHEIT_UNIT].min),
-						maxValue: this.Utils.toCelsius(this.capabilities[mode].temperatures[FAHRENHEIT_UNIT].max),
+						minValue: this.Utils.toCelsius(this.capabilities[mode].temperatures[this.FAHRENHEIT_UNIT].min),
+						maxValue: this.Utils.toCelsius(this.capabilities[mode].temperatures[this.FAHRENHEIT_UNIT].max),
 						minStep: this.temperatureStep
 					}
 				}
@@ -262,30 +286,31 @@ class AirConditioner {
 		}
 
 		if (validModes.length < 1) {
-			this.log(`ERR: ${this.name} - TargetHeaterCoolerState validModes is empty (${validModes}), exiting addHeaterCoolerService`)
+			this.log.info(`ERR: ${this.name} - TargetHeaterCoolerState validModes is empty (${validModes}), exiting addHeaterCoolerService`)
 
 			return
 		}
 
-		// this.log.easyDebug(`${this.name} - Calculated TargetHeaterCoolerState validValues: ${validModes.forEach(mode => {
-		// 	return this.stateManager.characteristicToMode(mode)
+		// this.easyDebug(`${this.name} - Calculated TargetHeaterCoolerState validValues: ${validModes.forEach(mode => {
+		// 	return this.StateManager.characteristicToMode(mode)
 		// })}`)
 		// TODO: use a helper function to return names for the mode numbers
-		this.log.easyDebug(`${this.name} - Calculated TargetHeaterCoolerState validValues: ${validModes}`)
+		this.easyDebug(`${this.name} - Calculated TargetHeaterCoolerState validValues: ${validModes}`)
 
 		// Below is specific logic to change TargetHeaterCoolerState and prevent warnings when its current value is not
 		// in the list of valid modes
-		const TargetHeaterCoolerState = this.HeaterCoolerService.getCharacteristic(Characteristic.TargetHeaterCoolerState)
+		const TargetHeaterCoolerState = this.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState)
 		const currentValue = TargetHeaterCoolerState.value
 
 		if (validModes.length > 0 && !validModes.includes(currentValue)) {
 			const tempValidModes = [...validModes] // make a shallow copy
 			const newMinValue = Math.min(...validModes) // validModes is an array of numbers (enums) that represent modes in HomeKit
 
-			this.log.easyDebug(`${this.name} - Temporarily including current value ${currentValue} to prevent warning,`
+			this.easyDebug(`${this.name} - Temporarily including current value ${currentValue} to prevent warning,`
 						+ ` then updating value to new minimum of ${newMinValue}`)
 			tempValidModes.push(currentValue)
-			//TODO: updateValue via this.Utils.updateValue?
+
+			// TODO: updateValue via this.Utils.updateValue?
 			TargetHeaterCoolerState.setProps({ validValues: tempValidModes })
 				.updateValue(newMinValue)
 		}
@@ -293,248 +318,258 @@ class AirConditioner {
 		this.addCharacteristicToService('HeaterCooler', 'TargetHeaterCoolerState', { validValues: validModes })
 
 		if (!this.disableVerticalSwing && ((this.capabilities.COOL && this.capabilities.COOL.verticalSwing) || (this.capabilities.HEAT && this.capabilities.HEAT.verticalSwing))) {
-			this.HeaterCoolerService.getCharacteristic(Characteristic.SwingMode)
-				.on('get', this.stateManager.get.ACSwing)
-				.on('set', this.stateManager.set.ACSwing)
+			this.HeaterCoolerService.getCharacteristic(this.Characteristic.SwingMode)
+				.on('get', this.StateManager.get.ACSwing)
+				.on('set', this.StateManager.set.ACSwing)
 		} else {
-			this.log.easyDebug(`${this.name} - Removing Vertical Swing (Oscillate) button`)
-			// TODO: WIP trying to find a way to remove the Oscillate switch immediately, without needing the user to
-			// remove / reset the accessory... there doesn't seem to be a way to force a 'refresh'
-			// Could we: 1. hide the characteristic from the user? HMCharacteristicPropertyHidden
-			// 2. Error the Characteristic?
-			// this.HeaterCoolerService.updateCharacteristic(Characteristic.SwingMode, new Error('A placeholder error object'))
-			// 3. Remove and re-add the whole service or accessory?
-			// 4. Try to see if the characteristic exists? this.HeaterCoolerService.testCharacteristic(Characteristic.SwingMode)
-			// 5. Set StatusActive Characteristic - https://github.com/homebridge/HAP-NodeJS/wiki/Presenting-Erroneous-Accessory-State-to-the-User
-			this.HeaterCoolerService.removeCharacteristic(Characteristic.SwingMode)
+			// TODO: WIP trying to find a way to remove the Vertical Swing (Oscillate) button immediately without needing the user to remove/reset the accessory.
+			//       There doesn't seem to be a way to force a 'refresh'.
+			//
+			// 		 Check if we can do one or more of the following:
+			//       1. hide the characteristic from the user? HMCharacteristicPropertyHidden
+			//       2. Error the Characteristic?
+			//       	  this.HeaterCoolerService.updateCharacteristic(Characteristic.SwingMode, new Error('A placeholder error object'))
+			//       3. Remove and re-add the whole service or accessory?
+			//       4. Try to see if the characteristic exists? this.HeaterCoolerService.testCharacteristic(Characteristic.SwingMode)
+			//       5. Set StatusActive Characteristic - https://github.com/homebridge/HAP-NodeJS/wiki/Presenting-Erroneous-Accessory-State-to-the-User
+			this.easyDebug(`${this.name} - Removing Vertical Swing (Oscillate) button`)
+			// @ts-ignore
+			this.HeaterCoolerService.removeCharacteristic(this.Characteristic.SwingMode)
 		}
 
 		if ((this.capabilities.COOL && this.capabilities.COOL.fanSpeeds) || (this.capabilities.HEAT && this.capabilities.HEAT.fanSpeeds)) {
-			this.HeaterCoolerService.getCharacteristic(Characteristic.RotationSpeed)
-				.on('get', this.stateManager.get.ACRotationSpeed)
-				.on('set', this.stateManager.set.ACRotationSpeed)
+			this.HeaterCoolerService.getCharacteristic(this.Characteristic.RotationSpeed)
+				.on('get', this.StateManager.get.ACRotationSpeed)
+				.on('set', this.StateManager.set.ACRotationSpeed)
 		}
 
-		//TODO: check on this warning...
+		// TODO: check on this warning...
 		if (this.filterService) {
 			// Apple HomeKit limitations mean a warning will be thrown as Filter characteristics doesn't exist under
 			// the HeaterCooler service and a separate Filter service doesn't seem to show up in the Home app.
 			// Home app also doesn't support Filter reset out of the box... could add a stateless switch?
-			this.log.easyDebug(`${this.name} - Adding Filter characteristics to ${this.name}`)
+			this.easyDebug(`${this.name} - Adding Filter characteristics to ${this.name}`)
 
-			this.HeaterCoolerService.getCharacteristic(Characteristic.FilterChangeIndication)
-				.on('get', this.stateManager.get.FilterChangeIndication)
+			this.HeaterCoolerService.getCharacteristic(this.Characteristic.FilterChangeIndication)
+				.on('get', this.StateManager.get.FilterChangeIndication)
 
-			this.HeaterCoolerService.getCharacteristic(Characteristic.FilterLifeLevel)
-				.on('get', this.stateManager.get.FilterLifeLevel)
+			this.HeaterCoolerService.getCharacteristic(this.Characteristic.FilterLifeLevel)
+				.on('get', this.StateManager.get.FilterLifeLevel)
 
-			this.HeaterCoolerService.getCharacteristic(Characteristic.ResetFilterIndication)
-				.on('set', this.stateManager.set.ResetFilterIndication)
+			this.HeaterCoolerService.getCharacteristic(this.Characteristic.ResetFilterIndication)
+				.on('set', this.StateManager.set.ResetFilterIndication)
 		}
 	}
 
 	removeHeaterCoolerService() {
-		const HeaterCoolerService = this.accessory.getService(Service.HeaterCooler)
+		const HeaterCoolerService = this.platformAccessory.getService(this.Service.HeaterCooler)
 
 		if (HeaterCoolerService) {
 			// remove service
-			this.log.easyDebug(`${this.name} - Removing HeaterCoolerService`)
-			this.accessory.removeService(HeaterCoolerService)
+			this.easyDebug(`${this.name} - Removing HeaterCoolerService`)
+			this.platformAccessory.removeService(HeaterCoolerService)
 		}
 	}
 
 	addFanService() {
-		this.log.easyDebug(`${this.name} - Adding FanService`)
+		this.easyDebug(`${this.name} - Adding FanService`)
 
-		this.FanService = this.accessory.getService(Service.Fanv2)
+		this.FanService = this.platformAccessory.getService(this.Service.Fanv2)
 		if (!this.FanService) {
-			this.FanService = this.accessory.addService(Service.Fanv2, this.roomName + ' Fan', 'Fan')
+			this.FanService = this.platformAccessory.addService(this.Service.Fanv2, this.room.name + ' Fan', 'Fan')
 		}
 
-		this.FanService.getCharacteristic(Characteristic.Active)
-			.on('get', this.stateManager.get.FanActive)
-			.on('set', this.stateManager.set.FanActive)
+		this.FanService.getCharacteristic(this.Characteristic.Active)
+			.on('get', this.StateManager.get.FanActive)
+			.on('set', this.StateManager.set.FanActive)
 
 		if (!this.disableVerticalSwing && this.capabilities.FAN.verticalSwing) {
-			this.FanService.getCharacteristic(Characteristic.SwingMode)
-				.on('get', this.stateManager.get.FanSwing)
-				.on('set', this.stateManager.set.FanSwing)
+			this.FanService.getCharacteristic(this.Characteristic.SwingMode)
+				.on('get', this.StateManager.get.FanSwing)
+				.on('set', this.StateManager.set.FanSwing)
 		} else {
-			this.FanService.removeCharacteristic(Characteristic.SwingMode)
+			// TODO: WIP trying to find a way to remove the Vertical Swing (Oscillate) button immediately without needing the user to remove/reset the accessory.
+			this.easyDebug(`${this.name} - Removing Vertical Swing (Oscillate) button`)
+			// @ts-ignore
+			this.FanService.removeCharacteristic(this.Characteristic.SwingMode)
 		}
 
 		if (this.capabilities.FAN.fanSpeeds) {
-			this.FanService.getCharacteristic(Characteristic.RotationSpeed)
-				.on('get', this.stateManager.get.FanRotationSpeed)
-				.on('set', this.stateManager.set.FanRotationSpeed)
+			this.FanService.getCharacteristic(this.Characteristic.RotationSpeed)
+				.on('get', this.StateManager.get.FanRotationSpeed)
+				.on('set', this.StateManager.set.FanRotationSpeed)
 		}
 	}
 
 	removeFanService() {
-		const FanService = this.accessory.getService(Service.Fanv2)
+		const FanService = this.platformAccessory.getService(this.Service.Fanv2)
 
 		if (FanService) {
 			// remove service
-			this.log.easyDebug(`${this.name} - Removing FanService`)
-			this.accessory.removeService(FanService)
+			this.easyDebug(`${this.name} - Removing FanService`)
+			this.platformAccessory.removeService(FanService)
 		}
 	}
 
 	addDryService() {
-		this.log.easyDebug(`${this.name} - Adding DehumidifierService`)
+		this.easyDebug(`${this.name} - Adding DehumidifierService`)
 
-		this.DryService = this.accessory.getService(Service.HumidifierDehumidifier)
+		this.DryService = this.platformAccessory.getService(this.Service.HumidifierDehumidifier)
 		if (!this.DryService) {
-			this.DryService = this.accessory.addService(Service.HumidifierDehumidifier, this.roomName + ' Dry', 'Dry')
+			this.DryService = this.platformAccessory.addService(this.Service.HumidifierDehumidifier, this.room.name + ' Dry', 'Dry')
 		}
 
-		this.DryService.getCharacteristic(Characteristic.Active)
-			.on('get', this.stateManager.get.DryActive)
-			.on('set', this.stateManager.set.DryActive)
+		this.DryService.getCharacteristic(this.Characteristic.Active)
+			.on('get', this.StateManager.get.DryActive)
+			.on('set', this.StateManager.set.DryActive)
 
 		// CurrentRelativeHumidity is required on HumidifierDehumidifier, so we add regardless of "disableHumidity"
-		this.DryService.getCharacteristic(Characteristic.CurrentRelativeHumidity)
-			.on('get', this.stateManager.get.CurrentRelativeHumidity)
+		this.DryService.getCharacteristic(this.Characteristic.CurrentRelativeHumidity)
+			.on('get', this.StateManager.get.CurrentRelativeHumidity)
 
-		this.DryService.getCharacteristic(Characteristic.CurrentHumidifierDehumidifierState)
-			.on('get', this.stateManager.get.CurrentHumidifierDehumidifierState)
+		this.DryService.getCharacteristic(this.Characteristic.CurrentHumidifierDehumidifierState)
+			.on('get', this.StateManager.get.CurrentHumidifierDehumidifierState)
 
-		this.DryService.getCharacteristic(Characteristic.TargetHumidifierDehumidifierState)
+		this.DryService.getCharacteristic(this.Characteristic.TargetHumidifierDehumidifierState)
 			.setProps({
 				minValue: 2,
 				maxValue: 2,
-				validValues: [Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER]
+				validValues: [this.Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER]
 			})
-			.on('get', this.stateManager.get.TargetHumidifierDehumidifierState)
-			.on('set', this.stateManager.set.TargetHumidifierDehumidifierState)
+			.on('get', this.StateManager.get.TargetHumidifierDehumidifierState)
+			.on('set', this.StateManager.set.TargetHumidifierDehumidifierState)
 
 		if (!this.disableVerticalSwing && this.capabilities.DRY.verticalSwing) {
-			this.DryService.getCharacteristic(Characteristic.SwingMode)
-				.on('get', this.stateManager.get.DrySwing)
-				.on('set', this.stateManager.set.DrySwing)
+			this.DryService.getCharacteristic(this.Characteristic.SwingMode)
+				.on('get', this.StateManager.get.DrySwing)
+				.on('set', this.StateManager.set.DrySwing)
 		} else {
-			this.DryService.removeCharacteristic(Characteristic.SwingMode)
+			// TODO: WIP trying to find a way to remove the Vertical Swing (Oscillate) button immediately without needing the user to remove/reset the accessory.
+			this.easyDebug(`${this.name} - Removing Vertical Swing (Oscillate) button`)
+			// @ts-ignore
+			this.DryService.removeCharacteristic(this.Characteristic.SwingMode)
 		}
 
 		if (this.capabilities.DRY.fanSpeeds) {
-			this.DryService.getCharacteristic(Characteristic.RotationSpeed)
-				.on('get', this.stateManager.get.DryRotationSpeed)
-				.on('set', this.stateManager.set.DryRotationSpeed)
+			this.DryService.getCharacteristic(this.Characteristic.RotationSpeed)
+				.on('get', this.StateManager.get.DryRotationSpeed)
+				.on('set', this.StateManager.set.DryRotationSpeed)
 		}
 	}
 
 	removeDryService() {
-		const DryService = this.accessory.getService(Service.HumidifierDehumidifier)
+		const DryService = this.platformAccessory.getService(this.Service.HumidifierDehumidifier)
 
 		if (DryService) {
 			// remove service
-			this.log.easyDebug(`${this.name} - Removing DehumidifierService`)
-			this.accessory.removeService(DryService)
+			this.easyDebug(`${this.name} - Removing DehumidifierService`)
+			this.platformAccessory.removeService(DryService)
 		}
 	}
 
 	addHorizontalSwingSwitch() {
-		//TODO: review the logging... maybe line below becomes "Add HorizontalSwingSwitch" and new log line 5 rows below for Adding if doesn't already exist?
-		//Do the same for other "add" functions
-		this.log.easyDebug(`${this.name} - Adding HorizontalSwingSwitchService`)
+		// TODO: review the logging... maybe line below becomes "Add HorizontalSwingSwitch" and
+		//       new log line 5 rows below for Adding if doesn't already exist?
+		//       do the same for other "add" functions
+		this.easyDebug(`${this.name} - Adding HorizontalSwingSwitchService`)
 
-		this.HorizontalSwingSwitchService = this.accessory.getService(this.roomName + ' Horizontal Swing')
+		this.HorizontalSwingSwitchService = this.platformAccessory.getService(this.room.name + ' Horizontal Swing')
 		if (!this.HorizontalSwingSwitchService) {
-			this.HorizontalSwingSwitchService = this.accessory.addService(Service.Switch, this.roomName + ' Horizontal Swing', 'HorizontalSwingSwitch')
+			this.HorizontalSwingSwitchService = this.platformAccessory.addService(this.Service.Switch, this.room.name + ' Horizontal Swing', 'HorizontalSwingSwitch')
 		}
 
-		this.HorizontalSwingSwitchService.getCharacteristic(Characteristic.On)
-			.on('get', this.stateManager.get.HorizontalSwing)
-			.on('set', this.stateManager.set.HorizontalSwing)
+		this.HorizontalSwingSwitchService.getCharacteristic(this.Characteristic.On)
+			.on('get', this.StateManager.get.HorizontalSwing)
+			.on('set', this.StateManager.set.HorizontalSwing)
 	}
 
 	removeHorizontalSwingSwitch() {
 		// Below || is required in case of name/type change of HorizontalSwingSwitch Service
-		const HorizontalSwingSwitch = this.accessory.getService('HorizontalSwingSwitch') || this.accessory.getService(this.roomName + ' Horizontal Swing')
+		const HorizontalSwingSwitch = this.platformAccessory.getService('HorizontalSwingSwitch') || this.platformAccessory.getService(this.room.name + ' Horizontal Swing')
 
 		if (HorizontalSwingSwitch) {
 			// remove service
-			this.log.easyDebug(`${this.name} - Removing HorizontalSwingSwitchService`)
-			this.accessory.removeService(HorizontalSwingSwitch)
+			this.easyDebug(`${this.name} - Removing HorizontalSwingSwitchService`)
+			this.platformAccessory.removeService(HorizontalSwingSwitch)
 		}
 	}
 
 	addLightSwitch() {
-		this.log.easyDebug(`${this.name} - Adding LightSwitchService`)
+		this.easyDebug(`${this.name} - Adding LightSwitchService`)
 
-		this.LightSwitchService = this.accessory.getService(this.roomName + 'AC Light')
+		this.LightSwitchService = this.platformAccessory.getService(this.room.name + 'AC Light')
 		if (!this.LightSwitchService) {
-			this.LightSwitchService = this.accessory.addService(Service.Lightbulb, this.roomName + 'AC Light', 'LightSwitch')
+			this.LightSwitchService = this.platformAccessory.addService(this.Service.Lightbulb, this.room.name + 'AC Light', 'LightSwitch')
 		}
 
-		this.LightSwitchService.getCharacteristic(Characteristic.On)
-			.on('get', this.stateManager.get.LightSwitch)
-			.on('set', this.stateManager.set.LightSwitch)
+		this.LightSwitchService.getCharacteristic(this.Characteristic.On)
+			.on('get', this.StateManager.get.LightSwitch)
+			.on('set', this.StateManager.set.LightSwitch)
 	}
 
 	removeLightSwitch() {
 		// Below || is required in case of name/type change of LightSwitch Service
-		const LightSwitch = this.accessory.getService('LightSwitch') || this.accessory.getService(this.roomName + 'AC Light')
+		const LightSwitch = this.platformAccessory.getService('LightSwitch') || this.platformAccessory.getService(this.room.name + 'AC Light')
 
 		if (LightSwitch) {
 			// remove service
-			this.log.easyDebug(`${this.name} - Removing LightSwitchService`)
-			this.accessory.removeService(LightSwitch)
+			this.easyDebug(`${this.name} - Removing LightSwitchService`)
+			this.platformAccessory.removeService(LightSwitch)
 		}
 	}
 
 	addSyncButtonService() {
-		this.log.easyDebug(`${this.name} - Adding SyncButtonSwitchService`)
+		this.easyDebug(`${this.name} - Adding SyncButtonSwitchService`)
 
-		this.SyncButtonService = this.accessory.getService(this.roomName + ' Sync')
+		this.SyncButtonService = this.platformAccessory.getService(this.room.name + ' Sync')
 		if (!this.SyncButtonService) {
-			this.SyncButtonService = this.accessory.addService(Service.Switch, this.roomName + ' Sync', 'SyncButtonSwitch')
+			this.SyncButtonService = this.platformAccessory.addService(this.Service.Switch, this.room.name + ' Sync', 'SyncButtonSwitch')
 		}
 
-		this.SyncButtonService.getCharacteristic(Characteristic.On)
-			.on('get', this.stateManager.get.SyncButton)
+		this.SyncButtonService.getCharacteristic(this.Characteristic.On)
+			.on('get', this.StateManager.get.SyncButton)
 			// TODO: see if below annoymous function can be moved to StateManager.js
 			.on('set', (state, callback) => {
-				this.stateManager.set.SyncButton(state, callback)
+				this.StateManager.set.SyncButton(state, callback)
 				setTimeout(() => {
-					//TODO: updateValue via this.Utils.updateValue?
-					this.SyncButtonService.getCharacteristic(Characteristic.On).updateValue(0)
+					// TODO: updateValue via this.Utils.updateValue?
+					this.SyncButtonService.getCharacteristic(this.Characteristic.On).updateValue(0)
 				}, 1000)
 			})
 	}
 
 	removeSyncButtonService() {
 		// Below || is required in case of name/type change of SyncButton Service
-		const SyncButtonService = this.accessory.getService('SyncButton') || this.accessory.getService('SyncButtonSwitch') || this.accessory.getService(this.roomName + ' Sync')
+		const SyncButtonService = this.platformAccessory.getService('SyncButton') || this.platformAccessory.getService('SyncButtonSwitch') || this.platformAccessory.getService(this.room.name + ' Sync')
 
 		if (SyncButtonService) {
 			// remove service
-			this.log.easyDebug(`${this.name} - Removing SyncButtonSwitchService`)
-			this.accessory.removeService(SyncButtonService)
+			this.easyDebug(`${this.name} - Removing SyncButtonSwitchService`)
+			this.platformAccessory.removeService(SyncButtonService)
 		}
 	}
 
 	addClimateReactService() {
-		this.log.easyDebug(`${this.roomName} - Adding Climate React Service`)
+		this.easyDebug(`${this.room.name} - Adding Climate React Service`)
 
-		this.ClimateReactService = this.accessory.getService(this.roomName + ' Climate React')
+		this.ClimateReactService = this.platformAccessory.getService(this.room.name + ' Climate React')
 		if (!this.ClimateReactService) {
-			this.ClimateReactService = this.accessory.addService(Service.Switch, this.roomName + ' Climate React' , 'ClimateReact')
+			this.ClimateReactService = this.platformAccessory.addService(this.Service.Switch, this.room.name + ' Climate React' , 'ClimateReact')
 		}
 
-		this.ClimateReactService.getCharacteristic(Characteristic.On)
-			.on('get', this.stateManager.get.ClimateReactSwitch)
-			.on('set', this.stateManager.set.ClimateReactSwitch)
+		this.ClimateReactService.getCharacteristic(this.Characteristic.On)
+			.on('get', this.StateManager.get.ClimateReactSwitch)
+			.on('set', this.StateManager.set.ClimateReactSwitch)
 	}
 
 	removeClimateReactService() {
 		// Below || is required in case of name/type change of ClimateReact Service
-		const ClimateReactService = this.accessory.getService('ClimateReact') || this.accessory.getService(this.roomName + ' Climate React')
+		const ClimateReactService = this.platformAccessory.getService('ClimateReact') || this.platformAccessory.getService(this.room.name + ' Climate React')
 
 		if (ClimateReactService) {
 			// remove service
-			this.log.easyDebug(`${this.roomName} - Removing Climate React Switch Service`)
-			this.accessory.removeService(ClimateReactService)
+			this.easyDebug(`${this.room.name} - Removing Climate React Switch Service`)
+			this.platformAccessory.removeService(ClimateReactService)
 		}
 	}
 
@@ -573,7 +608,7 @@ class AirConditioner {
 		if (!this.state.active) {
 			if (this.HeaterCoolerService) {
 				this.Utils.updateValue('HeaterCoolerService', 'Active', 0)
-				this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', Characteristic.CurrentHeaterCoolerState.INACTIVE)
+				this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', this.Characteristic.CurrentHeaterCoolerState.INACTIVE)
 			}
 
 			if (this.DryService) {
@@ -601,8 +636,8 @@ class AirConditioner {
 					this.Utils.updateValue('HeaterCoolerService', 'CoolingThresholdTemperature', this.state.targetTemperature)
 
 					// update vertical swing for HeaterCoolerService
-					if (!this.disableVerticalSwing && this.capabilities[this.state.mode].VerticalSwing) {
-						this.Utils.updateValue('HeaterCoolerService', 'SwingMode', Characteristic.SwingMode[this.state.verticalSwing])
+					if (!this.disableVerticalSwing && this.capabilities[this.state.mode].verticalSwing) {
+						this.Utils.updateValue('HeaterCoolerService', 'SwingMode', this.Characteristic.SwingMode[this.state.verticalSwing])
 					}
 
 					// update horizontal swing for HeaterCoolerService
@@ -624,23 +659,23 @@ class AirConditioner {
 
 					// update filter characteristics for HeaterCoolerService
 					if (this.filterService) {
-						this.Utils.updateValue('HeaterCoolerService', 'FilterChangeIndication', Characteristic.FilterChangeIndication[this.state.filterChange])
+						this.Utils.updateValue('HeaterCoolerService', 'FilterChangeIndication', this.Characteristic.FilterChangeIndication[this.state.filterChange])
 						this.Utils.updateValue('HeaterCoolerService', 'FilterLifeLevel', this.state.filterLifeLevel)
 					}
 
 					// set proper target and current state of HeaterCoolerService
 					if (this.state.mode === 'COOL') {
-						this.Utils.updateValue('HeaterCoolerService', 'TargetHeaterCoolerState', Characteristic.TargetHeaterCoolerState.COOL)
-						this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', Characteristic.CurrentHeaterCoolerState.COOLING)
+						this.Utils.updateValue('HeaterCoolerService', 'TargetHeaterCoolerState', this.Characteristic.TargetHeaterCoolerState.COOL)
+						this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', this.Characteristic.CurrentHeaterCoolerState.COOLING)
 					} else if (this.state.mode === 'HEAT') {
-						this.Utils.updateValue('HeaterCoolerService', 'TargetHeaterCoolerState', Characteristic.TargetHeaterCoolerState.HEAT)
-						this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', Characteristic.CurrentHeaterCoolerState.HEATING)
+						this.Utils.updateValue('HeaterCoolerService', 'TargetHeaterCoolerState', this.Characteristic.TargetHeaterCoolerState.HEAT)
+						this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState',this.Characteristic.CurrentHeaterCoolerState.HEATING)
 					} else if (this.state.mode === 'AUTO') {
-						this.Utils.updateValue('HeaterCoolerService', 'TargetHeaterCoolerState', Characteristic.TargetHeaterCoolerState.AUTO)
+						this.Utils.updateValue('HeaterCoolerService', 'TargetHeaterCoolerState', this.Characteristic.TargetHeaterCoolerState.AUTO)
 						if (this.state.currentTemperature > this.state.targetTemperature) {
-							this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', Characteristic.CurrentHeaterCoolerState.COOLING)
+							this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', this.Characteristic.CurrentHeaterCoolerState.COOLING)
 						} else {
-							this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', Characteristic.CurrentHeaterCoolerState.HEATING)
+							this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', this.Characteristic.CurrentHeaterCoolerState.HEATING)
 						}
 					}
 				}
@@ -671,7 +706,7 @@ class AirConditioner {
 
 					// update swing for FanService
 					if (!this.disableVerticalSwing && this.capabilities.FAN.verticalSwing) {
-						this.Utils.updateValue('FanService', 'SwingMode', Characteristic.SwingMode[this.state.verticalSwing])
+						this.Utils.updateValue('FanService', 'SwingMode', this.Characteristic.SwingMode[this.state.verticalSwing])
 					}
 
 					// update fanSpeed for FanService
@@ -683,7 +718,7 @@ class AirConditioner {
 				if (this.HeaterCoolerService) {
 					// turn off HeaterCoolerService
 					this.Utils.updateValue('HeaterCoolerService', 'Active', 0)
-					this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', Characteristic.CurrentHeaterCoolerState.INACTIVE)
+					this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', this.Characteristic.CurrentHeaterCoolerState.INACTIVE)
 				}
 
 				break
@@ -692,11 +727,11 @@ class AirConditioner {
 				if (this.DryService) {
 					// turn on DryService
 					this.Utils.updateValue('DryService', 'Active', 1)
-					this.Utils.updateValue('DryService', 'CurrentHumidifierDehumidifierState', Characteristic.CurrentHumidifierDehumidifierState.DEHUMIDIFYING)
+					this.Utils.updateValue('DryService', 'CurrentHumidifierDehumidifierState', this.Characteristic.CurrentHumidifierDehumidifierState.DEHUMIDIFYING)
 
 					// update swing for DryService
 					if (!this.disableVerticalSwing && this.capabilities.DRY.verticalSwing) {
-						this.Utils.updateValue('DryService', 'SwingMode', Characteristic.SwingMode[this.state.verticalSwing])
+						this.Utils.updateValue('DryService', 'SwingMode', this.Characteristic.SwingMode[this.state.verticalSwing])
 					}
 
 					// update fanSpeed for DryService
@@ -713,7 +748,7 @@ class AirConditioner {
 				if (this.HeaterCoolerService) {
 					// turn off HeaterCoolerService
 					this.Utils.updateValue('HeaterCoolerService', 'Active', 0)
-					this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', Characteristic.CurrentHeaterCoolerState.INACTIVE)
+					this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', this.Characteristic.CurrentHeaterCoolerState.INACTIVE)
 				}
 
 				break

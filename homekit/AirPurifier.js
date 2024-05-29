@@ -1,77 +1,97 @@
+// eslint-disable-next-line no-unused-vars
+const homebridge = require('homebridge')
+// eslint-disable-next-line no-unused-vars
+const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
+// eslint-disable-next-line no-unused-vars
+const Classes = require('../classes')
+const SensiboAccessory = require('./SensiboAccessory')
 const unified = require('../sensibo/unified')
-let Characteristic, Service
 
-class AirPurifier {
+class AirPurifier extends SensiboAccessory {
 
+	/**
+	 * @param {import('../types').Device} device*
+	 * @param {SensiboACPlatform} platform
+	 */
 	constructor(device, platform) {
-		Service = platform.api.hap.Service
-		Characteristic = platform.api.hap.Characteristic
+		const deviceInfo = unified.getDeviceInfo(device)
+		const namePrefix = deviceInfo.room.name
+		const nameSuffix = 'Pure'
+		const type = 'AirPurifier'
+
+		super(platform, deviceInfo.id, namePrefix, nameSuffix, type, '')
+
+		/** @type {typeof homebridge.Service} */
+		this.Service = platform.api.hap.Service
+		/** @type {typeof homebridge.Characteristic} */
+		this.Characteristic = platform.api.hap.Characteristic
 
 		this.Utils = require('../sensibo/Utils')(this, platform)
 
-		const deviceInfo = unified.deviceInformation(device)
-
-		this.log = platform.log
-		this.api = platform.api
-		this.storage = platform.storage
-		this.cachedState = platform.cachedState
-		this.id = deviceInfo.id
+		/** @type {import('../types').Device} */
+		this.device = device
 		this.appId = deviceInfo.appId
-		this.model = deviceInfo.model
+		this.productModel = deviceInfo.productModel
 		this.serial = deviceInfo.serial
 		this.manufacturer = deviceInfo.manufacturer
-		this.roomName = deviceInfo.roomName
-		this.name = this.roomName + ' Pure'
-		this.type = 'AirPurifier'
+		this.room = deviceInfo.room
 		this.disableLightSwitch = platform.disableLightSwitch
 		this.filterService = deviceInfo.filterService
-		this.capabilities = unified.capabilities(device, platform)
+		/** @type {import('../types').Capabilities} */
+		this.capabilities = unified.getCapabilities(device, platform)
+		/** @type {import('../types').Measurements} */
+		this.measurements = undefined
 
+		/** @type {ProxyHandler<Classes.InternalAcState>} */
 		const StateHandler = require('./StateHandler')(this, platform)
+		const state = unified.getAcState(device)
 
-		this.state = this.cachedState.devices[this.id] = unified.acState(device)
-		this.state = new Proxy(this.state, StateHandler)
-		this.stateManager = require('./StateManager')(this, platform)
+		this.cachedState.devices[this.id] = state
+		/** @type {Classes.InternalAcState} */
+		this.state = new Proxy(state, StateHandler)
+		this.StateManager = require('./StateManager')(this, platform)
 
-		this.UUID = this.api.hap.uuid.generate(this.id)
-		this.accessory = platform.cachedAccessories.find(accessory => {
-			return accessory.UUID === this.UUID
+		/** @type {undefined|homebridge.PlatformAccessory} */
+		this.platformAccessory = platform.cachedAccessories.find(cachedAccessory => {
+			return cachedAccessory.UUID === this.UUID
 		})
 
-		if (!this.accessory) {
-			this.log(`Creating New ${platform.PLATFORM_NAME} ${this.type} Accessory in the ${this.roomName}`)
-			this.accessory = new this.api.platformAccessory(this.name, this.UUID)
-			this.accessory.context.type = this.type
-			this.accessory.context.deviceId = this.id
+		if (!this.platformAccessory) {
+			this.log.info(`Creating New ${platform.platformName} ${this.type} Accessory in the ${this.room.name}`)
+			this.platformAccessory = new this.api.platformAccessory(this.name, this.UUID)
+			this.platformAccessory.context.type = this.type
+			this.platformAccessory.context.deviceId = this.id
 
-			platform.cachedAccessories.push(this.accessory)
+			platform.cachedAccessories.push(this.platformAccessory)
 
 			// register the accessory
-			this.api.registerPlatformAccessories(platform.PLUGIN_NAME, platform.PLATFORM_NAME, [this.accessory])
+			this.api.registerPlatformAccessories(platform.pluginName, platform.platformName, [this.platformAccessory])
 		}
 
 		// TODO: enable logging? See also line 143
 		// if (platform.enableHistoryStorage) {
-		// 	const FakeGatoHistoryService = require('fakegato-history')(this.api)
+		// 	const fakeGatoHistoryService = require('fakegato-history')(this.api)
 
-		// 	this.loggingService = new FakeGatoHistoryService('weather', this.accessory, {
+		// 	this.loggingService = new fakeGatoHistoryService('weather', this.platformAccessory, {
 		// 		storage: 'fs',
 		// 		path: platform.persistPath
 		// 	})
 		// }
 
-		this.accessory.context.roomName = this.roomName
+		this.platformAccessory.context.roomName = this.room.name
 
-		let informationService = this.accessory.getService(Service.AccessoryInformation)
+		/** @type {undefined|homebridge.Service} */
+		let informationService = this.platformAccessory.getService(this.Service.AccessoryInformation)
 
 		if (!informationService) {
-			informationService = this.accessory.addService(Service.AccessoryInformation)
+			/** @type {homebridge.Service} */
+			informationService = this.platformAccessory.addService(this.Service.AccessoryInformation)
 		}
 
 		informationService
-			.setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
-			.setCharacteristic(Characteristic.Model, this.model)
-			.setCharacteristic(Characteristic.SerialNumber, this.serial)
+			.setCharacteristic(this.Characteristic.Manufacturer, this.manufacturer)
+			.setCharacteristic(this.Characteristic.Model, this.productModel)
+			.setCharacteristic(this.Characteristic.SerialNumber, this.serial)
 
 		this.addAirPurifierService()
 
@@ -83,59 +103,59 @@ class AirPurifier {
 	}
 
 	addAirPurifierService() {
-		this.log.easyDebug(`${this.name} - Adding AirPurifierService`)
-		this.AirPurifierService = this.accessory.getService(Service.AirPurifier)
+		this.easyDebug(`${this.name} - Adding AirPurifierService`)
+		this.AirPurifierService = this.platformAccessory.getService(this.Service.AirPurifier)
 		if (!this.AirPurifierService) {
-			this.AirPurifierService = this.accessory.addService(Service.AirPurifier, this.name, this.type)
+			this.AirPurifierService = this.platformAccessory.addService(this.Service.AirPurifier, this.name, this.type)
 		}
 
-		this.AirPurifierService.getCharacteristic(Characteristic.Active)
-			.on('get', this.stateManager.get.PureActive)
-			.on('set', this.stateManager.set.PureActive)
+		this.AirPurifierService.getCharacteristic(this.Characteristic.Active)
+			.on('get', this.StateManager.get.PureActive)
+			.on('set', this.StateManager.set.PureActive)
 
-		this.AirPurifierService.getCharacteristic(Characteristic.CurrentAirPurifierState)
-			.on('get', this.stateManager.get.CurrentAirPurifierState)
+		this.AirPurifierService.getCharacteristic(this.Characteristic.CurrentAirPurifierState)
+			.on('get', this.StateManager.get.CurrentAirPurifierState)
 
-		this.AirPurifierService.getCharacteristic(Characteristic.TargetAirPurifierState)
-			.on('get', this.stateManager.get.TargetAirPurifierState)
-			.on('set', this.stateManager.set.TargetAirPurifierState)
+		this.AirPurifierService.getCharacteristic(this.Characteristic.TargetAirPurifierState)
+			.on('get', this.StateManager.get.TargetAirPurifierState)
+			.on('set', this.StateManager.set.TargetAirPurifierState)
 
-		this.AirPurifierService.getCharacteristic(Characteristic.RotationSpeed)
-			.on('get', this.stateManager.get.PureRotationSpeed)
-			.on('set', this.stateManager.set.PureRotationSpeed)
+		this.AirPurifierService.getCharacteristic(this.Characteristic.RotationSpeed)
+			.on('get', this.StateManager.get.PureRotationSpeed)
+			.on('set', this.StateManager.set.PureRotationSpeed)
 
 		if (this.filterService) {
-			this.AirPurifierService.getCharacteristic(Characteristic.FilterChangeIndication)
-				.on('get', this.stateManager.get.FilterChangeIndication)
+			this.AirPurifierService.getCharacteristic(this.Characteristic.FilterChangeIndication)
+				.on('get', this.StateManager.get.FilterChangeIndication)
 
-			this.AirPurifierService.getCharacteristic(Characteristic.FilterLifeLevel)
-				.on('get', this.stateManager.get.FilterLifeLevel)
+			this.AirPurifierService.getCharacteristic(this.Characteristic.FilterLifeLevel)
+				.on('get', this.StateManager.get.FilterLifeLevel)
 
-			this.AirPurifierService.getCharacteristic(Characteristic.ResetFilterIndication)
-				.on('set', this.stateManager.set.ResetFilterIndication)
+			this.AirPurifierService.getCharacteristic(this.Characteristic.ResetFilterIndication)
+				.on('set', this.StateManager.set.ResetFilterIndication)
 		}
 	}
 
 	addLightSwitch() {
-		this.log.easyDebug(`${this.name} - Adding LightSwitchService`)
+		this.easyDebug(`${this.name} - Adding LightSwitchService`)
 
-		this.PureLightSwitchService = this.accessory.getService(this.roomName + ' Pure Light')
+		this.PureLightSwitchService = this.platformAccessory.getService(this.room.name + ' Pure Light')
 		if (!this.PureLightSwitchService) {
-			this.PureLightSwitchService = this.accessory.addService(Service.Lightbulb, this.roomName + ' Pure Light', 'PureLightSwitch')
+			this.PureLightSwitchService = this.platformAccessory.addService(this.Service.Lightbulb, this.room.name + ' Pure Light', 'PureLightSwitch')
 		}
 
-		this.PureLightSwitchService.getCharacteristic(Characteristic.On)
-			.on('get', this.stateManager.get.LightSwitch)
-			.on('set', this.stateManager.set.LightSwitch)
+		this.PureLightSwitchService.getCharacteristic(this.Characteristic.On)
+			.on('get', this.StateManager.get.LightSwitch)
+			.on('set', this.StateManager.set.LightSwitch)
 	}
 
 	removeLightSwitch() {
-		const LightSwitch = this.accessory.getService(this.roomName + ' Pure Light')
+		const LightSwitch = this.platformAccessory.getService(this.room.name + ' Pure Light')
 
 		if (LightSwitch) {
 			// remove service
-			this.log.easyDebug(`${this.name} - Removing LightSwitchService`)
-			this.accessory.removeService(LightSwitch)
+			this.easyDebug(`${this.name} - Removing LightSwitchService`)
+			this.platformAccessory.removeService(LightSwitch)
 			delete this.PureLightSwitchService
 		}
 	}
@@ -154,10 +174,10 @@ class AirPurifier {
 		// if status is OFF, set all services to INACTIVE
 		if (!this.state.active) {
 			this.Utils.updateValue('AirPurifierService', 'Active', 0)
-			this.Utils.updateValue('AirPurifierService', 'CurrentAirPurifierState', Characteristic.CurrentAirPurifierState.INACTIVE)
+			this.Utils.updateValue('AirPurifierService', 'CurrentAirPurifierState', this.Characteristic.CurrentAirPurifierState.INACTIVE)
 		} else {
 			this.Utils.updateValue('AirPurifierService', 'Active', 1)
-			this.Utils.updateValue('AirPurifierService', 'CurrentAirPurifierState', Characteristic.CurrentAirPurifierState.PURIFYING_AIR)
+			this.Utils.updateValue('AirPurifierService', 'CurrentAirPurifierState', this.Characteristic.CurrentAirPurifierState.PURIFYING_AIR)
 
 			// update fanSpeed for AirPurifierService
 			this.Utils.updateValue('AirPurifierService', 'RotationSpeed', this.state.fanSpeed)
@@ -167,7 +187,7 @@ class AirPurifier {
 
 		// update filter characteristics for AirPurifierService
 		if (this.filterService) {
-			this.Utils.updateValue('AirPurifierService', 'FilterChangeIndication', Characteristic.FilterChangeIndication[this.state.filterChange])
+			this.Utils.updateValue('AirPurifierService', 'FilterChangeIndication', this.Characteristic.FilterChangeIndication[this.state.filterChange])
 			this.Utils.updateValue('AirPurifierService', 'FilterLifeLevel', this.state.filterLifeLevel)
 		}
 

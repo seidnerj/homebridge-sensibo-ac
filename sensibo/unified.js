@@ -1,3 +1,12 @@
+// eslint-disable-next-line no-unused-vars
+const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
+const Classes = require('../classes')
+
+/**
+ * @param {string} value
+ * @param {string[]} fanLevels
+ * @returns {number}
+ */
 function fanLevelToHK(value, fanLevels) {
 	if (value === 'auto') {
 		return 0
@@ -14,35 +23,51 @@ function fanLevelToHK(value, fanLevels) {
 }
 
 // TODO: use Utils version instead
+/**
+ * @param {number} value
+ * @returns {number}
+ */
 function toCelsius(value) {
 	return (value - 32) / 1.8
 }
 
-// TODO: move all functions in to Utils
+// TODO: move all functions below to Utils
 module.exports = {
 
-	deviceInformation: device => {
+	/**
+	 * @param {import('../types').Device} device
+	 * @returns {import('../types').DeviceInfo}
+	 */
+	getDeviceInfo: function (device) {
 		return {
 			id: device.id,
-			model: device.productModel ?? device.model,
+			productModel: device.productModel,
 			serial: device.serial,
 			manufacturer: 'Sensibo Inc.',
 			appId: 'com.sensibo.Sensibo',
-			roomName: device.room?.name ?? device.roomName,
+			room: device.room,
 			temperatureUnit: device.temperatureUnit,
-			filterService: device.filtersCleaning ? true : false,
+			filterService: device.filtersCleaning ? true : false
 		}
 	},
 
-	sensorInformation: sensor => {
+	/**
+	 * @param {import('../types').Sensor} sensor
+	 * @returns {import('../types').SensorInfo}
+	 */
+	getSensorInfo: function (sensor) {
 		return {
 			id: sensor.id,
-			model: sensor.productModel,
+			productModel: sensor.productModel,
 			serial: sensor.serial
 		}
 	},
 
-	locationInformation: location => {
+	/**
+	 * @param {import('../types').Location} location
+	 * @returns {import('../types').LocationInfo}
+	 */
+	getLocationInfo: function (location) {
 		return {
 			id: location.id,
 			name: location.name,
@@ -50,29 +75,36 @@ module.exports = {
 		}
 	},
 
-	capabilities: (device, platform) => {
+	/**
+	 * @param {import('../types').Device} device
+	 * @param {SensiboACPlatform} platform
+	 * @returns {import('../types').Capabilities}
+	 */
+	getCapabilities: function (device, platform) {
+		/** @type  {import('../types').Capabilities} */
 		const capabilities = {}
-		const roomName = device.room?.name ?? device.roomName
 
 		for (const [key, modeCapabilities] of Object.entries(device.remoteCapabilities.modes)) {
-			// Mode options are COOL, HEAT, AUTO, FAN, DRY
-			const mode = key.toUpperCase()
+			// modeString is one of the following: COOL, HEAT, AUTO, FAN, DRY
+			const modeString = key.toUpperCase()
+			/** @type {import('../types').Mode} */
+			const mode = {}
 
-			capabilities[mode] = {}
+			capabilities[modeString] = mode
 
-			if (!['DRY','FAN'].includes(mode)) {
-				capabilities[mode].homeKitSupported = true
+			if (!['DRY','FAN'].includes(modeString)) {
+				mode.homeKitSupported = true
 			}
 
-			platform.log.easyDebug(`${roomName} - Mode: ${mode} - Temperature scales, C: ${'C' in modeCapabilities.temperatures} F: ${'F' in modeCapabilities.temperatures}`)
+			platform.easyDebug(`${device.room.name} - Mode: ${modeString} - Temperature scales, C: ${'C' in modeCapabilities.temperatures} F: ${'F' in modeCapabilities.temperatures}`)
 
 			if ('C' in modeCapabilities.temperatures || 'F' in modeCapabilities.temperatures) {
-				capabilities[mode].temperatures = {}
+				mode.temperatures = {}
 			}
 
 			// set min & max temperatures
 			if (modeCapabilities.temperatures?.C) {
-				capabilities[mode].temperatures.C = {
+				mode.temperatures.C = {
 					min: Math.min(...modeCapabilities.temperatures.C.values),
 					max: Math.max(...modeCapabilities.temperatures.C.values)
 				}
@@ -80,7 +112,7 @@ module.exports = {
 
 			// TODO: check if we actaully need F, does Sensibo always return C if it has F?
 			if (modeCapabilities.temperatures?.F) {
-				capabilities[mode].temperatures.F = {
+				mode.temperatures.F = {
 					min: Math.min(...modeCapabilities.temperatures.F.values),
 					max: Math.max(...modeCapabilities.temperatures.F.values)
 				}
@@ -88,136 +120,216 @@ module.exports = {
 
 			// set fanSpeeds
 			if (modeCapabilities.fanLevels && modeCapabilities.fanLevels.length) {
-				capabilities[mode].fanSpeeds = modeCapabilities.fanLevels
+				mode.fanSpeeds = modeCapabilities.fanLevels
 
 				// set AUTO fanSpeed
-				if (capabilities[mode].fanSpeeds.includes('auto')) {
-					capabilities[mode].autoFanSpeed = true
+				if (mode.fanSpeeds.includes('auto')) {
+					mode.autoFanSpeed = true
 				} else {
-					capabilities[mode].autoFanSpeed = false
+					mode.autoFanSpeed = false
 				}
 			}
 
 			// set vertical swing
 			if (modeCapabilities.swing) {
 				if (modeCapabilities.swing.includes('both')) {
-					capabilities[mode].horizontalSwing = true
-					capabilities[mode].verticalSwing = true
-					capabilities[mode].threeDimensionalSwing = true
+					mode.horizontalSwing = true
+					mode.verticalSwing = true
+					mode.threeDimensionalSwing = true
 				} else {
 					if (modeCapabilities.swing.includes('rangeFull')) {
-						capabilities[mode].verticalSwing = true
+						mode.verticalSwing = true
+						mode.threeDimensionalSwing = false
 					}
 
 					if (modeCapabilities.swing.includes('horizontal')) {
-						capabilities[mode].horizontalSwing = true
+						mode.horizontalSwing = true
+						mode.threeDimensionalSwing = false
 					}
 				}
 			}
 
 			// set horizontal swing
-			if (!capabilities[mode].horizontalSwing && modeCapabilities.horizontalSwing && modeCapabilities.horizontalSwing.includes('rangeFull')) {
-				capabilities[mode].horizontalSwing = true
+			if (!capabilities[modeString].horizontalSwing && modeCapabilities.horizontalSwing && modeCapabilities.horizontalSwing.includes('rangeFull')) {
+				mode.horizontalSwing = true
 			}
 
 			// set light
 			if (modeCapabilities.light) {
-				capabilities[mode].light = true
+				mode.light = true
 			}
 
-			platform.log.easyDebug(`${roomName} - Mode: ${mode}, Capabilities: `)
-			platform.log.easyDebug(capabilities[mode])
+			platform.easyDebug(`${device.room.name} - Mode: ${modeString}, Capabilities: `)
+			platform.easyDebug(mode)
 		}
 
 		return capabilities
 	},
 
-	acState: device => {
-		const state = {
-			active: device.acState.on,
-			mode: device.acState.mode.toUpperCase(),
-			targetTemperature: !device.acState.targetTemperature ? null : device.acState.temperatureUnit === 'C' ? device.acState.targetTemperature : toCelsius(device.acState.targetTemperature),
-			currentTemperature: device.measurements.temperature,
-			relativeHumidity: device.measurements.humidity,
-			smartMode: device.smartMode,
-			light: device.acState.light && device.acState.light !== 'off',
-			pureBoost: device.pureBoostConfig && device.pureBoostConfig.enabled
-		}
+	/**
+	 * @param {import('../types').Device} device
+	 * @returns {import('../types').FilterState}
+	 */
+	getFilterState: function (device)  {
+		let filterChange = null
+		let filterLifeLevel = null
 
 		if (device.filtersCleaning) {
-			state.filterChange = device.filtersCleaning.shouldCleanFilters ? 'CHANGE_FILTER' : 'FILTER_OK'
+			filterChange = device.filtersCleaning.shouldCleanFilters ? 'CHANGE_FILTER' : 'FILTER_OK'
 			const acOnSecondsSinceLastFiltersClean = device.filtersCleaning.acOnSecondsSinceLastFiltersClean
 			const filtersCleanSecondsThreshold = device.filtersCleaning.filtersCleanSecondsThreshold
 
 			if (acOnSecondsSinceLastFiltersClean > filtersCleanSecondsThreshold) {
-				state.filterLifeLevel = 0
+				filterLifeLevel = 0
 			} else {
-				state.filterLifeLevel = 100 - Math.floor(acOnSecondsSinceLastFiltersClean / filtersCleanSecondsThreshold * 100)
+				filterLifeLevel = 100 - Math.floor(acOnSecondsSinceLastFiltersClean / filtersCleanSecondsThreshold * 100)
 			}
 		}
 
-		state.horizontalSwing = 'SWING_DISABLED'
-		state.verticalSwing = 'SWING_DISABLED'
+		return {
+			filterChange: filterChange,
+			filterLifeLevel: filterLifeLevel
+		}
+	},
+
+	/**
+	 * @param {import('../types').Device} device
+	 * @returns {import('../types').SwingState}
+	 */
+	getSwingState: function (device) {
+		let horizontalSwing = 'SWING_DISABLED'
+		let verticalSwing = 'SWING_DISABLED'
 
 		if (device.acState.swing) {
 			if (device.acState.swing === 'rangeFull') {
-				state.verticalSwing = 'SWING_ENABLED'
+				verticalSwing = 'SWING_ENABLED'
 			} else if (device.acState.swing === 'horizontal') {
-				state.horizontalSwing = 'SWING_ENABLED'
+				horizontalSwing = 'SWING_ENABLED'
 			} else if (device.acState.swing === 'both') {
-				state.horizontalSwing = 'SWING_ENABLED'
-				state.verticalSwing = 'SWING_ENABLED'
+				horizontalSwing = 'SWING_ENABLED'
+				verticalSwing = 'SWING_ENABLED'
 			}
 		}
 
 		if (device.acState.horizontalSwing && device.acState.horizontalSwing === 'rangeFull') {
-			state.horizontalSwing = 'SWING_ENABLED'
+			horizontalSwing = 'SWING_ENABLED'
 		}
 
+		return {
+			horizontalSwing: horizontalSwing,
+			verticalSwing: verticalSwing
+		}
+	},
+
+	/**
+	 * @param {import('../types').Device} device
+	 * @returns {null|number}
+	 */
+	getFanSpeed: function (device) {
+		let fanSpeed = null
 		const modeCapabilities = device.remoteCapabilities.modes[device.acState.mode]
 
 		if (modeCapabilities.fanLevels && modeCapabilities.fanLevels.length) {
-			state.fanSpeed = fanLevelToHK(device.acState.fanLevel, modeCapabilities.fanLevels) || 0
+			fanSpeed = fanLevelToHK(device.acState.fanLevel, modeCapabilities.fanLevels) || 0
 		}
+
+		return fanSpeed
+	},
+
+	/**
+	 * @param {import('../types').Device} device
+	 * @returns {Classes.InternalAcState}
+	 */
+	getAcState: function (device) {
+		const filterState = this.getFilterState(device)
+		const swingState = this.getSwingState(device)
+		const fanSpeed = this.getFanSpeed(device)
+		const state = new Classes.InternalAcState(
+			device.acState.on,
+			device.acState.mode.toUpperCase(),
+			!device.acState.targetTemperature ? null : device.acState.temperatureUnit === 'C' ? device.acState.targetTemperature : toCelsius(device.acState.targetTemperature),
+			device.measurements.temperature,
+			device.measurements.humidity,
+			{ enabled: device.smartMode.enabled },
+			device.acState.light && device.acState.light !== 'off',
+			device.pureBoostConfig && device.pureBoostConfig.enabled,
+			filterState.filterChange,
+			filterState.filterLifeLevel,
+			swingState.horizontalSwing,
+			swingState.verticalSwing,
+			fanSpeed,
+			null,
+			null,
+			null,
+			null
+		)
 
 		return state
 	},
 
-	airQualityState: (device, Constants) => {
-		const state = {}
+	/**
+	 * @param {import('../types').Device} device
+	 * @param {SensiboACPlatform} platform
+	 * @returns {Classes.InternalAcState}
+	 */
+	getAirQualityState: function (device, platform) {
+		// convert ppb to μg/m3
+		let VOCDensity = Math.round(device.measurements.tvoc * 4.57)
+		let airQuality = device.measurements?.pm25 ?? 0
+		let carbonDioxideLevel = null
+		let carbonDioxideDetected = null
 
-		state.airQuality = device.measurements?.pm25 ?? 0
+		VOCDensity = VOCDensity < platform.VOCDENSITY_MAX ? VOCDensity : platform.VOCDENSITY_MAX
 
 		if (device.measurements?.tvoc && device.measurements.tvoc > 0) {
-			// convert ppb to μg/m3
-			const VOCDensity = Math.round(device.measurements.tvoc * 4.57)
-
-			state.VOCDensity = VOCDensity < Constants.VOCDENSITY_MAX ? VOCDensity : Constants.VOCDENSITY_MAX
-
-			if (state.airQuality !== 0) {
+			if (airQuality !== 0) {
 				// don't overwrite airQuality if already retrieved from Sensibo
 			} else if (device.measurements.tvoc > 1500) {
-				state.airQuality = 5
+				airQuality = 5
 			} else if (device.measurements.tvoc > 1000) {
-				state.airQuality = 4
+				airQuality = 4
 			} else if (device.measurements.tvoc > 500) {
-				state.airQuality = 3
+				airQuality = 3
 			} else if (device.measurements.tvoc > 250) {
-				state.airQuality = 2
+				airQuality = 2
 			} else {
-				state.airQuality = 1
+				airQuality = 1
 			}
 		}
 
 		if (device.measurements?.co2 && device.measurements.co2 > 0) {
-			state.carbonDioxideLevel = device.measurements.co2
-			state.carbonDioxideDetected = device.measurements.co2 < Constants.carbonDioxideAlertThreshold ? 0 : 1
+			carbonDioxideLevel = device.measurements.co2
+			carbonDioxideDetected = device.measurements.co2 < platform.carbonDioxideAlertThreshold ? 0 : 1
 		}
+
+		const state = new Classes.InternalAcState(
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			airQuality,
+			VOCDensity,
+			carbonDioxideDetected,
+			carbonDioxideLevel
+		)
 
 		return state
 	},
 
-	sensorState: sensor => {
+	/**
+	 * @param {import('../types').Sensor} sensor
+	 * @returns {Classes.InternalSensorState}
+	 */
+	getSensorState: function (sensor) {
 		const state = {
 			motionDetected: sensor.measurements.motion,
 			currentTemperature: sensor.measurements.temperature,
@@ -228,7 +340,11 @@ module.exports = {
 		return state
 	},
 
-	occupancyState: location => {
+	/**
+	 * @param {import('../types').Location} location
+	 * @returns {Classes.InternalOccupancyState}
+	 */
+	getOccupancyState: function (location) {
 		const state = { occupancy: (location.occupancy === 'me' || location.occupancy === 'someone') ? 'OCCUPANCY_DETECTED' : 'OCCUPANCY_NOT_DETECTED' }
 
 		return state

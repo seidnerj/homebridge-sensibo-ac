@@ -12,7 +12,7 @@ module.exports = [
 		// files: ['**/api.js'],
 		// ignores: ['index.js'],
 		languageOptions: {
-			ecmaVersion: 13,
+			ecmaVersion: 'latest',
 			globals: { ...globals.node },
 			sourceType: 'commonjs'
 		},

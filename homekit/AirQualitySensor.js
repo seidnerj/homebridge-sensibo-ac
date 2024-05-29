@@ -1,79 +1,96 @@
+// eslint-disable-next-line no-unused-vars
+const homebridge = require('homebridge')
+// eslint-disable-next-line no-unused-vars
+const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
+// eslint-disable-next-line no-unused-vars
+const Classes = require('../classes')
+// eslint-disable-next-line no-unused-vars
+const AirPurifier = require('./AirPurifier')
+// eslint-disable-next-line no-unused-vars
+const AirConditioner = require('./AirConditioner')
+const SensiboAccessory = require('./SensiboAccessory')
 const unified = require('../sensibo/unified')
-let Characteristic, Service
-const Constants = {}
 
-class AirQualitySensor {
+class AirQualitySensor extends SensiboAccessory {
 
-	constructor(device, platform) {
-		Service = platform.api.hap.Service
-		Characteristic = platform.api.hap.Characteristic
-		Constants.VOCDENSITY_MAX = platform.VOCDENSITY_MAX
-		Constants.carbonDioxideAlertThreshold = platform.carbonDioxideAlertThreshold
+	/**
+	 * @param {AirConditioner|AirPurifier} airConditionerOrPurifier
+	 * @param {SensiboACPlatform} platform
+	 */
+	constructor(airConditionerOrPurifier, platform) {
+		const namePrefix = airConditionerOrPurifier.room.name
+		const nameSuffix = 'Air Quality'
+		const type = 'AirQualitySensor'
+
+		super(platform, airConditionerOrPurifier.id, namePrefix, nameSuffix, type, '_airQuality')
+
+		/** @type {typeof homebridge.Service} */
+		this.Service = platform.api.hap.Service
+		/** @type {typeof homebridge.Characteristic} */
+		this.Characteristic = platform.api.hap.Characteristic
+		/** @type {SensiboACPlatform} */
+		this.platform = platform
 
 		this.Utils = require('../sensibo/Utils')(this, platform)
 
-		const deviceInfo = unified.deviceInformation(device)
-
-		this.log = platform.log
-		this.api = platform.api
-		this.storage = platform.storage
-		this.cachedState = platform.cachedState
-		this.id = deviceInfo.id
-		this.appId = deviceInfo.appId
-		this.model = deviceInfo.model
-		this.serial = deviceInfo.serial
-		this.manufacturer = deviceInfo.manufacturer
-		this.roomName = deviceInfo.roomName
-		this.name = this.roomName + ' Air Quality'
-		this.type = 'AirQualitySensor'
+		this.appId = 'com.sensibo.Sensibo'
+		this.productModel = airConditionerOrPurifier.productModel
+		this.serial = airConditionerOrPurifier.serial
+		this.manufacturer = 'Sensibo Inc.'
+		this.room = airConditionerOrPurifier.room
 		this.disableAirQuality = platform.disableAirQuality
 		this.disableCarbonDioxide = platform.disableCarbonDioxide
 
+		/** @type {ProxyHandler<Classes.InternalAcState>} */
 		const StateHandler = require('./StateHandler')(this, platform)
+		const state = unified.getAcState(airConditionerOrPurifier.device)
 
-		this.state = this.cachedState.devices[this.id] = unified.airQualityState(device, Constants)
-		this.state = new Proxy(this.state, StateHandler)
-		this.stateManager = require('./StateManager')(this, platform)
+		this.cachedState.devices[this.id] = state
+		/** @type {Classes.InternalAcState} */
+		this.state = new Proxy(state, StateHandler)
+		this.StateManager = require('./StateManager')(this, platform)
 
-		this.UUID = this.api.hap.uuid.generate(this.id + '_airQuality')
-		this.accessory = platform.cachedAccessories.find(accessory => {
-			return accessory.UUID === this.UUID
+		/** @type {undefined|homebridge.PlatformAccessory} */
+		this.platformAccessory = platform.cachedAccessories.find(cachedAccessory => {
+			return cachedAccessory.UUID === this.UUID
 		})
 
-		if (!this.accessory) {
-			this.log(`Creating New ${platform.PLATFORM_NAME} ${this.type} Accessory in the ${this.roomName}`)
-			this.accessory = new this.api.platformAccessory(this.name, this.UUID)
-			this.accessory.context.type = this.type
-			this.accessory.context.deviceId = this.id
+		if (!this.platformAccessory) {
+			this.log.info(`Creating New ${platform.platformName} ${this.type} Accessory in the ${this.room.name}`)
+			this.platformAccessory = new this.api.platformAccessory(this.name, this.UUID)
+			this.platformAccessory.context.type = this.type
+			this.platformAccessory.context.deviceId = this.id
 
-			platform.cachedAccessories.push(this.accessory)
+			platform.cachedAccessories.push(this.platformAccessory)
 
 			// register the accessory
-			this.api.registerPlatformAccessories(platform.PLUGIN_NAME, platform.PLATFORM_NAME, [this.accessory])
+			this.api.registerPlatformAccessories(platform.pluginName, platform.platformName, [this.platformAccessory])
 		}
 
 		// TODO: enable logging? See also line 143
 		// if (platform.enableHistoryStorage) {
-		// 	const FakeGatoHistoryService = require('fakegato-history')(this.api)
+		// 	const fakeGatoHistoryService = require('fakegato-history')(this.api)
 
-		// 	this.loggingService = new FakeGatoHistoryService('weather', this.accessory, {
+		// 	this.loggingService = new fakeGatoHistoryService('weather', this.platformAccessory, {
 		// 		storage: 'fs',
 		// 		path: platform.persistPath
 		// 	})
 		// }
 
-		this.accessory.context.roomName = this.roomName
+		this.platformAccessory.context.roomName = this.room.name
 
-		let informationService = this.accessory.getService(Service.AccessoryInformation)
+		/** @type {undefined|homebridge.Service} */
+		let informationService = this.platformAccessory.getService(this.Service.AccessoryInformation)
 
 		if (!informationService) {
-			informationService = this.accessory.addService(Service.AccessoryInformation)
+			/** @type {homebridge.Service} */
+			informationService = this.platformAccessory.addService(this.Service.AccessoryInformation)
 		}
 
 		informationService
-			.setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
-			.setCharacteristic(Characteristic.Model, this.model)
-			.setCharacteristic(Characteristic.SerialNumber, this.serial)
+			.setCharacteristic(this.Characteristic.Manufacturer, this.manufacturer)
+			.setCharacteristic(this.Characteristic.Model, this.productModel)
+			.setCharacteristic(this.Characteristic.SerialNumber, this.serial)
 
 		if (!this.disableAirQuality) {
 			this.addAirQualityService()
@@ -81,7 +98,7 @@ class AirQualitySensor {
 			this.removeAirQualityService()
 		}
 
-		if (this.model === 'airq' && !this.disableCarbonDioxide) {
+		if (this.productModel === 'airq' && !this.disableCarbonDioxide) {
 			this.addCarbonDioxideService()
 		} else {
 			this.removeCarbonDioxideService()
@@ -89,51 +106,51 @@ class AirQualitySensor {
 	}
 
 	addAirQualityService() {
-		this.log.easyDebug(`${this.name} - Adding AirQualitySensorService`)
-		this.AirQualitySensorService = this.accessory.getService(Service.AirQualitySensor)
+		this.easyDebug(`${this.name} - Adding AirQualitySensorService`)
+		this.AirQualitySensorService = this.platformAccessory.getService(this.Service.AirQualitySensor)
 
 		if (!this.AirQualitySensorService) {
-			this.AirQualitySensorService = this.accessory.addService(Service.AirQualitySensor, this.name, 'AirQualitySensor')
+			this.AirQualitySensorService = this.platformAccessory.addService(this.Service.AirQualitySensor, this.name, 'AirQualitySensor')
 		}
 
-		this.AirQualitySensorService.getCharacteristic(Characteristic.AirQuality)
-			.on('get', this.stateManager.get.AirQuality)
-		this.AirQualitySensorService.getCharacteristic(Characteristic.VOCDensity)
-			.setProps({ maxValue: Constants.VOCDENSITY_MAX })
-			.on('get', this.stateManager.get.VOCDensity)
+		this.AirQualitySensorService.getCharacteristic(this.Characteristic.AirQuality)
+			.on('get', this.StateManager.get.AirQuality)
+		this.AirQualitySensorService.getCharacteristic(this.Characteristic.VOCDensity)
+			.setProps({ maxValue: this.platform.VOCDENSITY_MAX })
+			.on('get', this.StateManager.get.VOCDensity)
 	}
 
 	removeAirQualityService() {
-		const AirQualitySensor = this.accessory.getService('AirQualitySensor')
+		const AirQualitySensor = this.platformAccessory.getService('AirQualitySensor')
 
 		if (AirQualitySensor) {
 			// remove service
-			this.log.easyDebug(`${this.name} - Removing AirQualitySensorService`)
-			this.accessory.removeService(AirQualitySensor)
+			this.easyDebug(`${this.name} - Removing AirQualitySensorService`)
+			this.platformAccessory.removeService(AirQualitySensor)
 		}
 	}
 
 	addCarbonDioxideService() {
-		this.log.easyDebug(`${this.name} - Adding CarbonDioxideSensorService`)
-		this.CarbonDioxideSensorService = this.accessory.getService(Service.CarbonDioxideSensor)
+		this.easyDebug(`${this.name} - Adding CarbonDioxideSensorService`)
+		this.CarbonDioxideSensorService = this.platformAccessory.getService(this.Service.CarbonDioxideSensor)
 
 		if (!this.CarbonDioxideSensorService) {
-			this.CarbonDioxideSensorService = this.accessory.addService(Service.CarbonDioxideSensor, this.name, 'CarbonDioxideSensor')
+			this.CarbonDioxideSensorService = this.platformAccessory.addService(this.Service.CarbonDioxideSensor, this.name, 'CarbonDioxideSensor')
 		}
 
-		this.CarbonDioxideSensorService.getCharacteristic(Characteristic.CarbonDioxideDetected)
-			.on('get', this.stateManager.get.CarbonDioxideDetected)
-		this.CarbonDioxideSensorService.getCharacteristic(Characteristic.CarbonDioxideLevel)
-			.on('get', this.stateManager.get.CarbonDioxideLevel)
+		this.CarbonDioxideSensorService.getCharacteristic(this.Characteristic.CarbonDioxideDetected)
+			.on('get', this.StateManager.get.CarbonDioxideDetected)
+		this.CarbonDioxideSensorService.getCharacteristic(this.Characteristic.CarbonDioxideLevel)
+			.on('get', this.StateManager.get.CarbonDioxideLevel)
 	}
 
 	removeCarbonDioxideService() {
-		const CarbonDioxideSensor = this.accessory.getService('CarbonDioxideSensor')
+		const CarbonDioxideSensor = this.platformAccessory.getService('CarbonDioxideSensor')
 
 		if (CarbonDioxideSensor) {
 			// remove service
-			this.log.easyDebug(`${this.name} - Removing CarbonDioxideSensorService`)
-			this.accessory.removeService(CarbonDioxideSensor)
+			this.easyDebug(`${this.name} - Removing CarbonDioxideSensorService`)
+			this.platformAccessory.removeService(CarbonDioxideSensor)
 		}
 	}
 

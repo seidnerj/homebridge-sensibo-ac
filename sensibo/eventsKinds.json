@@ -1,0 +1,52 @@
+{
+    "AC_STATE":
+    {
+        "FIRST": 1000000,
+        "CHANGED": 1000000        
+    },
+    "CLIMATE_REACT":
+    {
+        "FIRST": 1030000,
+        "CHANGED": 1032000,
+        "ENABLED_DISABLED": 1030000,
+        "ENABLED_DISABLED_ON_GEOFENCE": 1030010,
+        "ENABLED_DISABLED_ON_MOTION": 1030030,
+        "ENABLED_DISABLED_ON_SCHEDULING": 1030020,        
+        "THRESHOLD_CROSSED": 1031000
+    },
+    "GEOFENCE":
+    {
+        "FIRST": 1040000,
+        "CHANGED": 1041000,
+        "EVERYONE_LEFT": 1040010
+    },
+    "MOTION":
+    {
+        "FIRST": 1060000,
+        "CHANGED": 1061010,
+        "CREATED": 1061000,
+        "ENABLED_DISABLED": 1060000,
+        "ENABLED_DISABLED_ON_GEOFENCE": 1060010,
+        "ENABLED_DISABLED_ON_SCHEDULING": 1060020,
+        "ENTERED": 1062000,        
+        "LEFT": 1062010
+    },
+    "PRIME":
+    {
+        "FIRST": 1050000,
+        "UNNECESSARY_ON_NOTIFICATION": 1050000
+    },
+    "REMOTE":
+    {
+        "FIRST": 1010000,
+        "CHANGED": 1010000,        
+        "STARTED_REMOTE_RECOGNITION": 1011000
+    },
+    "SCHEDULING":
+    {
+        "FIRST": 1020000,
+        "CHANGED": 1020000,
+        "CREATED": 1020010,
+        "DELETED": 1020020
+    }
+}
