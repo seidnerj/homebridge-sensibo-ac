@@ -2,7 +2,8 @@ const version = require('./../package.json').version
 const pluginName = require('./../package.json').name
 // eslint-disable-next-line no-unused-vars
 const SensiboACPlatform = require('./SensiboACPlatform')
-const axios = require('axios').default
+// TODO: should we revert removing ".default" and all the subsequent changes emanating from this change?
+const axios = require('axios')
 const integrationName = `${pluginName}@${version}`
 const baseURL = 'https://home.sensibo.com/api/v2'
 
@@ -38,7 +39,7 @@ function getToken(platform) {
 		axios.post(
 			tokenURL,
 			data,
-			{ headers: { 'content-type': 'application/x-www-form-urlencoded' } })
+			{ headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
 			.then(async response => {
 				if (response.data.access_token) {
 					/** @type {import('../types').TokenObject} */
@@ -109,13 +110,13 @@ async function apiRequest(platform, method, url, data) {
 	// maybe https://www.thedutchlab.com/en/insights/using-axios-interceptors-for-refreshing-your-api-token
 
 	// TODO: could add auto-retry for timeouts etc
-	if (!axios.defaults?.params?.apiKey && !axios.defaults?.headers?.Authorization) {
+	if (!axios.defaults?.params?.apiKey && !axios.defaults?.headers?.common?.Authorization) {
 		platform.easyDebug('apiRequest error: No API Token or Authorization Header found')
 
 		try {
 			const token = await getToken(platform)
 
-			axios.defaults.headers = { 'Authorization': 'Bearer ' + token }
+			axios.defaults.headers.common = { Authorization: 'Bearer ' + token }
 		} catch(err) {
 			platform.log.info('apiRequest token error:', err.message || err)
 			throw err
@@ -356,7 +357,7 @@ module.exports = async function (platform) {
 		try {
 			const token = await getToken(platform)
 
-			axios.defaults.headers = { 'Authorization': 'Bearer ' + token }
+			axios.defaults.headers.common = { Authorization: 'Bearer ' + token }
 			axios.defaults.params = { integration: integrationName }
 		} catch (err) {
 			platform.log.info('The plugin was NOT able to find a stored token or acquire one from Sensibo\'s API -> it will not be able to set or get the state!!!')
