@@ -26,7 +26,7 @@ class SensiboACPlatform {
 		this.pluginName = pluginName
 		/** @type {string} */
 		this.platformName = platformName
-		/** TODO: add typing hint */
+		/** @type {storage.LocalStorage} */
 		this.storage = storage
 		/** @type {homebridge.PlatformAccessory[]} */
 		this.cachedAccessories = []
@@ -53,9 +53,9 @@ class SensiboACPlatform {
 		this.password = config['password']
 
 		if (!((this.username && this.password) || this.apiKey)) {
-			this.log.info('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  --  ERROR  --  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n')
-			this.log.info(`Can't start ${this.pluginName} plugin without user credentials or an API key!!!\n`)
-			this.log.info('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n')
+			this.log.error('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  --  ERROR  --  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n')
+			this.log.error(`Can't start ${this.pluginName} plugin without user credentials or an API key!!!\n`)
+			this.log.error('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n')
 
 			return
 		}
@@ -91,6 +91,8 @@ class SensiboACPlatform {
 		/** @type {boolean} */
 		this.enableClimateReactSwitch = config['enableClimateReactSwitch'] || false
 		/** @type {boolean} */
+		this.enableRepeatClimateReactAction = config['enableRepeatClimateReactAction'] || false
+		/** @type {boolean} */
 		this.enableHistoryStorage = config['enableHistoryStorage'] || false
 		/** @type {boolean} */
 		this.enableOccupancySensor = config['enableOccupancySensor'] || false
@@ -124,6 +126,7 @@ class SensiboACPlatform {
 		/** @type {string} */
 		this.persistPath = path.join(this.api.user.persistPath(), '/../sensibo-persist')
 
+		/** @type {import('../types').PlatformState} */
 		this.emptyState = {
 			devices: {},
 			sensors: {},
@@ -135,14 +138,14 @@ class SensiboACPlatform {
 		/** @type {string} */
 		this.FAHRENHEIT_UNIT = 'F'
 		/** @type {number} */
-		this.VOCDENSITY_MAX = 10000
+		this.VOCDENSITY_MAX = 10*1000
 		/** @type {any[]} */
 		this.locations = []
 		/** @type {number} */
-		const requestedInterval = 90000  // requested interval is hardcoded to 90 seconds (requested by the Sensibo company)
+		const requestedInterval = 90*1000  // requested interval is hardcoded to 90 seconds (requested by the Sensibo company)
 
 		/** @type {number} */
-		this.refreshDelay = 5000  // refresh delay is hardcoded to 5 seconds
+		this.refreshDelay = 5*1000  // refresh delay is hardcoded to 5 seconds
 		/** @type {number} */
 		this.pollingInterval = requestedInterval - this.refreshDelay
 		/** @type {number | null} */
@@ -151,6 +154,8 @@ class SensiboACPlatform {
 		this.processingState = false
 		/** @type {boolean} */
 		this.setProcessing = false
+		/** @type {number} */
+		this.repeatClimateReactActionMinGapMilliseconds = 45*1000  // this must be smaller than platform.requestedInterval
 
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 
@@ -176,6 +181,7 @@ class SensiboACPlatform {
 				forgiveParseErrors: true
 			})
 
+			/** @type {import('../types').PlatformState} */
 			this.cachedState = await this.storage.getItem('state') || this.emptyState
 
 			if (!this.cachedState.devices) {

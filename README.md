@@ -71,33 +71,35 @@ If you don't use Homebridge UI or HOOBS, or if you want to know more about the p
 
 ```json
 "platforms": [
-    {
-        "platform": "SensiboAC",
-        "apiKey": "***************",
-        "allowRepeatedCommands": false,
-        "carbonDioxideAlertThreshold": 1500,
-        "climateReactSwitchInAccessory": false,
-        "disableAirQuality": false,
-        "disableCarbonDioxide": false,
-        "disableDry": false,
-        "disableFan": false,
-        "disableHorizontalSwing": false,
-        "disableHumidity": false,
-        "disableLightSwitch": false,
-        "disableVerticalSwing": false,
-        "enableClimateReactAutoSetup": false,
-        "enableClimateReactSwitch": true,
-        "enableHistoryStorage": true,
-        "enableOccupancySensor": true,
-        "enableSyncButton": true,
-        "externalHumiditySensor": false,
-        "ignoreHomeKitDevices": false,
-        "syncButtonInAccessory": false,
-        "devicesToExclude": [],
-        "locationsToInclude": [],
-        "modesToExclude": [],
-        "debug": false
-    }
+	{
+		"platform": "SensiboAC",
+		"auth": "api-key",
+		"apiKey": "***************",
+		"allowRepeatedCommands": false,
+		"carbonDioxideAlertThreshold": 1500,
+		"climateReactSwitchInAccessory": false,
+		"disableAirQuality": false,
+		"disableCarbonDioxide": false,
+		"disableDry": false,
+		"disableFan": false,
+		"disableHorizontalSwing": false,
+		"disableHumidity": false,
+		"disableLightSwitch": false,
+		"disableVerticalSwing": false,
+		"enableClimateReactAutoSetup": false,
+		"enableRepeatClimateReactAction": false,
+		"enableClimateReactSwitch": false,	
+		"enableHistoryStorage": false,
+		"enableOccupancySensor": false,
+		"enableSyncButton": false,
+		"externalHumiditySensor": false,
+		"ignoreHomeKitDevices": false,
+		"syncButtonInAccessory": false,
+		"devicesToExclude": [],
+		"locationsToInclude": [],
+		"modesToExclude": [],
+		"debug": false
+	}
 ]
 ```
 
@@ -123,8 +125,9 @@ See below the table for additional details on these settings.
 | `disableHorizontalSwing`   |  When set to `true`, will remove the horizontal swing switch     |          |  `false` |  Boolean |
 | `disableVerticalSwing`     |  When set to `true`, will remove the vertical swing control (Oscillate) from the accessory  |          |  `false` |  Boolean |
 | `enableClimateReactSwitch` |  Adds a switch to enable/disable Climate React (Smart mode)      |          |  `false` |  Boolean |
-| `climateReactSwitchInAccessory` |  When set to `true`, adds a **Climate React** switch (like `enableClimateReactSwitch` above) but within the AC accessory. It will also remove the standalone AC Climate React switch (if one exists). Works only when `enableClimateReactSwitch` is also set to true  |          |  `false` |  Boolean  |
 | `enableClimateReactAutoSetup` |  When set to `true`, will auto-update the Climate React (Smart mode) settings to match whenever the AC state is set or changed  |          |  `false` |  Boolean  |
+| `enableRepeatClimateReactAction` |  When set to `true`, will Repeat the last Climate React triggered action to decrease the likelihood of AC State discrepancies  |          |  `false` |  Boolean  |
+| `climateReactSwitchInAccessory` |  When set to `true`, adds a **Climate React** switch (like `enableClimateReactSwitch` above) but within the AC accessory. It will also remove the standalone AC Climate React switch (if one exists). Works only when `enableClimateReactSwitch` is also set to true  |          |  `false` |  Boolean  |
 | `enableHistoryStorage`     |  When set to `true`, temperature & humidity measurements will be stored over time, viewable as History in the Eve app  |          |  `false` |   Boolean |
 | `enableOccupancySensor`    |  Adds an occupancy sensor to represent the state of someone at home  |          |  `false` |  Boolean  |
 | `enableSyncButton`         |  When set to `true`, adds an **AC Sync** switch to toggle the state of the accessory in the Home app, without sending a command to the unit  |          |  `false` |  Boolean  |
@@ -277,6 +280,14 @@ For example, if setting an AC to Cool and 25°C, Climate React will be set up su
 When setting an AC to Heat with a target temprature, Climate React will be set to plus 1 degree C, or equivalent F delta.
 
 To enable **Climate React Auto Setup**, add `"enableClimateReactAutoSetup": true` to your config.
+
+#### Repeat Climate React action
+
+In some scenarios an AC does not receive commands issued by Climate React but the system still "believes" it did. To decrease the likelihood of such a discrepancy persisting, we can repeat (once) the last climate react triggered action, when relevant.
+
+When enabled, the plugin will periodically check and, when relevant, repeat the last Climate React triggered action to decrease the likelihood of of the scenario described above.
+
+To enable **Repeat Climate React Action**, add `"enableRepeatClimateReactAction": true` to your config.
 
 ### Filter cleaning indication
 

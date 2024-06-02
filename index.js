@@ -4,8 +4,6 @@ const SensiboACPlatform = require('./sensibo/SensiboACPlatform')
 const pluginName = require('./package.json').name
 const platformName = require('./package.json').platformName
 
-// NOTE: https://dev.to/manuartero/type-hints-on-pure-js-files-8ee
-
 /**
  * @param {homebridge.API} api
  */

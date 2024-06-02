@@ -2,7 +2,7 @@
   "displayName": "Sensibo for Homebridge",
   "name": "homebridge-sensibo-ac",
   "platformName": "SensiboAC",
-  "version": "2.5.0-alpha.3",
+  "version": "2.5.0-alpha.4",
   "description": "Homebridge plugin for Sensibo - Smart AC Control",
   "license": "GNU",
   "repository": {
@@ -37,6 +37,7 @@
   "devDependencies": {
     "@eslint/js": "^8.53.0",
     "@stylistic/eslint-plugin": "^1.8.1",
+    "@types/node-persist": "^3.1.8",
     "eslint": "^8.57.0",
     "homebridge": "^1.8.1",
     "nodemon": "^3.1.0"

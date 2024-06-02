@@ -56,7 +56,7 @@ function getToken(platform) {
 				} else {
 					const error = `Inner Could NOT complete the the token request -> ERROR: "${response.data}"`
 
-					platform.log.info(error)
+					platform.log.error(error)
 					reject(error)
 				}
 			})
@@ -65,7 +65,7 @@ function getToken(platform) {
 
 				errorContent.message = `Could NOT complete the the token request - ERROR: "${err.response.data.error_description || err.response.data.error}"`
 
-				platform.log.info('getToken:', errorContent.message)
+				platform.log.error('getToken:', errorContent.message)
 
 				if (err.response) {
 					platform.easyDebug('Error response:')
@@ -118,7 +118,7 @@ async function apiRequest(platform, method, url, data) {
 
 			axios.defaults.headers.common = { Authorization: 'Bearer ' + token }
 		} catch(err) {
-			platform.log.info('apiRequest token error:', err.message || err)
+			platform.log.error('apiRequest token error:', err.message || err)
 			throw err
 		}
 	}
@@ -127,7 +127,7 @@ async function apiRequest(platform, method, url, data) {
 		platform.easyDebug(`Creating ${method.toUpperCase()} request to Sensibo API ->`)
 		platform.easyDebug(baseURL + url)
 		if (data) {
-			platform.easyDebug(`data: ${JSON.stringify(data, null, 4)}`)
+			platform.easyDebug(`data:\n${JSON.stringify(data, null, 4)}`)
 		}
 
 		axios({
@@ -140,7 +140,7 @@ async function apiRequest(platform, method, url, data) {
 				let results
 
 				if (json.status && json.status == 'success') {
-					platform.easyDebug(`Successful ${method.toUpperCase()} response:`)
+					platform.easyDebug(`Successful ${method.toUpperCase()} response (response value not logged)`)
 
 					// TODO: The below is only relevant for getAllDevices (and should be moved).
 					//       This prevents address details being logged through (and adds ClimateReact settings if they are missing),
@@ -151,13 +151,14 @@ async function apiRequest(platform, method, url, data) {
 						results = json
 					}
 
-					platform.easyDebug(JSON.stringify(results, null, 4))
+					// TODO: revert commenting? (it just takes up too much of the log to make any sense of the rest)
+					// platform.easyDebug(JSON.stringify(results, null, 4))
 					resolve(results)
 				} else {
 					const error = json
 
-					platform.log.info(`ERROR: ${error.reason} - "${error.message}"`)
-					platform.log.info(json)
+					platform.log.error(`ERROR: ${error.reason} - "${error.message}"`)
+					platform.log.error(json)
 					reject(error)
 				}
 			})
@@ -166,12 +167,12 @@ async function apiRequest(platform, method, url, data) {
 
 				errorContent.errorURL = baseURL + url
 				errorContent.message = err.message
-				platform.log.info(`Error URL: ${errorContent.errorURL}`)
-				platform.log.info(`Error message: ${errorContent.message}`)
+				platform.log.error(`Error URL: ${errorContent.errorURL}`)
+				platform.log.error(`Error message: ${errorContent.message}`)
 
 				if (err.response) {
 					errorContent.response = err.response.data
-					platform.easyDebug(`Error response: ${JSON.stringify(errorContent.response, null, 4)}`)
+					platform.easyDebug(`Error response:\n${JSON.stringify(errorContent.response, null, 4)}`)
 				}
 
 				reject(errorContent)
@@ -197,7 +198,7 @@ async function getAllDevices(platform) {
 	}
 
 	// TODO: the below will return an exception if above "get" fails... null check?
-	return allDevices.filter(device => {
+	return allDevices.filter((device) => {
 		return (platform.locationsToInclude.length === 0
 						|| platform.locationsToInclude.includes(device.location.id)
 						|| platform.locationsToInclude.includes(device.location.name))
@@ -216,70 +217,8 @@ async function getDeviceEvents (platform, deviceId) {
 	const path = `/pods/${deviceId}/events`
 	const queryString = ''
 
+	// NOTE: events are returns in descending order by timestamp, but we should note rely on this being the case.
 	return await apiRequest(platform, 'get', path + '?' + queryString)
-
-	// TODO: remove
-	// function Ar(e, t) {
-	// 	if (t.eventKind == Tr.REMOTE.CHANGED) return `Remote changed to ${t.details.flavorName}`;
-	// 	if (t.eventKind == Tr.CLIMATE_REACT.THRESHOLD_CROSSED) return "Climate React detected a threshold cross";
-	// 	if (t.eventKind == Tr.CLIMATE_REACT.ENABLED_DISABLED_ON_SCHEDULING) return `Scheduler turned Climate React ${t.details.enabled?"on":"off"}`;
-	// 	if (t.eventKind == Tr.CLIMATE_REACT.ENABLED_DISABLED_ON_MOTION) return `Motion turned Climate React ${t.details.enabled?"on":"off"}`;
-	// 	if (t.eventKind == Tr.MOTION.ENABLED_DISABLED_ON_SCHEDULING) return `Scheduler turned Motion ${t.details.enabled?"on":"off"}`;
-	// 	if (t.eventKind == Tr.MOTION.ENTERED) return "Motion detected an entrance";
-	// 	if (t.eventKind == Tr.MOTION.LEFT) return "Motion detected an exit";
-	// 	const n = t.details.user,
-	// 		a = void 0 == n ? "" : n.email == e.email ? "You" : n.firstName;
-	// 	return t.eventKind == Tr.AC_STATE.CHANGED ? function(e, t) {
-	// 		switch (e.reason) {
-	// 			case Lt.USER_REQUEST:
-	//				t = "User Reqeust";  // NOTE: this was added by me, also Lt.USER_REQUEST should be set to "UserAPI" and not "UserRequest" (seems like this was updated by Sensibo in the web interface)
-	// 				break;
-	// 			case Lt.STATE_CORRECTION_BY_USER:
-	// 				t = "Sync State";
-	// 				break;
-	// 			case Lt.REMOTE_CONTROL:
-	// 				t = "Remote Control";
-	// 				break;
-	// 			case Lt.CHANGED_REMOTE:
-	// 				t = "Changed Remote";
-	// 				break;
-	// 			case Lt.TRIGGER:
-	// 				t = "Climate React";
-	// 				break;
-	// 			case Lt.GEOFENCE:
-	// 				t = "Geofence";
-	// 				break;
-	// 			case Lt.IFTTT_REQUEST:
-	// 				t = "IFTTT";
-	// 				break;
-	// 			case Lt.SCHEDULED_COMMAND:
-	// 				t = "Scheduler";
-	// 				break;
-	// 			case Lt.MOTION_REACTION:
-	// 				t = "Motion";
-	// 				break;
-	// 			case Lt.AMAZON_ECHO:
-	// 				t = "Amazon Echo";
-	// 				break;
-	// 			case Lt.GOOGLE_ASSISTANT:
-	// 				t = "Google Assistant";
-	// 				break;
-	// 			default:
-	// 				t = "Unknown"
-	// 		}
-	// 		let n = [];
-	// 		for (let t of e.changedProperties) {
-	// 			let a;
-	// 			if (t == St.ON) a = e.resultingAcState.on ? "AC power to on" : "AC power to off";
-	// 			else {
-	// 				let n = kt[t]
-	// 				void 0 === n && (console.error("No name for property", t), n = t), a = `${n} to ${e.resultingAcState[t]}`
-	// 			}
-	// 			n.push(a)
-	// 		}
-	// 		return n.length >= 1 ? e.changedProperties[0] == St.ON ? e.resultingAcState.on ? `${t} turned AC on` : `${t} turned AC off` : e.changedProperties[0] == St.MODE ? `${t} changed mode to ${e.resultingAcState.mode}` : e.changedProperties[0] == St.TARGET_TEMPERATURE ? `${t} changed temperature to ${e.resultingAcState.targetTemperature}` : e.changedProperties[0] == St.FAN_LEVEL ? `${t} changed fan level to ${e.resultingAcState.fanLevel}` : `${t} changed AC state` : `${t} executed`
-	// 	}(t.details, a) : t.eventKind == Tr.REMOTE.STARTED_REMOTE_RECOGNITION ? `${a} started a remote recognition session` : t.eventKind == Tr.SCHEDULING.CHANGED ? `${a} changed schedule` : t.eventKind == Tr.SCHEDULING.CREATED ? `${a} created schedule` : t.eventKind == Tr.SCHEDULING.DELETED ? `${a} deleted schedule` : t.eventKind == Tr.CLIMATE_REACT.ENABLED_DISABLED ? `${a} turned Climate React ${t.details.enabled?"on":"off"}` : t.eventKind == Tr.CLIMATE_REACT.ENABLED_DISABLED_ON_GEOFENCE ? `${a} turned Climate React ${t.details.enabled?"on":"off"} by ${t.details.transition} ${t.details.location?t.details.location.name:""}` : t.eventKind == Tr.MOTION.ENABLED_DISABLED_ON_GEOFENCE ? `${a} turned Motion ${t.details.enabled?"on":"off"} by ${t.details.transition} ${t.details.location?t.details.location.name:""}` : t.eventKind == Tr.CLIMATE_REACT.CHANGED ? `${a} changed Climate React` : t.eventKind == Tr.GEOFENCE.EVERYONE_LEFT ? `${a} ${"You"==a?"were":"was"} the last to leave ${t.details.location?t.details.location.name:""}` : t.eventKind == Tr.GEOFENCE.CHANGED ? `${a} changed Geofence behaviour` : t.eventKind == Tr.MOTION.CREATED ? `${a} created Motion configuration` : t.eventKind == Tr.MOTION.CHANGED ? `${a} changed Motion configuration` : t.eventKind == Tr.MOTION.ENABLED_DISABLED ? `${a} turned Motion ${t.details.enabled?"on":"off"}` : t.eventKind == Cr.GEOFENCE.ENTERED || t.eventKind == Cr.GEOFENCE.LEFT ? `You ${t.eventKind==Cr.GEOFENCE.ENTERED?"entered":"left"} ${t.details.location?t.details.location.name:""}` : ""
-	// }
 }
 
 /**

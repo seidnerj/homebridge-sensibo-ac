@@ -1,0 +1,13 @@
+{
+    "USER_REQUEST": "UserAPI",
+    "CLIMATE_REACT": "Trigger",
+	  "STATE_CORRECTION_BY_USER": "Sync State",
+    "REMOTE_CONTROL": "Remote Control",
+    "CHANGED_REMOTE": "Changed Remote",
+    "GEOFENCE": "Geofence",
+    "IFTTT_REQUEST": "IFTTT",
+    "SCHEDULED_COMMAND": "Scheduler",
+    "MOTION_REACTION": "Motion",
+    "AMAZON_ECHO": "Amazon Echo",
+    "GOOGLE_ASSISTANT": "Google Assistant"
+  }

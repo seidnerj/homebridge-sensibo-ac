@@ -25,8 +25,6 @@ class AirPurifier extends SensiboAccessory {
 		/** @type {typeof homebridge.Characteristic} */
 		this.Characteristic = platform.api.hap.Characteristic
 
-		this.Utils = require('../sensibo/Utils')(this, platform)
-
 		/** @type {import('../types').Device} */
 		this.device = device
 		this.appId = deviceInfo.appId
@@ -67,7 +65,7 @@ class AirPurifier extends SensiboAccessory {
 			this.api.registerPlatformAccessories(platform.pluginName, platform.platformName, [this.platformAccessory])
 		}
 
-		// TODO: enable logging? See also line 143
+		// TODO: enable logging?
 		// if (platform.enableHistoryStorage) {
 		// 	const fakeGatoHistoryService = require('fakegato-history')(this.api)
 
@@ -165,7 +163,7 @@ class AirPurifier extends SensiboAccessory {
 			return
 		}
 
-		// TODO: add logging? See also line 53
+		// TODO: add logging?
 		// log new state with FakeGato
 		// if (this.loggingService) {
 		// 	this.loggingService.addEntry({

@@ -1,3 +1,5 @@
+import { InternalAcState, InternalOccupancyState, InternalSensorState } from "./classes"
+
 export declare type DeviceInfo = {
     id: string,
     productModel: string,
@@ -35,12 +37,12 @@ export declare type SensorMeasurements = {
     batteryVoltage: number
 }
 
-export declare type SwingState = {
+export declare type InternalSwingState = {
     horizontalSwing: null|string,
     verticalSwing: null|string
 }
 
-export declare type FilterState = {
+export declare type InternalFilterState = {
     filterChange: null|string, 
     filterLifeLevel: null|number
 }
@@ -66,24 +68,24 @@ export declare type SmartMode = {
     enabled: boolean,
     type: string,
     deviceUid: string,
-    highTemperatureState: SmartModeTempratureState,
-    highTemperatureThreshold: number,
+    highTemperatureState: null|SmartModeTempratureState,
+    highTemperatureThreshold: null|number,
     highTemperatureWebhook: null|object,
-    lowTemperatureState: SmartModeTempratureState,
-    lowTemperatureThreshold: number,
+    lowTemperatureState: null|SmartModeTempratureState,
+    lowTemperatureThreshold: null|number,
     lowTemperatureWebhook: null|object,
     sync_with_ac_power: boolean
 }
 
 export declare type InternalSmartMode = {
     enabled: boolean,
-    type?: string,
-    highTemperatureState?: InternalSmartModeTempratureState,
-    highTemperatureThreshold?: number,
-    highTemperatureWebhook?: null|object,
-    lowTemperatureState?: InternalSmartModeTempratureState,
-    lowTemperatureThreshold?: number,
-    lowTemperatureWebhook?: null|object
+    type: string,
+    highTemperatureState: InternalSmartModeTempratureState,
+    highTemperatureThreshold: number,
+    highTemperatureWebhook: null|object,
+    lowTemperatureState: InternalSmartModeTempratureState,
+    lowTemperatureThreshold: number,
+    lowTemperatureWebhook: null|object
 }
 
 export declare type RemoteCapabilities = {
@@ -260,7 +262,7 @@ export declare type Timestamp = {
 export declare type Event = {
     objectId: string,
     objectKind: string,
-    timestamp: string,
+    timestamp: string, // NOTE: this is provided in UTC time as a string value that has the following format (example): "2024-05-26T22:41:28Z"
     eventKind: number,
     details: EventDetails
 }
@@ -297,4 +299,10 @@ export declare type Measurements = {
     co2?: number,
     pm25?: number,
     tvoc?: number  
+}
+
+export declare type PlatformState = {
+    devices: { [id: string]: InternalAcState|InternalSensorState },
+    sensors: { [id: string]: InternalSensorState },
+    occupancy: { [id: string]: InternalOccupancyState },
 }

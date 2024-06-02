@@ -27,10 +27,6 @@ class AirQualitySensor extends SensiboAccessory {
 		this.Service = platform.api.hap.Service
 		/** @type {typeof homebridge.Characteristic} */
 		this.Characteristic = platform.api.hap.Characteristic
-		/** @type {SensiboACPlatform} */
-		this.platform = platform
-
-		this.Utils = require('../sensibo/Utils')(this, platform)
 
 		this.appId = 'com.sensibo.Sensibo'
 		this.productModel = airConditionerOrPurifier.productModel
@@ -66,7 +62,7 @@ class AirQualitySensor extends SensiboAccessory {
 			this.api.registerPlatformAccessories(platform.pluginName, platform.platformName, [this.platformAccessory])
 		}
 
-		// TODO: enable logging? See also line 143
+		// TODO: enable logging?
 		// if (platform.enableHistoryStorage) {
 		// 	const fakeGatoHistoryService = require('fakegato-history')(this.api)
 
@@ -159,7 +155,7 @@ class AirQualitySensor extends SensiboAccessory {
 			return
 		}
 
-		// TODO: add logging of CO2 and VOCs? See also line 57
+		// TODO: add logging of CO2 and VOCs?
 		// log new state with FakeGato
 		// if (this.loggingService) {
 		// 	this.loggingService.addEntry({

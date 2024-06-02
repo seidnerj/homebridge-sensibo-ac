@@ -28,8 +28,6 @@ class RoomSensor extends SensiboAccessory {
 		/** @type {string} */
 		this.FAHRENHEIT_UNIT = platform.FAHRENHEIT_UNIT
 
-		this.Utils = require('../sensibo/Utils')(this, platform)
-
 		this.deviceId = deviceInfo.id
 		this.productModel = sensorInfo.productModel
 		this.serial = sensorInfo.serial
@@ -43,6 +41,8 @@ class RoomSensor extends SensiboAccessory {
 		const StateHandler = require('./StateHandler')(this, platform)
 		const state = unified.getSensorState(sensor)
 
+		// TODO: check if this should be this this.cachedState.sensors instead? seems like this.cachedState.sensor is unused
+		//       if so, also need to remove InternalSensorState type from the PlatformState's devices property.
 		this.cachedState.devices[this.id] = state
 		/** @type {Classes.InternalSensorState} */
 		this.state = new Proxy(state, StateHandler)

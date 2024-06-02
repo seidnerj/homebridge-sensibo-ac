@@ -26,8 +26,6 @@ class OccupancySensor extends SensiboAccessory {
 		/** @type {typeof homebridge.Characteristic} */
 		this.Characteristic = platform.api.hap.Characteristic
 
-		this.Utils = require('../sensibo/Utils')(this, platform)
-
 		this.productModel = deviceInfo.productModel + '_occupancy'
 		this.serial = locationInfo.id
 		this.manufacturer = deviceInfo.manufacturer

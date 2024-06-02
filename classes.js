@@ -6,7 +6,7 @@ class InternalAcState {
      * @param {null|number} targetTemperature
      * @param {null|number} currentTemperature
      * @param {null|number} relativeHumidity
-     * @param {null|import("./types").InternalSmartMode} smartMode
+     * @param {null|import('./types').InternalSmartMode} smartMode
      * @param {null|boolean} light
      * @param {null|boolean} pureBoost
      * @param {null|string} filterChange
@@ -39,8 +39,8 @@ class InternalAcState {
 		this.VOCDensity = VOCDensity
 		this.carbonDioxideDetected = carbonDioxideDetected
 		this.carbonDioxideLevel = carbonDioxideLevel
-		this.syncState = null // this is overriden by StateHandler which wraps this class's instance
-		this.update = null // this is overriden by StateHandler which wraps this class's instance
+		this.syncState = null // this is overriden by StateHandler which wraps this class' instance
+		this.update = null // this is overriden by StateHandler which wraps this class' instance
 	}
 
 }
