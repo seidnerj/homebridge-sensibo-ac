@@ -888,8 +888,8 @@ module.exports = (device, platform) => {
 				const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
 				const mode = this.characteristicToMode(lastMode)
 
-				device.state.targetTemperature = targetTemp
 				easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
+				device.state.targetTemperature = targetTemp
 				device.state.active = true
 				device.state.mode = mode
 
@@ -914,15 +914,15 @@ module.exports = (device, platform) => {
 					return
 				}
 
+				const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
+				const mode = this.characteristicToMode(lastMode)
+
 				value = value === this.Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
 				easyDebug(device.name, '(SET) - AC Swing:', value)
 				device.state.verticalSwing = value
 
-				const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
-				const mode = this.characteristicToMode(lastMode)
-
-				easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
 				device.state.active = true
+				easyDebug(device.name, '(SET) - Mode To:', mode)
 				device.state.mode = mode
 
 				this.updateClimateReact(device, enableClimateReactAutoSetup)
@@ -1055,6 +1055,7 @@ module.exports = (device, platform) => {
 				value = value === this.Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
 				easyDebug(device.name, '(SET) - Fan Swing:', value)
 				device.state.verticalSwing = value
+
 				device.state.active = true
 				easyDebug(device.name, '(SET) - Mode to: FAN')
 				device.state.mode = 'FAN'
@@ -1142,7 +1143,7 @@ module.exports = (device, platform) => {
 				device.state.verticalSwing = value
 
 				device.state.active = true
-				easyDebug(device.name + ' -> Setting Mode to: DRY')
+				easyDebug(device.name, '(SET) - Mode to: DRY')
 				device.state.mode = 'DRY'
 
 				callback()
@@ -1166,7 +1167,7 @@ module.exports = (device, platform) => {
 				}
 
 				device.state.active = true
-				easyDebug(device.name + ' -> Setting Mode to: DRY')
+				easyDebug(device.name + ' (SET) - Mode to: DRY')
 				device.state.mode = 'DRY'
 
 				callback()
@@ -1184,13 +1185,13 @@ module.exports = (device, platform) => {
 				}
 
 				value = value ? 'SWING_ENABLED' : 'SWING_DISABLED'
-				easyDebug(device.name, '(SET) - Horizontal Swing Swing:', value)
+				easyDebug(device.name, '(SET) - Horizontal Swing:', value)
 				device.state.horizontalSwing = value
 
 				if (device instanceof AirConditioner) {
 					this.updateClimateReact(device, enableClimateReactAutoSetup)
 				} else{
-					easyDebug(device.name, `(SET) - Horizontal Swing Swing: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
+					easyDebug(device.name, `(SET) - Horizontal Swing: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
 				}
 
 				callback()
@@ -1225,7 +1226,7 @@ module.exports = (device, platform) => {
 			},
 
 			// AC SYNC BUTTON
-			// TODO: should be moved to be a 'set' in StateHanlder line 33
+			// TODO: should be moved to be a 'set' in StateHanlder
 			/**
 			 * @param {homebridge.CharacteristicValue} value
 			 * @param {homebridge.CharacteristicGetCallback} callback

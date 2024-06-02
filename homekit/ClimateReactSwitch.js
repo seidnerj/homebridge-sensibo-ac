@@ -25,8 +25,6 @@ class ClimateReactSwitch extends SensiboAccessory {
 		/** @type {typeof homebridge.Characteristic} */
 		this.Characteristic = platform.api.hap.Characteristic
 
-		this.Utils = require('../sensibo/Utils')(this, platform)
-
 		this.productModel = airConditioner.productModel + '_CR'
 		this.serial = airConditioner.serial + '_CR'
 		this.manufacturer = airConditioner.manufacturer

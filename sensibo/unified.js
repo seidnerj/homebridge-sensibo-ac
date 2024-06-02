@@ -2,37 +2,49 @@
 const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
 const Classes = require('../classes')
 
-/**
- * @param {string} value
- * @param {string[]} fanLevels
- * @returns {number}
- */
-function fanLevelToHK(value, fanLevels) {
-	if (value === 'auto') {
-		return 0
-	}
-
-	fanLevels = fanLevels.filter(level => {
-		return level !== 'auto'
-	})
-
-	const totalLevels = fanLevels.length > 0 ? fanLevels.length : 1
-	const valueIndex = fanLevels.indexOf(value) + 1
-
-	return Math.round(100 * valueIndex / totalLevels)
-}
-
-// TODO: use Utils version instead
-/**
- * @param {number} value
- * @returns {number}
- */
-function toCelsius(value) {
-	return (value - 32) / 1.8
-}
-
-// TODO: move all functions below to Utils
 module.exports = {
+
+	/**
+	 * @param {string} value
+	 * @param {string[]} fanLevels
+	 * @returns {number}
+	 */
+	fanLevelToHK: function(value, fanLevels) {
+		if (value === 'auto') {
+			return 0
+		}
+
+		fanLevels = fanLevels.filter(level => {
+			return level !== 'auto'
+		})
+
+		const totalLevels = fanLevels.length > 0 ? fanLevels.length : 1
+		const valueIndex = fanLevels.indexOf(value) + 1
+
+		return Math.round(100 * valueIndex / totalLevels)
+	},
+
+	/**
+	 * Convert degrees F to degrees C
+	 * @param  {Number} degreesF The degrees in F to convert
+	 * @return {Number} The degrees in C
+	 */
+	toCelsius: function (degreesF) {
+		const degreesC = (degreesF - 32) / 1.8
+
+		return degreesC
+	},
+
+	/**
+	 * Convert degrees C to degrees F
+	 * @param  {Number} degreesC The degrees in C to convert
+	 * @return {Number} The degrees in F
+	 */
+	toFahrenheit: function (degreesC) {
+		const degreesF = Math.round((degreesC * 1.8) + 32)
+
+		return degreesF
+	},
 
 	/**
 	 * @param {import('../types').Device} device
@@ -96,9 +108,11 @@ module.exports = {
 				mode.homeKitSupported = true
 			}
 
-			platform.easyDebug(`${device.room.name} - Mode: ${modeString} - Temperature scales, C: ${'C' in modeCapabilities.temperatures} F: ${'F' in modeCapabilities.temperatures}`)
+			platform.easyDebug(`${device.room.name} - Mode: ${modeString} - Temperature scales:`)
+			platform.easyDebug(`C:\n${JSON.stringify(modeCapabilities.temperatures.C, null, 4)}`)
+			platform.easyDebug(`F:\n${JSON.stringify(modeCapabilities.temperatures.F, null, 4)}`)
 
-			if ('C' in modeCapabilities.temperatures || 'F' in modeCapabilities.temperatures) {
+			if (modeCapabilities.temperatures.C || modeCapabilities.temperatures.F) {
 				mode.temperatures = {}
 			}
 
@@ -110,7 +124,7 @@ module.exports = {
 				}
 			}
 
-			// TODO: check if we actaully need F, does Sensibo always return C if it has F?
+			// TODO: check if we actually need F, does Sensibo always return C if it has F?
 			if (modeCapabilities.temperatures?.F) {
 				mode.temperatures.F = {
 					min: Math.min(...modeCapabilities.temperatures.F.values),
@@ -150,7 +164,9 @@ module.exports = {
 			}
 
 			// set horizontal swing
-			if (!capabilities[modeString].horizontalSwing && modeCapabilities.horizontalSwing && modeCapabilities.horizontalSwing.includes('rangeFull')) {
+			if (!capabilities[modeString].horizontalSwing &&
+				modeCapabilities.horizontalSwing &&
+				modeCapabilities.horizontalSwing.includes('rangeFull')) {
 				mode.horizontalSwing = true
 			}
 
@@ -159,8 +175,8 @@ module.exports = {
 				mode.light = true
 			}
 
-			platform.easyDebug(`${device.room.name} - Mode: ${modeString}, Capabilities: `)
-			platform.easyDebug(mode)
+			platform.easyDebug(`${device.room.name} - Mode: ${modeString}, Capabilities:`)
+			platform.easyDebug(JSON.stringify(mode, null, 4))
 		}
 
 		return capabilities
@@ -168,9 +184,9 @@ module.exports = {
 
 	/**
 	 * @param {import('../types').Device} device
-	 * @returns {import('../types').FilterState}
+	 * @returns {import('../types').InternalFilterState}
 	 */
-	getFilterState: function (device)  {
+	getInternalFilterState: function (device)  {
 		let filterChange = null
 		let filterLifeLevel = null
 
@@ -194,30 +210,47 @@ module.exports = {
 
 	/**
 	 * @param {import('../types').Device} device
-	 * @returns {import('../types').SwingState}
+	 * @returns {import('../types').InternalSwingState}
 	 */
-	getSwingState: function (device) {
-		let horizontalSwing = 'SWING_DISABLED'
-		let verticalSwing = 'SWING_DISABLED'
+	getInternalSwingState: function (device) {
+		return this.getInternalSwingStateFromAcState(device.acState)
+	},
 
-		if (device.acState.swing) {
-			if (device.acState.swing === 'rangeFull') {
-				verticalSwing = 'SWING_ENABLED'
-			} else if (device.acState.swing === 'horizontal') {
-				horizontalSwing = 'SWING_ENABLED'
-			} else if (device.acState.swing === 'both') {
-				horizontalSwing = 'SWING_ENABLED'
-				verticalSwing = 'SWING_ENABLED'
+	/**
+	 * @param {import('../types').AcState} acState
+	 * @returns {import('../types').InternalSwingState}
+	 */
+	getInternalSwingStateFromAcState: function (acState) {
+		return this.getInternalSwingStateFromInternalSwingValues(acState.swing, acState.horizontalSwing)
+	},
+
+	/**
+	 * @param {string} swing
+	 * @param {string} horizontalSwing
+	 * @returns {import('../types').InternalSwingState}
+	 */
+	getInternalSwingStateFromInternalSwingValues: function (swing, horizontalSwing) {
+		let internalHorizontalSwingValue = 'SWING_DISABLED'
+		let internalVerticalSwingValue = 'SWING_DISABLED'
+
+		if (swing) {
+			if (swing === 'rangeFull') {
+				internalVerticalSwingValue = 'SWING_ENABLED'
+			} else if (swing === 'horizontal') {
+				internalHorizontalSwingValue = 'SWING_ENABLED'
+			} else if (swing === 'both') {
+				internalHorizontalSwingValue = 'SWING_ENABLED'
+				internalVerticalSwingValue = 'SWING_ENABLED'
 			}
 		}
 
-		if (device.acState.horizontalSwing && device.acState.horizontalSwing === 'rangeFull') {
-			horizontalSwing = 'SWING_ENABLED'
+		if (horizontalSwing && horizontalSwing === 'rangeFull') {
+			internalHorizontalSwingValue = 'SWING_ENABLED'
 		}
 
 		return {
-			horizontalSwing: horizontalSwing,
-			verticalSwing: verticalSwing
+			horizontalSwing: internalHorizontalSwingValue,
+			verticalSwing: internalVerticalSwingValue
 		}
 	},
 
@@ -226,11 +259,30 @@ module.exports = {
 	 * @returns {null|number}
 	 */
 	getFanSpeed: function (device) {
+		return this.getFanSpeedFromAcState(device, device.acState)
+	},
+
+	/**
+	 * @param {import('../types').Device} device
+	 * @param {import('../types').AcState} acState
+	 * @returns {null|number}
+	 */
+	getFanSpeedFromAcState: function (device, acState) {
+		return this.getFanSpeedForFanLevel(device, acState.mode, acState.fanLevel)
+	},
+
+	/**
+	 * @param {import('../types').Device} device
+	 * @param {string} mode
+	 * @param {string} fanLevel
+	 * @returns {null|number}
+	 */
+	getFanSpeedForFanLevel: function (device, mode, fanLevel) {
 		let fanSpeed = null
-		const modeCapabilities = device.remoteCapabilities.modes[device.acState.mode]
+		const modeCapabilities = device.remoteCapabilities.modes[mode]
 
 		if (modeCapabilities.fanLevels && modeCapabilities.fanLevels.length) {
-			fanSpeed = fanLevelToHK(device.acState.fanLevel, modeCapabilities.fanLevels) || 0
+			fanSpeed = this.fanLevelToHK(fanLevel, modeCapabilities.fanLevels) || 0
 		}
 
 		return fanSpeed
@@ -241,16 +293,68 @@ module.exports = {
 	 * @returns {Classes.InternalAcState}
 	 */
 	getAcState: function (device) {
-		const filterState = this.getFilterState(device)
-		const swingState = this.getSwingState(device)
+		/** @type {null|import('../types').InternalSmartMode} */
+		let smartModeState = null
+
+		if (device.smartMode) {
+			/** @type {null|import('../types').InternalSmartModeTempratureState} */
+			let highTemperatureState = null
+			/** @type {null|import('../types').InternalSmartModeTempratureState} */
+			let lowTemperatureState = null
+
+			if (device.smartMode.highTemperatureState && device.smartMode.lowTemperatureState) {
+				const highTemperatureStateFanSpeed = this.getFanSpeedForFanLevel(device, device.smartMode.highTemperatureState.mode, device.smartMode.highTemperatureState.fanLevel)
+				const highTemperatureInternalSwingState = this.getInternalSwingStateFromInternalSwingValues(device.smartMode.highTemperatureState.swing, device.smartMode.highTemperatureState.horizontalSwing)
+
+				highTemperatureState = {
+					on: device.smartMode.highTemperatureState.on,
+					light: device.smartMode.highTemperatureState.light,
+					temperatureUnit: device.smartMode.highTemperatureState.temperatureUnit,
+					fanSpeed: highTemperatureStateFanSpeed,
+					mode: device.smartMode.highTemperatureState.mode.toUpperCase(),
+					targetTemperature: device.smartMode.highTemperatureState.targetTemperature,
+					swing: highTemperatureInternalSwingState.verticalSwing,
+					horizontalSwing: highTemperatureInternalSwingState.horizontalSwing
+				}
+
+				const lowTemperatureStateFanSpeed = this.getFanSpeedForFanLevel(device, device.smartMode.lowTemperatureState.mode, device.smartMode.lowTemperatureState.fanLevel)
+				const lowTemperatureInternalSwingState = this.getInternalSwingStateFromInternalSwingValues(device.smartMode.lowTemperatureState.swing, device.smartMode.lowTemperatureState.horizontalSwing)
+
+				lowTemperatureState = {
+					on: device.smartMode.lowTemperatureState.on,
+					light: device.smartMode.lowTemperatureState.light,
+					temperatureUnit: device.smartMode.lowTemperatureState.temperatureUnit,
+					fanSpeed: lowTemperatureStateFanSpeed,
+					mode: device.smartMode.lowTemperatureState.mode.toUpperCase(),
+					targetTemperature: device.smartMode.lowTemperatureState.targetTemperature,
+					swing: lowTemperatureInternalSwingState.verticalSwing,
+					horizontalSwing: lowTemperatureInternalSwingState.horizontalSwing
+				}
+			}
+
+			/** @type {import('../types').InternalSmartMode} */
+			smartModeState = {
+				enabled: device.smartMode.enabled,
+				type: device.smartMode.type,
+				highTemperatureState: highTemperatureState,
+				highTemperatureThreshold: device.smartMode.highTemperatureThreshold,
+				highTemperatureWebhook: device.smartMode.highTemperatureWebhook,
+				lowTemperatureState: lowTemperatureState,
+				lowTemperatureThreshold: device.smartMode.lowTemperatureThreshold,
+				lowTemperatureWebhook: device.smartMode.lowTemperatureWebhook
+			}
+		}
+
+		const filterState = this.getInternalFilterState(device)
+		const swingState = this.getInternalSwingState(device)
 		const fanSpeed = this.getFanSpeed(device)
 		const state = new Classes.InternalAcState(
 			device.acState.on,
 			device.acState.mode.toUpperCase(),
-			!device.acState.targetTemperature ? null : device.acState.temperatureUnit === 'C' ? device.acState.targetTemperature : toCelsius(device.acState.targetTemperature),
+			!device.acState.targetTemperature ? null : device.acState.temperatureUnit === 'C' ? device.acState.targetTemperature : this.toCelsius(device.acState.targetTemperature),
 			device.measurements.temperature,
 			device.measurements.humidity,
-			{ enabled: device.smartMode.enabled },
+			smartModeState,
 			device.acState.light && device.acState.light !== 'off',
 			device.pureBoostConfig && device.pureBoostConfig.enabled,
 			filterState.filterChange,

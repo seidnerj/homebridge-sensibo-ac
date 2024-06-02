@@ -29,8 +29,6 @@ class AirConditioner extends SensiboAccessory {
 		/** @type {string} */
 		this.FAHRENHEIT_UNIT = platform.FAHRENHEIT_UNIT
 
-		this.Utils = require('../sensibo/Utils')(this, platform)
-
 		/** @type {import('../types').Device} */
 		this.device = device
 		this.appId = deviceInfo.appId
@@ -184,7 +182,7 @@ class AirConditioner extends SensiboAccessory {
 			}
 			characteristic.setProps(Props)
 		} else {
-			this.easyDebug(`${this.name} - Props not set for ${CharacteristicName}, proceeding with defaults`)
+			this.easyDebug(`${this.name} - Props not set for ${CharacteristicName}, proceeding with defaults.`)
 		}
 
 		characteristic
@@ -213,7 +211,7 @@ class AirConditioner extends SensiboAccessory {
 		this.addCharacteristicToService('HeaterCooler', 'TemperatureDisplayUnits', null, false)
 
 		if (!this.disableHumidity) {
-			// TODO: check on warning... "Humidity isn't a supported Characteristic of HeaterCooler"
+			// TODO: check this warning... "Humidity isn't a supported Characteristic of HeaterCooler"
 			//       Should we create a new custom Characteristic?
 			// e.g. const customHumidity = new Characteristic('CustomHumidity', this.api.hap.uuid.generate('CustomHumidity' + this.id))
 			this.addCharacteristicToService('HeaterCooler', 'CurrentRelativeHumidity', null, false)
@@ -294,7 +292,7 @@ class AirConditioner extends SensiboAccessory {
 		// 	return this.StateManager.characteristicToMode(mode)
 		// })}`)
 		// TODO: use a helper function to return names for the mode numbers
-		this.easyDebug(`${this.name} - Calculated TargetHeaterCoolerState validValues: ${validModes}`)
+		this.easyDebug(`${this.name} - Calculated TargetHeaterCoolerState validValues: [${validModes}]`)
 
 		// Below is specific logic to change TargetHeaterCoolerState and prevent warnings when its current value is not
 		// in the list of valid modes
@@ -342,7 +340,7 @@ class AirConditioner extends SensiboAccessory {
 				.on('set', this.StateManager.set.ACRotationSpeed)
 		}
 
-		// TODO: check on this warning...
+		// TODO: check this warning...
 		if (this.filterService) {
 			// Apple HomeKit limitations mean a warning will be thrown as Filter characteristics doesn't exist under
 			// the HeaterCooler service and a separate Filter service doesn't seem to show up in the Home app.
@@ -468,7 +466,7 @@ class AirConditioner extends SensiboAccessory {
 
 	addHorizontalSwingSwitch() {
 		// TODO: review the logging... maybe line below becomes "Add HorizontalSwingSwitch" and
-		//       new log line 5 rows below for Adding if doesn't already exist?
+		//       new log line several rows below for Adding if doesn't already exist?
 		//       do the same for other "add" functions
 		this.easyDebug(`${this.name} - Adding HorizontalSwingSwitchService`)
 

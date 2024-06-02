@@ -25,8 +25,6 @@ class HumiditySensor extends SensiboAccessory {
 		/** @type {typeof homebridge.Characteristic} */
 		this.Characteristic = platform.api.hap.Characteristic
 
-		this.Utils = require('../sensibo/Utils')(this, platform)
-
 		this.productModel = device.productModel + '_humidity'
 		this.serial = device.serial + '_humidity'
 		this.manufacturer = device.manufacturer

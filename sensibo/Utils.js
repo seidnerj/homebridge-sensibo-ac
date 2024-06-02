@@ -2,6 +2,7 @@
 const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
 // eslint-disable-next-line no-unused-vars
 const SensiboAccessory = require ('../homekit/SensiboAccessory')
+const unified = require('../sensibo/unified')
 
 // FIXME: This file should be moved to a different location...
 // TODO: move unified.js functions here
@@ -22,7 +23,7 @@ module.exports = (device, platform) => {
 		 * @return {Number} The degrees in C
 		 */
 		toCelsius: (degreesF) => {
-			const degreesC = (degreesF - 32) / 1.8
+			const degreesC = unified.toCelsius(degreesF)
 
 			easyDebug(`${device.name} - Utils toCelsius - degreesF: ${degreesF}, degreesC: ${degreesC}`)
 
@@ -35,7 +36,7 @@ module.exports = (device, platform) => {
 		 * @return {Number} The degrees in F
 		 */
 		toFahrenheit: (degreesC) => {
-			const degreesF = Math.round((degreesC * 1.8) + 32)
+			const degreesF = unified.toFarenheight(degreesC)
 
 			easyDebug(`${device.name} - Utils toFahrenheit - degreesC: ${degreesC}, degreesF: ${degreesF}`)
 
@@ -56,7 +57,7 @@ module.exports = (device, platform) => {
 		 * @param  {Number|String|Boolean} newValue   The value that the Characteristic should be set to
 		 */
 		updateValue: (serviceName, characteristicName, newValue) => {
-			// easyDebug(`${device.name} - updateValue: ${newValue} for characteristic ${characteristicName} on service ${serviceName}`)
+			// easyDebug(`${device.name} - updateValue: ${newValue} for  ${characteristicName} for ${serviceName}`)
 			// Could we use .validateUserInput or .validateClientSuppliedValue from HAP Characteristics definition? Probably not as both are private...
 
 			const characteristic = device[serviceName]?.getCharacteristic(Characteristic[characteristicName])
@@ -69,13 +70,13 @@ module.exports = (device, platform) => {
 
 			// FIXME: what does this line actually check for? Does it look for not false and false (not true) at the same time?
 			if (newValue !== 0 && newValue !== false && (typeof newValue === 'undefined' || !newValue)) {
-				easyDebug(`${device.name} - '${newValue}' bad value for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
+				easyDebug(`${device.name} - '${newValue}' bad value for ${characteristicName} for ${serviceName}... skipping update`)
 
 				return
 			}
 
 			if (newValue === undefined || newValue === null) {
-				easyDebug(`${device.name} - '${newValue}' undefined or null for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
+				easyDebug(`${device.name} - '${newValue}' undefined or null for ${characteristicName} for ${serviceName}... skipping update`)
 
 				return
 			}
@@ -90,11 +91,11 @@ module.exports = (device, platform) => {
 			if (Number.isNaN(newValue)) {
 				// non-number is valid for many usecases
 				// TODO: could check if props.format is float or int, then compare and fail if needed?
-				easyDebug(`${device.name} - '${newValue}' is not a number for characteristic ${characteristicName} (expected format '${format}') on service ${serviceName}... continuing`)
+				easyDebug(`${device.name} - '${newValue}' is not a number for ${characteristicName} (expected format '${format}') for ${serviceName}... continuing`)
 			}
 
 			if (validValues && !validValues.includes(newValue)) {
-				easyDebug(`${device.name} - '${newValue}' not in validValues: ${validValues} for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
+				easyDebug(`${device.name} - '${newValue}' not in validValues: ${validValues} for ${characteristicName} for ${serviceName}... skipping update`)
 
 				return
 			}
@@ -108,33 +109,33 @@ module.exports = (device, platform) => {
 					const roundedValue = minStep < 1 ? Math.round((newValuePlusEpsilon) * 10) / 10 : Math.round(newValuePlusEpsilon)
 
 					if (roundedValue !== newValue) {
-						easyDebug(`${device.name} - '${newValue}' doesn't meet the rounding requird by minStep: ${minStep} for characteristic ${characteristicName} on service ${serviceName}... rounding to ${roundedValue}`)
+						easyDebug(`${device.name} - '${newValue}' doesn't meet required rounding (minStep = ${minStep}) for ${characteristicName} for ${serviceName}, rounding: ${roundedValue}`)
 						newValue = roundedValue
 					}
 				} else{
-					easyDebug(`${device.name} - '${newValue}' for characteristic ${characteristicName} on service ${serviceName} is not of type 'number'... skipping update`)
+					easyDebug(`${device.name} - '${newValue}' for ${characteristicName} for ${serviceName} is not of type 'number'... skipping update`)
 
 					return
 				}
 			}
 
 			if (minValue && newValue < minValue) {
-				easyDebug(`${device.name} - '${newValue}' less than minValue: ${minValue} for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
+				easyDebug(`${device.name} - '${newValue}' less than minValue: ${minValue} for ${characteristicName} for ${serviceName}... skipping update`)
 
 				return
 			} else if (maxValue && newValue > maxValue) {
-				easyDebug(`${device.name} - '${newValue}' greater than maxValue: ${maxValue} for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
+				easyDebug(`${device.name} - '${newValue}' greater than maxValue: ${maxValue} for ${characteristicName} for ${serviceName}... skipping update`)
 
 				return
 			}
 
 			if (currentValue === newValue) {
-				easyDebug(`${device.name} - '${newValue}' equals '${currentValue}' for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
+				easyDebug(`${device.name} - '${newValue}' equals '${currentValue}' for ${characteristicName} for ${serviceName}... skipping update`)
 
 				return
 			}
 
-			easyDebug(`${device.name} - Setting '${newValue}' for characteristic ${characteristicName} on service ${serviceName}, value was '${currentValue}'`)
+			easyDebug(`${device.name} - Setting '${newValue}' for ${characteristicName} on service ${serviceName}, value was '${currentValue}'`)
 			characteristic.updateValue(newValue)
 
 			return
