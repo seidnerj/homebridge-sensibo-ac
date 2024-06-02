@@ -4,6 +4,7 @@ const homebridge = require('homebridge')
 const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
 // eslint-disable-next-line no-unused-vars
 const SensiboAccessory = require('./SensiboAccessory')
+const Classes = require('../classes')
 const AirConditioner = require('./AirConditioner')
 const RoomSensor = require('./RoomSensor')
 
@@ -86,6 +87,11 @@ module.exports = (device, platform) => {
 
 		// If nothing has changed should we skip...? Like we do in StateHandler for SET?
 
+		if (!(device.state instanceof Classes.InternalAcState)) {
+			// TODO: log warning
+			return
+		}
+
 		const smartModeState = device.state.smartMode
 
 		smartModeState.type = 'temperature'
@@ -162,6 +168,11 @@ module.exports = (device, platform) => {
 			// TODO: refactor this similar to PureActive below?
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			ACActive: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const active = device.state.active
 				const mode = device.state.mode
 
@@ -178,6 +189,11 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			PureActive: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const active = device.state.active
 
 				easyDebug(`${device.name} (GET) - Pure Active State: ${active}`)
@@ -187,6 +203,10 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentAirPurifierState: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
 				const active = device.state.active
 
 				easyDebug(`${device.name} (GET) - Pure Current State: ${active ? 'PURIFYING_AIR' : 'INACTIVE'}`)
@@ -196,6 +216,11 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			TargetAirPurifierState: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const pureBoost = device.state.pureBoost
 
 				easyDebug(`${device.name} (GET) - Pure Target State (Boost): ${pureBoost ? 'AUTO' : 'MANUAL'}`)
@@ -205,6 +230,11 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentHeaterCoolerState: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const active = device.state.active
 				const mode = device.state.mode
 				const targetTemp = device.state.targetTemperature
@@ -227,6 +257,12 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			TargetHeaterCoolerState: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					easyDebug(device.name, `(GET) - Target HeaterCooler State: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				if (!(device instanceof AirConditioner)) {
 					easyDebug(device.name, `(GET) - Target HeaterCooler State: ${device.name} is not an instance of AirConditioner!`)
 
@@ -248,6 +284,12 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentTemperature: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					easyDebug(device.name, `(GET) - Current Temperature State: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				if (!(device instanceof AirConditioner || device instanceof RoomSensor)) {
 					easyDebug(device.name, `(GET) - Current Temperature State: ${device.name} is not an instance of AirConditioner or RoomSensor!`)
 
@@ -267,6 +309,12 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CoolingThresholdTemperature: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					easyDebug(device.name, `(GET) - Target Cooling Temperature: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				if (!(device instanceof AirConditioner)) {
 					easyDebug(device.name, `(GET) - Target Cooling Temperature: ${device.name} is not an instance of AirConditioner!`)
 
@@ -286,6 +334,12 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			HeatingThresholdTemperature: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					easyDebug(device.name, `(GET) - Target Heating Temperature: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				if (!(device instanceof AirConditioner)) {
 					easyDebug(device.name, `(GET) - Target Heating Temperature: ${device.name} is not an instance of AirConditioner!`)
 
@@ -318,6 +372,12 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentRelativeHumidity: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState || device.state instanceof Classes.InternalSensorState)) {
+					easyDebug(device.name, `(GET) - Current Relative Humidity: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				easyDebug(device.name, '(GET) - Current Relative Humidity:', device.state.relativeHumidity, '%')
 
 				callback(null, device.state.relativeHumidity)
@@ -325,6 +385,12 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			ACSwing: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					easyDebug(device.name, `(GET) - AC Swing: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				const swing = device.state.verticalSwing
 
 				easyDebug(device.name, '(GET) - AC Swing:', swing)
@@ -334,6 +400,12 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			ACRotationSpeed: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					easyDebug(device.name, `(GET) - AC Rotation Speed: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				const fanSpeed = device.state.fanSpeed ?? 0
 
 				easyDebug(device.name, '(GET) - AC Rotation Speed:', fanSpeed + '%')
@@ -343,6 +415,12 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			PureRotationSpeed: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					easyDebug(device.name, `(GET) - Pure Rotation Speed: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				const fanSpeed = device.state.fanSpeed
 
 				easyDebug(device.name, '(GET) - Pure Rotation Speed:', fanSpeed + '%')
@@ -353,6 +431,12 @@ module.exports = (device, platform) => {
 			// FILTER
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FilterChangeIndication: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					easyDebug(device.name, `(GET) - Filter Change Indication: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				const filterChange = device.state.filterChange
 
 				easyDebug(device.name, '(GET) - Filter Change Indication:', filterChange)
@@ -362,6 +446,12 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FilterLifeLevel: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					easyDebug(device.name, `(GET) - Filter Life Level: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				const filterLifeLevel = device.state.filterLifeLevel
 
 				easyDebug(device.name, '(GET) - Filter Life Level:', filterLifeLevel + '%')
@@ -372,6 +462,12 @@ module.exports = (device, platform) => {
 			// FAN
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FanActive: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					easyDebug(device.name, `(GET) - Fan Active State: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				const active = device.state.active
 				const mode = device.state.mode
 
@@ -388,6 +484,12 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FanSwing: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					easyDebug(device.name, `(GET) - Fan Swing: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				const swing = device.state.verticalSwing
 
 				easyDebug(device.name, '(GET) - Fan Swing:', swing)
@@ -397,6 +499,12 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FanRotationSpeed: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					easyDebug(device.name, `(GET) - Fan Rotation Speed: ${device.state} is not an instance of InternalAcState!`)
+
+					return
+				}
+
 				const fanSpeed = device.state.fanSpeed
 
 				easyDebug(device.name, '(GET) - Fan Rotation Speed:', fanSpeed + '%')
@@ -407,6 +515,11 @@ module.exports = (device, platform) => {
 			// DEHUMIDIFIER
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			DryActive: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const active = device.state.active
 				const mode = device.state.mode
 
@@ -423,6 +536,11 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentHumidifierDehumidifierState: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const active = device.state.active
 				const mode = device.state.mode
 
@@ -446,6 +564,11 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			DryRotationSpeed: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const fanSpeed = device.state.fanSpeed
 
 				easyDebug(device.name, '(GET) - Dry Rotation Speed:', fanSpeed + '%')
@@ -455,6 +578,11 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			DrySwing: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const swing = device.state.verticalSwing
 
 				easyDebug(device.name, '(GET) - Dry Swing:', swing)
@@ -465,6 +593,11 @@ module.exports = (device, platform) => {
 			// ROOM SENSOR
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			MotionDetected: (callback) => {
+				if (!(device.state instanceof Classes.InternalSensorState)) {
+					// TODO: log warning
+					return
+				}
+
 				const motionDetected = device.state.motionDetected
 
 				easyDebug(device.name, '(GET) - Motion Detected:', motionDetected)
@@ -474,6 +607,11 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			StatusLowBattery: (callback) => {
+				if (!(device.state instanceof Classes.InternalSensorState)) {
+					// TODO: log warning
+					return
+				}
+
 				const lowBattery = device.state.lowBattery
 
 				easyDebug(device.name, '(GET) - Status Low Battery:', lowBattery)
@@ -484,6 +622,11 @@ module.exports = (device, platform) => {
 			// HORIZONTAL SWING
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			HorizontalSwing: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const horizontalSwing = device.state.horizontalSwing
 
 				easyDebug(device.name, '(GET) - Horizontal Swing:', horizontalSwing)
@@ -494,6 +637,11 @@ module.exports = (device, platform) => {
 			// AIR CONDITIONER/PURIFIER LIGHT
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			LightSwitch: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const light = device.state.light
 
 				easyDebug(device.name, '(GET) - Light:', light ? 'ON' : 'OFF')
@@ -504,6 +652,11 @@ module.exports = (device, platform) => {
 			// CLIMATE REACT
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			ClimateReactSwitch: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const smartModeEnabled = device.state.smartMode.enabled
 
 				easyDebug(device.name, '(GET) - Climate React Enabled Switch:', smartModeEnabled)
@@ -514,6 +667,11 @@ module.exports = (device, platform) => {
 			// OCCUPANCY SENSOR
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			OccupancyDetected: (callback) => {
+				if (!(device.state instanceof Classes.InternalOccupancyState)) {
+					// TODO: log warning
+					return
+				}
+
 				const occupancy = device.state.occupancy
 
 				easyDebug(device.name, '(GET) Occupancy Detected:', occupancy)
@@ -524,6 +682,11 @@ module.exports = (device, platform) => {
 			// Air Quality
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			AirQuality: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const airQuality = device.state.airQuality
 
 				easyDebug(device.name, '(GET) - Air Quality:', airQuality)
@@ -533,6 +696,11 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			VOCDensity: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const VOCDensity = device.state.VOCDensity
 
 				easyDebug(device.name, '(GET) - Volatile Organic Compound Density:', VOCDensity)
@@ -542,6 +710,11 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CarbonDioxideDetected: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const carbonDioxideDetected = device.state.carbonDioxideDetected
 
 				easyDebug(device.name, '(GET) - Carbon Dioxide Detected:', carbonDioxideDetected)
@@ -551,6 +724,11 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CarbonDioxideLevel: (callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const carbonDioxideLevel = device.state.carbonDioxideLevel
 
 				easyDebug(device.name, '(GET) - Carbon Dioxide Level:', carbonDioxideLevel)
@@ -572,6 +750,11 @@ module.exports = (device, platform) => {
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
 			ACActive: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				if (!(device instanceof AirConditioner)) {
 					easyDebug(device.name, `(SET) - AC Active State: ${device.name} is not an instance of AirConditioner!`)
 
@@ -602,6 +785,11 @@ module.exports = (device, platform) => {
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
 			PureActive: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				value = !!value
 				easyDebug(device.name, '(SET) - Pure Active State:', value)
 				device.state.active = value
@@ -620,6 +808,11 @@ module.exports = (device, platform) => {
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
 			TargetHeaterCoolerState: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				const mode = this.characteristicToMode(value)
 
 				easyDebug(device.name, '(SET) - Target HeaterCooler State:', mode)
@@ -635,10 +828,15 @@ module.exports = (device, platform) => {
 			},
 
 			/**
-			 * param {homebridge.CharacteristicValue} value
+			 * @param {number} targetTemp
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
 			CoolingThresholdTemperature: (targetTemp, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				if (!(device instanceof AirConditioner)) {
 					easyDebug(device.name, `(SET) - Target Cooling Temperature: ${device.name} is not an instance of AirConditioner!`)
 
@@ -666,10 +864,15 @@ module.exports = (device, platform) => {
 			},
 
 			/**
-			 * param {homebridge.CharacteristicValue} value
+			 * @param {number} targetTemp
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
 			HeatingThresholdTemperature: (targetTemp, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				if (!(device instanceof AirConditioner)) {
 					easyDebug(device.name, `(SET) - AC Active State: ${device.name} is not an instance of AirConditioner!`)
 
@@ -700,6 +903,11 @@ module.exports = (device, platform) => {
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
 			ACSwing: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				if (!(device instanceof AirConditioner)) {
 					easyDebug(device.name, `(SET) - HeaterCooler State: ${device.name} is not an instance of AirConditioner!`)
 
@@ -727,6 +935,11 @@ module.exports = (device, platform) => {
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
 			ACRotationSpeed: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				if (!(device instanceof AirConditioner)) {
 					easyDebug(device.name, `(SET) - AC Rotation Speed: ${device.name} is not an instance of AirConditioner!`)
 
@@ -758,9 +971,20 @@ module.exports = (device, platform) => {
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
 			PureRotationSpeed: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				if (value) {
 					easyDebug(device.name, '(SET) - Pure Rotation Speed:', value + '%')
-					device.state.fanSpeed = value
+
+					if (typeof(value) == 'number') {
+						device.state.fanSpeed = value
+					} else {
+						// TODO: log warning
+					}
+
 					device.state.active = true
 				} else {
 					device.state.active = false
@@ -775,22 +999,38 @@ module.exports = (device, platform) => {
 			},
 
 			// FILTER
-			/** @param {homebridge.CharacteristicGetCallback} callback */
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
 			ResetFilterIndication: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				easyDebug(device.name, '(SET) - Filter Change Indication: RESET')
-				device.state.filterChange = 0
+				device.state.filterChange = 'FILTER_OK'
 				device.state.filterLifeLevel = 100
 
 				callback()
 			},
 
 			// FAN
-			/** @param {homebridge.CharacteristicGetCallback} callback */
-			FanActive: (state, callback) => {
-				state = !!state
-				easyDebug(device.name, '(SET) - Fan state Active:', state)
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			FanActive: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
 
-				if (state) {
+				value = !!value
+				easyDebug(device.name, '(SET) - Fan state Active:', value)
+
+				if (value) {
 					easyDebug(device.name, '(SET) - Mode to: FAN')
 					device.state.mode = 'FAN'
 
@@ -802,11 +1042,19 @@ module.exports = (device, platform) => {
 				callback()
 			},
 
-			/** @param {homebridge.CharacteristicGetCallback} callback */
-			FanSwing: (state, callback) => {
-				state = state === this.Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
-				easyDebug(device.name, '(SET) - Fan Swing:', state)
-				device.state.verticalSwing = state
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			FanSwing: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
+				value = value === this.Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
+				easyDebug(device.name, '(SET) - Fan Swing:', value)
+				device.state.verticalSwing = value
 				device.state.active = true
 				easyDebug(device.name, '(SET) - Mode to: FAN')
 				device.state.mode = 'FAN'
@@ -814,10 +1062,22 @@ module.exports = (device, platform) => {
 				callback()
 			},
 
-			/** @param {homebridge.CharacteristicGetCallback} callback */
-			FanRotationSpeed: (speed, callback) => {
-				easyDebug(device.name, '(SET) - Fan Rotation Speed:', speed + '%')
-				device.state.fanSpeed = speed
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			FanRotationSpeed: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
+				easyDebug(device.name, '(SET) - Fan Rotation Speed:', value + '%')
+				if (typeof(value) == 'number') {
+					device.state.fanSpeed = value
+				} else {
+					// TODO: log warning
+				}
 
 				device.state.active = true
 				easyDebug(device.name, '(SET) - Mode to: FAN')
@@ -827,11 +1087,19 @@ module.exports = (device, platform) => {
 			},
 
 			// DEHUMIDIFIER
-			/** @param {homebridge.CharacteristicGetCallback} callback */
-			DryActive: (state, callback) => {
-				state = !!state
-				easyDebug(device.name, '(SET) - Dry state Active:', state)
-				if (state) {
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			DryActive: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
+				value = !!value
+				easyDebug(device.name, '(SET) - Dry state Active:', value)
+				if (value) {
 					device.state.active = true
 					easyDebug(device.name, '(SET) - HeaterCooler State: DRY')
 					device.state.mode = 'DRY'
@@ -842,8 +1110,16 @@ module.exports = (device, platform) => {
 				callback()
 			},
 
-			/** @param {homebridge.CharacteristicGetCallback} callback */
-			TargetHumidifierDehumidifierState: (state, callback) => {
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			TargetHumidifierDehumidifierState: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
 				device.state.active = true
 				easyDebug(device.name, '(SET) - HeaterCooler State: DRY')
 				device.state.mode = 'DRY'
@@ -851,11 +1127,19 @@ module.exports = (device, platform) => {
 				callback()
 			},
 
-			/** @param {homebridge.CharacteristicGetCallback} callback */
-			DrySwing: (state, callback) => {
-				state = state === this.Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
-				easyDebug(device.name, '(SET) - Dry Swing:', state)
-				device.state.verticalSwing = state
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			DrySwing: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
+				value = value === this.Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
+				easyDebug(device.name, '(SET) - Dry Swing:', value)
+				device.state.verticalSwing = value
 
 				device.state.active = true
 				easyDebug(device.name + ' -> Setting Mode to: DRY')
@@ -864,10 +1148,22 @@ module.exports = (device, platform) => {
 				callback()
 			},
 
-			/** @param {homebridge.CharacteristicGetCallback} callback */
-			DryRotationSpeed: (speed, callback) => {
-				easyDebug(device.name, '(SET) - Dry Rotation Speed:', speed + '%')
-				device.state.fanSpeed = speed
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			DryRotationSpeed: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
+				easyDebug(device.name, '(SET) - Dry Rotation Speed:', value + '%')
+				if (typeof(value) == 'number') {
+					device.state.fanSpeed = value
+				} else {
+					// TODO: log warning
+				}
 
 				device.state.active = true
 				easyDebug(device.name + ' -> Setting Mode to: DRY')
@@ -877,11 +1173,19 @@ module.exports = (device, platform) => {
 			},
 
 			// HORIZONTAL SWING
-			/** @param {homebridge.CharacteristicGetCallback} callback */
-			HorizontalSwing: (state, callback) => {
-				state = state ? 'SWING_ENABLED' : 'SWING_DISABLED'
-				easyDebug(device.name, '(SET) - Horizontal Swing Swing:', state)
-				device.state.horizontalSwing = state
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			HorizontalSwing: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
+				value = value ? 'SWING_ENABLED' : 'SWING_DISABLED'
+				easyDebug(device.name, '(SET) - Horizontal Swing Swing:', value)
+				device.state.horizontalSwing = value
 
 				if (device instanceof AirConditioner) {
 					this.updateClimateReact(device, enableClimateReactAutoSetup)
@@ -893,10 +1197,24 @@ module.exports = (device, platform) => {
 			},
 
 			// AIR CONDITIONER/PURIFIER LIGHT
-			/** @param {homebridge.CharacteristicGetCallback} callback */
-			LightSwitch: (state, callback) => {
-				easyDebug(device.name, '(SET) - Light to', state ? 'ON' : 'OFF')
-				device.state.light = state
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			LightSwitch: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
+				easyDebug(device.name, '(SET) - Light to', value ? 'ON' : 'OFF')
+
+				if (typeof(value) == 'boolean') {
+					device.state.light = value
+				} else {
+					// TODO: log warning
+				}
+
 				if (device instanceof AirConditioner) {
 					this.updateClimateReact(device, enableClimateReactAutoSetup)
 				} else {
@@ -908,9 +1226,17 @@ module.exports = (device, platform) => {
 
 			// AC SYNC BUTTON
 			// TODO: should be moved to be a 'set' in StateHanlder line 33
-			/** @param {homebridge.CharacteristicGetCallback} callback */
-			SyncButton: (state, callback) => {
-				if (state) {
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			SyncButton: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
+				if (value) {
 					easyDebug(device.name, '(SYNC) - AC Active State:', device.state.active)
 					device.state.syncState()
 				}
@@ -919,12 +1245,20 @@ module.exports = (device, platform) => {
 			},
 
 			// CLIMATE REACT
-			/** @param {homebridge.CharacteristicGetCallback} callback */
-			ClimateReactSwitch: (state, callback) => {
-				easyDebug(device.name, '(SET) - Climate React Enabled Switch:', state)
+			/**
+			 * @param {homebridge.CharacteristicValue} value
+			 * @param {homebridge.CharacteristicGetCallback} callback
+			 */
+			ClimateReactSwitch: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
+				easyDebug(device.name, '(SET) - Climate React Enabled Switch:', value)
 				const smartModeState = device.state.smartMode
 
-				smartModeState.enabled = !!state
+				smartModeState.enabled = !!value
 
 				// NOTE: we must set the 'smartMode' property directly (and NOT for example like so: device.state.smartMode.enabled = true),
 				//       otherwise the StateHandler's setter code will not be executed and any changes will not take effect.
@@ -935,10 +1269,16 @@ module.exports = (device, platform) => {
 
 			// PURE BOOST
 			/**
+			 * @param {homebridge.CharacteristicValue} value
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
-			TargetAirPurifierState: (state, callback) => {
-				const pureBoost = !!state
+			TargetAirPurifierState: (value, callback) => {
+				if (!(device.state instanceof Classes.InternalAcState)) {
+					// TODO: log warning
+					return
+				}
+
+				const pureBoost = !!value
 
 				easyDebug(device.name, '(SET) - Pure Target State (Boost):', pureBoost ? 'AUTO' : 'MANUAL')
 				device.state.pureBoost = pureBoost

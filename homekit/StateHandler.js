@@ -246,7 +246,7 @@ module.exports = (device, platform) => {
 					if (state instanceof Classes.InternalAcState) {
 						// NOTE: Without this, smartMode changes are seen as "duplicate". This happens because
 						//       the smartMode object child values are being updated _before_ this setter runs
-						//       (on smartMode). So when it compares it looks the same
+						//       (on smartMode). So when it compares it looks the same.
 						if (state.smartMode.enabled) {
 							easyDebug(`${device.name} - smartMode update already running, returning without updating`)
 

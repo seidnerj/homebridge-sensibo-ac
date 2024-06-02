@@ -39,14 +39,20 @@ class InternalAcState {
 		this.VOCDensity = VOCDensity
 		this.carbonDioxideDetected = carbonDioxideDetected
 		this.carbonDioxideLevel = carbonDioxideLevel
+		this.syncState = null // this is overriden by StateHandler which wraps this class's instance
+		this.update = null // this is overriden by StateHandler which wraps this class's instance
 	}
 
 }
 
 class InternalOccupancyState {
 
+	/**
+	 * @param {string} occupancy
+	 */
 	constructor (occupancy) {
 		this.occupancy = occupancy
+		this.update = null // this is overriden by StateHandler which wraps this class's instance
 	}
 
 }
@@ -58,6 +64,7 @@ class InternalSensorState {
 		this.currentTemperature = currentTemperature
 		this.relativeHumidity =relativeHumidity
 		this.lowBattery = lowBattery
+		this.update = null // this is overriden by StateHandler which wraps this class's instance
 	}
 
 }

@@ -2,7 +2,6 @@
 const homebridge = require('homebridge')
 // eslint-disable-next-line no-unused-vars
 const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
-// eslint-disable-next-line no-unused-vars
 const Classes = require('../classes')
 const SensiboAccessory = require('./SensiboAccessory')
 const unified = require('../sensibo/unified')
@@ -574,6 +573,11 @@ class AirConditioner extends SensiboAccessory {
 	}
 
 	updateHomeKit() {
+		if (!(this.state instanceof Classes.InternalAcState)) {
+			// TODO: log warning
+			return
+		}
+
 		// log new state with FakeGato
 		if (this.loggingService) {
 			// TODO: remove humidity if disabled
@@ -585,6 +589,11 @@ class AirConditioner extends SensiboAccessory {
 		}
 
 		if (this.ClimateReactService) {
+			if (!(this.state instanceof Classes.InternalAcState)) {
+				// TODO: log warning
+				return
+			}
+
 			const smartModeEnabledState = this.state?.smartMode?.enabled ?? false
 
 			// update Climate React Service

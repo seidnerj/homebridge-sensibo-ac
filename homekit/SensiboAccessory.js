@@ -1,5 +1,7 @@
 // eslint-disable-next-line no-unused-vars
 const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
+// eslint-disable-next-line no-unused-vars
+const Classes = require('../classes')
 
 class SensiboAccessory {
 
@@ -24,7 +26,8 @@ class SensiboAccessory {
 		this.UUID = this.api.hap.uuid.generate(id + uuidSuffix)
 
 		// FIXME: this is populated by the subclass but should probably be moved here
-		this.state = {}
+		/** @type {Classes.InternalAcState|Classes.InternalOccupancyState|Classes.InternalSensorState} */
+		this.state = null
 	}
 
 	updateHomeKit() {

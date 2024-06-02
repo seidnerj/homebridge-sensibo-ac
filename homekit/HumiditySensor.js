@@ -4,7 +4,6 @@ const homebridge = require('homebridge')
 const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
 // eslint-disable-next-line no-unused-vars
 const AirConditioner = require('./AirConditioner')
-// eslint-disable-next-line no-unused-vars
 const Classes = require('../classes')
 const SensiboAccessory = require('./SensiboAccessory')
 
@@ -91,6 +90,11 @@ class HumiditySensor extends SensiboAccessory {
 	}
 
 	updateHomeKit() {
+		if (!(this.state instanceof Classes.InternalAcState)) {
+			// TODO: log warning
+			return
+		}
+
 		// log new state with FakeGato
 		if (this.loggingService) {
 			this.loggingService.addEntry({
