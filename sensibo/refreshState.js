@@ -1,10 +1,12 @@
 // eslint-disable-next-line no-unused-vars
 const SensiboACPlatform = require('./SensiboACPlatform')
+const Classes = require('../classes')
 const unified = require('./unified')
 
 /**
  * @param {any[]} handledLocations
  * @param {SensiboACPlatform} platform
+ * @param {import('../types').Device} device
  */
 async function refreshDeviceState(handledLocations, platform, device) {
 	const airConditioner = platform.activeAccessories.find(accessory => {
@@ -13,6 +15,11 @@ async function refreshDeviceState(handledLocations, platform, device) {
 
 	// Update Air Conditioner state in cache + HomeKit
 	if (airConditioner) {
+		if (!(airConditioner.state instanceof Classes.InternalAcState)) {
+			// TODO: log warning
+			return
+		}
+
 		platform.easyDebug(`Updating AC state in Cache + HomeKit for ${device.id}`)
 		airConditioner.state.update(unified.getAcState(device))
 
@@ -27,6 +34,7 @@ async function refreshDeviceState(handledLocations, platform, device) {
 		}
 
 		// TODO: implement - fetch all events since last timestame, find latest THRESHOLD_CROSSED event. If exists, re-issue latest command.
+		//       this should mostly take care of the scenario when the AC did not receive the climate react command of on/off but believes it did.
 		// const airConditionerEvents = await platform.sensiboApi.getDeviceEvents(device.id)
 	}
 
@@ -38,6 +46,11 @@ async function refreshDeviceState(handledLocations, platform, device) {
 
 	// Update Air Purifier state in cache + HomeKit
 	if (airPurifier) {
+		if (!(airPurifier.state instanceof Classes.InternalAcState)) {
+			// TODO: log warning
+			return
+		}
+
 		platform.easyDebug(`Updating Pure state in cache + HomeKit for for ${device.id}`)
 		airPurifier.state.update(unified.getAcState(device))
 	}
@@ -50,6 +63,11 @@ async function refreshDeviceState(handledLocations, platform, device) {
 
 	// Update Air Quality Sensor state in cache + HomeKit
 	if (airQualitySensor) {
+		if (!(airQualitySensor.state instanceof Classes.InternalAcState)) {
+			// TODO: log warning
+			return
+		}
+
 		platform.easyDebug(`Updating Air Quality Sensor state in cache + HomeKit for for ${device.id}`)
 		airQualitySensor.state.update(unified.getAirQualityState(device, platform))
 	}
@@ -77,6 +95,11 @@ async function refreshDeviceState(handledLocations, platform, device) {
 			})
 
 			if (roomSensor) {
+				if (!(roomSensor.state instanceof Classes.InternalSensorState)) {
+					// TODO: log warning
+					return
+				}
+
 				platform.easyDebug(`Updating Room Sensor state in cache + HomeKit for ${device.id}`)
 				roomSensor.state.update(unified.getSensorState(sensor))
 			}

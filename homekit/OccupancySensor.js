@@ -2,7 +2,6 @@
 const homebridge = require('homebridge')
 // eslint-disable-next-line no-unused-vars
 const SensiboACPlatform = require('../sensibo/SensiboACPlatform')
-// eslint-disable-next-line no-unused-vars
 const Classes = require('../classes')
 const SensiboAccessory = require('./SensiboAccessory')
 const unified = require('../sensibo/unified')
@@ -91,6 +90,11 @@ class OccupancySensor extends SensiboAccessory {
 	}
 
 	updateHomeKit() {
+		if (!(this.state instanceof Classes.InternalOccupancyState)) {
+			// TODO: log warning
+			return
+		}
+
 		// update measurements
 		this.Utils.updateValue('OccupancySensorService', 'OccupancyDetected', this.Characteristic.OccupancyDetected[this.state.occupancy])
 

@@ -334,7 +334,8 @@ module.exports = {
 			motionDetected: sensor.measurements.motion,
 			currentTemperature: sensor.measurements.temperature,
 			relativeHumidity: sensor.measurements.humidity,
-			lowBattery: sensor.measurements.batteryVoltage > 100 ? 'BATTERY_LEVEL_NORMAL' : 'BATTERY_LEVEL_LOW'
+			lowBattery: sensor.measurements.batteryVoltage > 100 ? 'BATTERY_LEVEL_NORMAL' : 'BATTERY_LEVEL_LOW',
+			update: null
 		}
 
 		return state
@@ -345,7 +346,10 @@ module.exports = {
 	 * @returns {Classes.InternalOccupancyState}
 	 */
 	getOccupancyState: function (location) {
-		const state = { occupancy: (location.occupancy === 'me' || location.occupancy === 'someone') ? 'OCCUPANCY_DETECTED' : 'OCCUPANCY_NOT_DETECTED' }
+		const state = {
+			occupancy: (location.occupancy === 'me' || location.occupancy === 'someone') ? 'OCCUPANCY_DETECTED' : 'OCCUPANCY_NOT_DETECTED',
+			update: null
+		}
 
 		return state
 	}
