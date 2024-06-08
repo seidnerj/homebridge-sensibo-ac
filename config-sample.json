@@ -23,6 +23,7 @@
 			"disableLightSwitch": false,
 			"disableVerticalSwing": false,
 			"enableClimateReactAutoSetup": false,
+			"climateReactAutoSetupOffset": 0,
 			"enableRepeatClimateReactAction": false,
 			"enableClimateReactSwitch": false,			
 			"enableHistoryStorage": false,
