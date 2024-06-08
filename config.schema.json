@@ -135,6 +135,13 @@
                 "default": false,
                 "required": false
             },
+			"climateReactAutoSetupOffset": {
+                "title": "Climate React Auto Setup Offset",
+                "description": "Temprature offset used when automatically setting Climate React's thresholds",
+                "type": "number",
+                "default": 0,
+                "required": false
+            },
 			"enableClimateReactSwitch": {
 				"title": "Enable Climate React Switch",
 				"description": "Add Climate React (Smart mode) switch",

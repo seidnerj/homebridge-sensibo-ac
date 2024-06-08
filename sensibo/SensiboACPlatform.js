@@ -88,6 +88,8 @@ class SensiboACPlatform {
 		this.disableVerticalSwing = config['disableVerticalSwing'] || false
 		/** @type {boolean} */
 		this.enableClimateReactAutoSetup = config['enableClimateReactAutoSetup'] || false
+		/** @type {number} */
+		this.climateReactAutoSetupOffset = config['climateReactAutoSetupOffset'] || 0
 		/** @type {boolean} */
 		this.enableClimateReactSwitch = config['enableClimateReactSwitch'] || false
 		/** @type {boolean} */

@@ -18,6 +18,7 @@ module.exports = (device, platform) => {
 	this.Characteristic = platform.api.hap.Characteristic
 	const easyDebug = platform.easyDebug
 	const enableClimateReactAutoSetup = platform.enableClimateReactAutoSetup
+	const climateReactAutoSetupOffset = platform.climateReactAutoSetupOffset
 
 	/**
 	 * @param {number} value
@@ -99,7 +100,7 @@ module.exports = (device, platform) => {
 		smartModeState.lowTemperatureWebhook = null
 
 		if (device.state.mode === 'COOL') {
-			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)
+			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1) + climateReactAutoSetupOffset
 			smartModeState.highTemperatureState = {
 				on: true,
 				targetTemperature: device.state.targetTemperature,
@@ -111,7 +112,7 @@ module.exports = (device, platform) => {
 				light: device.state.light ? 'on' : 'off'
 			}
 
-			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)
+			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1) + climateReactAutoSetupOffset
 			smartModeState.lowTemperatureState = {
 				on: false,
 				targetTemperature: device.state.targetTemperature,
@@ -123,7 +124,7 @@ module.exports = (device, platform) => {
 				light: device.state.light ? 'on' : 'off'
 			}
 		} else if (device.state.mode === 'HEAT') {
-			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)
+			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1) + climateReactAutoSetupOffset
 			smartModeState.highTemperatureState = {
 				on: false,
 				targetTemperature: device.state.targetTemperature,
@@ -135,7 +136,7 @@ module.exports = (device, platform) => {
 				light: device.state.light ? 'on' : 'off'
 			}
 
-			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)
+			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1) + climateReactAutoSetupOffset
 			smartModeState.lowTemperatureState = {
 				on: true,
 				targetTemperature: device.state.targetTemperature,
@@ -1190,7 +1191,7 @@ module.exports = (device, platform) => {
 
 				if (device instanceof AirConditioner) {
 					this.updateClimateReact(device, enableClimateReactAutoSetup)
-				} else{
+				} else {
 					easyDebug(device.name, `(SET) - Horizontal Swing: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
 				}
 
