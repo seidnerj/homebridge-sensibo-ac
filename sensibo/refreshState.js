@@ -271,7 +271,7 @@ module.exports = (platform) => {
 					await platform.storage.setItem('devices', platform.devices)
 					platform.easyDebug('Refreshing state completed.')
 				} catch(err) {
-					platform.easyDebug('<<<< ---- Refresh State FAILED! ---- >>>>')
+					platform.easyDebug(`<<<< ---- Refresh State FAILED! ${err} ---- >>>> `)
 					platform.processingState = false
 
 					if (platform.pollingInterval) {

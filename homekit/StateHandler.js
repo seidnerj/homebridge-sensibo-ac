@@ -213,6 +213,7 @@ module.exports = (device, platform) => {
 							device.updateHomeKit()
 						} catch (err) {
 							log.error(`${device.name} - syncState - ERROR Syncing!`)
+							easyDebug(`${device.name} - Error: ${err}`)
 						}
 					} else {
 						log.warn(`${device.name} - syncState -  ${device.name} is not an instance of AirConditioner or AirPurifier... skipping update`)
