@@ -306,7 +306,7 @@ module.exports = async function (platform) {
 			axios.defaults.headers.common = { Authorization: 'Bearer ' + token }
 			axios.defaults.params = { integration: integrationName }
 		} catch (err) {
-			platform.log.info('The plugin was NOT able to find a stored token or acquire one from Sensibo\'s API -> it will not be able to set or get the state!!!')
+			platform.log.info(`The plugin was NOT able to find a stored token or acquire one from Sensibo's API -> it will not be able to set or get the state!!! ${err}`)
 		}
 	}
 	axios.defaults.baseURL = baseURL
