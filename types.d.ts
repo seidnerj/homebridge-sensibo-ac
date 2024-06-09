@@ -171,7 +171,7 @@ export declare type Location = {
 
 }
 
-export declare type TokenObject = {
+export declare type Token = {
     username: string,
     key: string,
     expirationDate: number

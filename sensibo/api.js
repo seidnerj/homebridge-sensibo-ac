@@ -4,6 +4,9 @@ const pluginName = require('./../package.json').name
 const SensiboACPlatform = require('./SensiboACPlatform')
 // TODO: should we revert removing ".default" and all the subsequent changes emanating from this change?
 const axios = require('axios')
+const retry = require('axios-retry-after')
+
+axios.interceptors.response.use(null, retry(axios))
 const integrationName = `${pluginName}@${version}`
 const baseURL = 'https://home.sensibo.com/api/v2'
 
@@ -15,7 +18,7 @@ function getToken(platform) {
 	// TODO: check on if the below is required
 	// eslint-disable-next-line no-async-promise-executor
 	return new Promise(async (resolve, reject) => {
-		/** @type {import('../types').TokenObject} */
+		/** @type {import('../types').Token} */
 		const token = await platform.storage.getItem('token')
 
 		// TODO: what happens if returned token doesn't work? E.g. password change... should token be "checked" for validity?
@@ -35,31 +38,33 @@ function getToken(platform) {
 			client_id: 'bcrEwCG2mZTvm1vFJOD51DNdJHEaRemMitH1gCWc',
 			scope: 'read write'
 		}
+		/** @type {axios.AxiosRequestConfig} */
+		const axiosInstanceConfig = {
+			url: tokenURL,
+			method: 'post',
+			data: data,
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+		}
 
-		axios.post(
-			tokenURL,
-			data,
-			{ headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
-			.then(async response => {
-				if (response.data.access_token) {
-					/** @type {import('../types').TokenObject} */
-					const tokenObj = {
-						username: platform.username,
-						key: response.data.access_token,
-						expirationDate: new Date().getTime() + response.data.expires_in*1000
-					}
-
-					platform.easyDebug('Token successfully acquired from Sensibo API')
-					// platform.easyDebug(tokenObj)
-					await platform.storage.setItem('token', tokenObj)
-					resolve(tokenObj.key)
-				} else {
-					const error = `Inner Could NOT complete the the token request -> ERROR: "${response.data}"`
-
-					platform.log.error(error)
-					reject(error)
+		axios(axiosInstanceConfig).then(async response => {
+			if (response.data.access_token) {
+				/** @type {import('../types').Token} */
+				const token = {
+					username: platform.username,
+					key: response.data.access_token,
+					expirationDate: new Date().getTime() + response.data.expires_in*1000
 				}
-			})
+
+				platform.easyDebug('Token successfully acquired from Sensibo\'s API')
+				await platform.storage.setItem('token', token)
+				resolve(token.key)
+			} else {
+				const error = `Inner Could NOT complete the the token request -> ERROR: "${response.data}"`
+
+				platform.log.error(error)
+				reject(error)
+			}
+		})
 			.catch(err => {
 				const errorContent = {}
 
@@ -130,38 +135,40 @@ async function apiRequest(platform, method, url, data) {
 			platform.easyDebug(`data:\n${JSON.stringify(data, null, 4)}`)
 		}
 
-		axios({
-			method,
-			url,
-			data
-		})
-			.then(response => {
-				const json = response.data
-				let results
+		/** @type {axios.AxiosRequestConfig} */
+		const axiosInstanceConfig = {
+			url: url,
+			method: method,
+			data: data
+		}
 
-				if (json.status && json.status == 'success') {
-					platform.easyDebug(`Successful ${method.toUpperCase()} response (response value not logged)`)
+		axios(axiosInstanceConfig).then(async response => {
+			const json = response.data
+			let results
 
-					// TODO: The below is only relevant for getAllDevices (and should be moved).
-					//       This prevents address details being logged through (and adds ClimateReact settings if they are missing),
-					//       so the logger would also need to be moved...
-					if (json.result && json.result instanceof Array) {
-						results = fixResponse(json.result)
-					} else {
-						results = json
-					}
+			if (json.status && json.status == 'success') {
+				platform.easyDebug(`Successful ${method.toUpperCase()} response (response value not logged)`)
 
-					// TODO: revert commenting? (it just takes up too much of the log to make any sense of the rest)
-					// platform.easyDebug(JSON.stringify(results, null, 4))
-					resolve(results)
+				// TODO: The below is only relevant for getAllDevices (and should be moved).
+				//       This prevents address details being logged through (and adds ClimateReact settings if they are missing),
+				//       so the logger would also need to be moved...
+				if (json.result && json.result instanceof Array) {
+					results = fixResponse(json.result)
 				} else {
-					const error = json
-
-					platform.log.error(`ERROR: ${error.reason} - "${error.message}"`)
-					platform.log.error(json)
-					reject(error)
+					results = json
 				}
-			})
+
+				// TODO: revert commenting? (it just takes up too much of the log to make any sense of the rest)
+				// platform.easyDebug(JSON.stringify(results, null, 4))
+				resolve(results)
+			} else {
+				const error = json
+
+				platform.log.error(`ERROR: ${error.reason} - "${error.message}"`)
+				platform.log.error(json)
+				reject(error)
+			}
+		})
 			.catch(err => {
 				const errorContent = {}
 
