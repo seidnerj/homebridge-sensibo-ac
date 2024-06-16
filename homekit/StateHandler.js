@@ -74,8 +74,8 @@ function swingMode(mode, state) {
 * @return {import('../types').AcState}
 */
 function sensiboFormattedACState(device, internalAcState) {
-	device.easyDebug(`${device.name} -> sensiboFormattedACState: internalAcState =`)
-	device.easyDebug(JSON.stringify(internalAcState, null, 4))
+	device.easyDebugInfo(`${device.name} -> sensiboFormattedACState: internalAcState =`)
+	device.easyDebugInfo(JSON.stringify(internalAcState, null, 4))
 
 	/** @type {import('../types').Mode} */
 	const mode = device.capabilities[internalAcState.mode]
@@ -95,22 +95,22 @@ function sensiboFormattedACState(device, internalAcState) {
 		acState.light = internalAcState.light ? 'on' : 'off'
 	}
 
-	device.easyDebug(`${device.name} -> sensiboFormattedACState: acState =`)
-	device.easyDebug(JSON.stringify(acState, null, 4))
+	device.easyDebugInfo(`${device.name} -> sensiboFormattedACState: acState =`)
+	device.easyDebugInfo(JSON.stringify(acState, null, 4))
 
 	return acState
 }
 
 /**
 * @param {AirConditioner} device
-* @param {Classes.InternalAcState} intertnalAcState
+* @param {Classes.InternalAcState} internalAcState
 * @return {import('../types').ClimateReactState}
 */
-function sensiboFormattedClimateReactState(device, intertnalAcState) {
-	device.easyDebug(`${device.name} -> sensiboFormattedClimateReactState: internalAcState =`)
-	device.easyDebug(JSON.stringify(intertnalAcState, null, 4))
+function sensiboFormattedClimateReactState(device, internalAcState) {
+	device.easyDebugInfo(`${device.name} -> sensiboFormattedClimateReactState: internalAcState =`)
+	device.easyDebugInfo(JSON.stringify(internalAcState, null, 4))
 
-	const smartModeState = intertnalAcState.smartMode
+	const smartModeState = internalAcState.smartMode
 	const climateReactState = {
 		enabled: smartModeState.enabled,
 		type: smartModeState.type,
@@ -118,7 +118,7 @@ function sensiboFormattedClimateReactState(device, intertnalAcState) {
 			on: smartModeState.highTemperatureState.on,
 			light: smartModeState.highTemperatureState.light ? 'on' : 'off',
 			temperatureUnit: device.temperatureUnit,
-			fanLevel: HKToFanLevel(intertnalAcState.fanSpeed, device.capabilities[intertnalAcState.mode].fanSpeeds),
+			fanLevel: HKToFanLevel(internalAcState.fanSpeed, device.capabilities[internalAcState.mode].fanSpeeds),
 			mode: smartModeState.highTemperatureState.mode.toLowerCase(),
 			targetTemperature: smartModeState.highTemperatureState.targetTemperature
 		},
@@ -128,20 +128,20 @@ function sensiboFormattedClimateReactState(device, intertnalAcState) {
 			on: smartModeState.lowTemperatureState.on,
 			light: smartModeState.lowTemperatureState.light ? 'on' : 'off',
 			temperatureUnit: device.temperatureUnit,
-			fanLevel: HKToFanLevel(intertnalAcState.fanSpeed, device.capabilities[intertnalAcState.mode].fanSpeeds),
+			fanLevel: HKToFanLevel(internalAcState.fanSpeed, device.capabilities[internalAcState.mode].fanSpeeds),
 			mode: smartModeState.lowTemperatureState.mode.toLowerCase(),
 			targetTemperature: smartModeState.lowTemperatureState.targetTemperature
 		},
 		lowTemperatureThreshold: smartModeState.lowTemperatureThreshold,
 		lowTemperatureWebhook: null
 	}
-	const swingModes = swingMode(device.capabilities[intertnalAcState.mode], intertnalAcState)
+	const swingModes = swingMode(device.capabilities[internalAcState.mode], internalAcState)
 
 	Object.assign(climateReactState.lowTemperatureState, swingModes)
 	Object.assign(climateReactState.highTemperatureState, swingModes)
 
-	device.easyDebug(`${device.name} -> sensiboFormattedClimateReactState: climateReactState =`)
-	device.easyDebug(JSON.stringify(climateReactState, null, 4))
+	device.easyDebugInfo(`${device.name} -> sensiboFormattedClimateReactState: climateReactState =`)
+	device.easyDebugInfo(JSON.stringify(climateReactState, null, 4))
 
 	return climateReactState
 }
@@ -162,14 +162,15 @@ module.exports = (device, platform) => {
 	const setTimeoutDelay = 1000
 	let setTimer = null
 	let preventTurningOff = false
-	const easyDebug = platform.easyDebug
+	const easyDebugInfo = platform.easyDebugInfo
+	const easyDebugError = platform.easyDebugError
 	const log = platform.log
 
 	return {
 		// As StateHandler is invoked as a Proxy the below overwrites/intercepts the default get() commands [traps]
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
 		/**
-		 * @param {Classes.InternalAcState|Classes.InternalOccupancyState|Classes.InternalSensorState} target
+		 * @param {Classes.InternalAcState|Classes.InternalOccupancyState|Classes.InternalSensorState|Classes.InternalAirQualitySensorState|Classes.InternalAirPurifierState} target
 		 * @param {string} prop
 		 * @param {any[]} args
 		 */
@@ -177,8 +178,6 @@ module.exports = (device, platform) => {
 			// check for last update and refresh state if needed
 			if (!platform.setProcessing) {
 				platform.refreshState()
-			} else {
-				// easyDebug(`setProcessing is true, skipping refreshState() in GET, Prop: ${prop}`)
 			}
 
 			// returns an anonymous *function* to update the state (multiple properties)
@@ -186,7 +185,7 @@ module.exports = (device, platform) => {
 				// 'state' below is the value passed in when the update() function is called
 				// see refreshState.js, e.g. airConditioner.state.update(unified.acState(device))
 				/**
-				 * @param {Classes.InternalAcState|Classes.InternalOccupancyState|Classes.InternalSensorState} state
+				 * @param {Classes.InternalAcState|Classes.InternalOccupancyState|Classes.InternalSensorState|Classes.InternalAirQualitySensorState|Classes.InternalAirPurifierState} state
 				 */
 				return (state) => {
 					if (!platform.setProcessing) {
@@ -200,23 +199,23 @@ module.exports = (device, platform) => {
 				}
 			}
 
-			// return a function to sync ac state
+			// return a function that "syncs" the ac state
 			// TODO: should be moved to be a 'set' below
 			if (prop === 'syncState') {
 				return async() => {
 					if (target instanceof Classes.InternalAcState) {
 						try {
-							easyDebug(`${device.name} - syncState - syncing`)
+							easyDebugInfo(`${device.name} - syncState - syncing`)
 
 							await platform.sensiboApi.syncDeviceOnState(device.id, !target.active)
 							target.active = !target.active
 							device.updateHomeKit()
 						} catch (err) {
 							log.error(`${device.name} - syncState - ERROR Syncing!`)
-							easyDebug(`${device.name} - Error: ${err}`)
+							easyDebugInfo(`${device.name} - Error: ${err}`)
 						}
 					} else {
-						log.warn(`${device.name} - syncState -  ${device.name} is not an instance of AirConditioner or AirPurifier... skipping update`)
+						log.error(`${device.name} - syncState -  ${device.name} is not an instance of AirConditioner or AirPurifier!`)
 					}
 				}
 			}
@@ -230,37 +229,20 @@ module.exports = (device, platform) => {
 		// TODO: update state variable below to target?
 		/**
 		 *
-		 * @param {Classes.InternalAcState|Classes.InternalOccupancyState|Classes.InternalSensorState} state
+		 * @param {Classes.InternalAcState|Classes.InternalOccupancyState|Classes.InternalSensorState|Classes.InternalAirQualitySensorState|Classes.InternalAirPurifierState} state
 		 * @param {any} value
 		 * @param {string} prop
 		 * @param {any[]} args
 		 */
 		set: (state, prop, value, ...args) => {
-			easyDebug(`StateHandler SET Property: ${prop}, New Value:`)
-			easyDebug(JSON.stringify(value, null, 4))
+			easyDebugInfo(`StateHandler SET Property: ${prop}, New Value:`)
+			easyDebugInfo(JSON.stringify(value, null, 4))
 
 			if (prop != '_') {
 				if (!platform.allowRepeatedCommands && prop in state && state[prop] === value) {
-					if (prop === 'smartMode') {
-						if (state instanceof Classes.InternalAcState) {
-							// NOTE: Without this, smartMode changes are seen as "duplicate". This happens because
-							//       the smartMode object child values are being updated _before_ this setter runs
-							//       (on smartMode). So when it compares it looks the same.
-							if (state.smartMode.enabled) {
-								easyDebug(`${device.name} - smartMode update already running, returning without updating.`)
+					easyDebugInfo(`${device.name} - ${prop} already equal to target value, returning without updating.`)
 
-								return false
-							}
-
-							state.smartMode.enabled = true
-						} else {
-							log.info(`${device.name} - smartMode -  ${device.name} is not an instance of AirConditioner... skipping update`)
-						}
-					} else {
-						easyDebug(`${device.name} - ${prop} already equal to target value, returning without updating.`)
-
-						return false
-					}
+					return false
 				}
 
 				// NOTE: we use Reflect.set instead of setting state[prop] directly in order to bypass state's ProxyHandler, otherwise this would result in an infinite loop.
@@ -269,12 +251,12 @@ module.exports = (device, platform) => {
 				// Send Reset Filter command
 				if (prop === 'filterChange') {
 					try {
-						easyDebug(`${device.name} - filterChange - Resetting filter indicator`)
+						easyDebugInfo(`${device.name} - filterChange - Resetting filter indicator`)
 
 						platform.sensiboApi.resetFilterIndicator(device.id)
 					} catch(err) {
 						log.error(`${device.name} - filterChange - Error occurred! -> Could not reset filter indicator`)
-						easyDebug(`${device.name} - Error: ${err}`)
+						easyDebugInfo(`${device.name} - Error: ${err}`)
 					}
 
 					return true
@@ -291,53 +273,47 @@ module.exports = (device, platform) => {
 							try {
 								const sensiboNewClimateReactState = sensiboFormattedClimateReactState(device, state)
 
-								log.info(`${device.name} - smartMode - new Climate React state:\n${JSON.stringify(sensiboNewClimateReactState, null, 4)}`)
-								easyDebug(`${device.name} - smartMode - new Climate React state:\n${JSON.stringify(sensiboNewClimateReactState, null, 4)}`)
+								easyDebugInfo(`${device.name} - smartMode - new Climate React state:\n${JSON.stringify(sensiboNewClimateReactState, null, 4)}`)
 
 								await platform.sensiboApi.setDeviceClimateReactState(device.id, sensiboNewClimateReactState)
 							} catch(err) {
-								log.error(`${device.name} - smartMode - Error occurred! -> Climate React state did not change:\n${JSON.stringify(err, null, 4)}`)
-								easyDebug(`${device.name} - smartMode - Error occurred! -> Climate React state did not change:\n${JSON.stringify(err, null, 4)}`)
+								easyDebugError(`${device.name} - smartMode - Error occurred! -> Climate React state did not change:\n${JSON.stringify(err, null, 4)}`)
 							}
 
 							if (!platform.setProcessing) {
 								platform.refreshState()
 							} else {
-								easyDebug(`${device.name} - setProcessing is true, skipping refreshState() after Climate React SET`)
+								easyDebugInfo(`${device.name} - setProcessing is true, skipping refreshState() after Climate React SET`)
 							}
-
-							easyDebug(`${device.name} - setting smartMode.enabled to false`)
-							state.smartMode.enabled = false
 						} else {
-							log.info(`${device.name} - smartMode -  ${device.name} is not an instance of AirConditioner... skipping update `)
+							log.error(`${device.name} - smartMode -  ${device.name} is not an instance of AirConditioner! `)
 						}
 					})()
 
-					// TODO: should we "catch" if the API calls fail and prevent it from updating state
-					//       and return false instead?
+					// TODO: should we "catch" if the API calls fail, prevent it from updating state and return false instead?
 					return true
 				}
 
 				// Send Pure Boost state command and refresh state
 				if (prop === 'pureBoost') {
 					try {
-						easyDebug(`${device.name} - pureBoost - Setting Pure Boost state to ${value}`)
+						easyDebugInfo(`${device.name} - pureBoost - Setting Pure Boost state to ${value}`)
 						platform.sensiboApi.enableDisablePureBoost(device.id, value)
 					} catch(err) {
 						log.error(`${device.name} - pureBoost - Error occurred! -> Pure Boost state did not change`)
-						easyDebug(`${device.name} - Error: ${err}`)
+						easyDebugInfo(`${device.name} - Error: ${err}`)
 					}
 
 					if (!platform.setProcessing) {
 						platform.refreshState()
 					} else {
-						easyDebug(`${device.name} - setProcessing is true, skipping refreshState() after Pure Boost SET`)
+						easyDebugInfo(`${device.name} - setProcessing is true, skipping refreshState() after Pure Boost SET`)
 					}
 
 					return true
 				}
 
-				easyDebug(`${device.name} - updating setProcessing to true, Prop: ${prop}`)
+				easyDebugInfo(`${device.name} - updating setProcessing to true, Prop: ${prop}`)
 				platform.setProcessing = true
 
 				// Make sure device is not turning off when setting fanSpeed to 0 (AUTO)
@@ -368,21 +344,21 @@ module.exports = (device, platform) => {
 				if (device instanceof AirConditioner && state instanceof Classes.InternalAcState) {
 					// Make sure device is not turning off when setting fanSpeed to 0 (AUTO)
 					if (preventTurningOff && state.active === false) {
-						easyDebug(`${device.name} - Auto fan speed, don't turn off when fanSpeed is set to 0%. Prop: ${prop}, Value: ${value}`)
+						easyDebugInfo(`${device.name} - Auto fan speed, don't turn off when fanSpeed is set to 0%. Prop: ${prop}, Value: ${value}`)
 						state.active = true
 						preventTurningOff = false
 					}
 
 					const sensiboNewACState = sensiboFormattedACState(device, state)
 
-					easyDebug(`${device.name} - before calling API to set new state:\n${JSON.stringify(sensiboNewACState, null, 4)}`)
+					easyDebugInfo(`${device.name} - before calling API to set new state:\n${JSON.stringify(sensiboNewACState, null, 4)}`)
 
 					try {
 						// send state command to Sensibo
 						await platform.sensiboApi.setDeviceACState(device.id, sensiboNewACState)
 					} catch(err) {
 						log.error(`${device.name} - ERROR setting ${prop} to ${value}:\n${JSON.stringify(err, null, 4)}`)
-						easyDebug(`${device.name} - ERROR setting ${prop} to ${value}:\n${JSON.stringify(err, null, 4)}`)
+						easyDebugInfo(`${device.name} - ERROR setting ${prop} to ${value}:\n${JSON.stringify(err, null, 4)}`)
 
 						setTimeout(() => {
 							platform.setProcessing = false
@@ -392,7 +368,7 @@ module.exports = (device, platform) => {
 						return
 					}
 				} else {
-					log.info(`${device.name} - setDeviceACState -  ${device.name} is not an instance of AirConditioner... skipping update `)
+					log.error(`${device.name} - setDeviceACState -  ${device.name} is not an instance of AirConditioner!`)
 				}
 
 				setTimeout(() => {

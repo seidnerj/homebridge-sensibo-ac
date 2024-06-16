@@ -16,7 +16,7 @@ const RoomSensor = require('./RoomSensor')
 module.exports = (device, platform) => {
 	/** @type {typeof homebridge.Characteristic} */
 	this.Characteristic = platform.api.hap.Characteristic
-	const easyDebug = platform.easyDebug
+	const easyDebugInfo = platform.easyDebugInfo
 	const enableClimateReactAutoSetup = platform.enableClimateReactAutoSetup
 	const climateReactAutoSetupOffset = platform.climateReactAutoSetupOffset
 
@@ -178,11 +178,11 @@ module.exports = (device, platform) => {
 				const mode = device.state.mode
 
 				if (!active || mode === 'FAN' || mode === 'DRY') {
-					easyDebug(device.name, '(GET) - AC Active State: false')
+					easyDebugInfo(device.name, '(GET) - AC Active State: false')
 
 					callback(null, 0)
 				} else {
-					easyDebug(device.name, '(GET) - AC Active State: true')
+					easyDebugInfo(device.name, '(GET) - AC Active State: true')
 
 					callback(null, 1)
 				}
@@ -197,34 +197,34 @@ module.exports = (device, platform) => {
 
 				const active = device.state.active
 
-				easyDebug(`${device.name} (GET) - Pure Active State: ${active}`)
+				easyDebugInfo(`${device.name} (GET) - Pure Active State: ${active}`)
 
 				callback(null, active ? 1 : 0)
 			},
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentAirPurifierState: (callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device.state instanceof Classes.InternalAirPurifierState)) {
 					// TODO: log warning
 					return
 				}
 				const active = device.state.active
 
-				easyDebug(`${device.name} (GET) - Pure Current State: ${active ? 'PURIFYING_AIR' : 'INACTIVE'}`)
+				easyDebugInfo(`${device.name} (GET) - Pure Current State: ${active ? 'PURIFYING_AIR' : 'INACTIVE'}`)
 
 				callback(null, active ? 2 : 0)
 			},
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			TargetAirPurifierState: (callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device.state instanceof Classes.InternalAirPurifierState)) {
 					// TODO: log warning
 					return
 				}
 
 				const pureBoost = device.state.pureBoost
 
-				easyDebug(`${device.name} (GET) - Pure Target State (Boost): ${pureBoost ? 'AUTO' : 'MANUAL'}`)
+				easyDebugInfo(`${device.name} (GET) - Pure Target State (Boost): ${pureBoost ? 'AUTO' : 'MANUAL'}`)
 
 				callback(null, pureBoost ? 1 : 0)
 			},
@@ -241,7 +241,7 @@ module.exports = (device, platform) => {
 				const targetTemp = device.state.targetTemperature
 				const currentTemp = device.state.currentTemperature
 
-				easyDebug(device.name, '(GET) - Current HeaterCooler State:', active ? mode : 'OFF')
+				easyDebugInfo(device.name, '(GET) - Current HeaterCooler State:', active ? mode : 'OFF')
 
 				if (!active || mode === 'FAN' || mode === 'DRY') {
 					callback(null, this.Characteristic.CurrentHeaterCoolerState.INACTIVE)
@@ -259,13 +259,13 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			TargetHeaterCoolerState: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebug(device.name, `(GET) - Target HeaterCooler State: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - Target HeaterCooler State: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
 
 				if (!(device instanceof AirConditioner)) {
-					easyDebug(device.name, `(GET) - Target HeaterCooler State: ${device.name} is not an instance of AirConditioner!`)
+					easyDebugInfo(device.name, `(GET) - Target HeaterCooler State: ${device.name} is not an instance of AirConditioner!`)
 
 					return
 				}
@@ -273,7 +273,7 @@ module.exports = (device, platform) => {
 				const active = device.state.active
 				const mode = device.state.mode
 
-				easyDebug(device.name, '(GET) - Target HeaterCooler State:', active ? mode : 'OFF')
+				easyDebugInfo(device.name, '(GET) - Target HeaterCooler State:', active ? mode : 'OFF')
 				if (!active || mode === 'FAN' || mode === 'DRY') {
 					const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
 
@@ -286,13 +286,13 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentTemperature: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebug(device.name, `(GET) - Current Temperature State: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - Current Temperature State: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
 
 				if (!(device instanceof AirConditioner || device instanceof RoomSensor)) {
-					easyDebug(device.name, `(GET) - Current Temperature State: ${device.name} is not an instance of AirConditioner or RoomSensor!`)
+					easyDebugInfo(device.name, `(GET) - Current Temperature State: ${device.name} is not an instance of AirConditioner or RoomSensor!`)
 
 					return
 				}
@@ -300,9 +300,9 @@ module.exports = (device, platform) => {
 				const currentTemp = device.state.currentTemperature
 
 				if (device.usesFahrenheit) {
-					easyDebug(device.name, '(GET) - Current Temperature:', this.toFahrenheit(currentTemp) + 'ºF')
+					easyDebugInfo(device.name, '(GET) - Current Temperature:', this.toFahrenheit(currentTemp) + 'ºF')
 				} else {
-					easyDebug(device.name, '(GET) - Current Temperature:', currentTemp + 'ºC')
+					easyDebugInfo(device.name, '(GET) - Current Temperature:', currentTemp + 'ºC')
 				}
 
 				callback(null, currentTemp)
@@ -311,13 +311,13 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CoolingThresholdTemperature: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebug(device.name, `(GET) - Target Cooling Temperature: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - Target Cooling Temperature: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
 
 				if (!(device instanceof AirConditioner)) {
-					easyDebug(device.name, `(GET) - Target Cooling Temperature: ${device.name} is not an instance of AirConditioner!`)
+					easyDebugInfo(device.name, `(GET) - Target Cooling Temperature: ${device.name} is not an instance of AirConditioner!`)
 
 					return
 				}
@@ -325,9 +325,9 @@ module.exports = (device, platform) => {
 				const targetTemp = this.sanitize(device.HeaterCoolerService, 'CoolingThresholdTemperature', device.state.targetTemperature)
 
 				if (device.usesFahrenheit) {
-					easyDebug(device.name, '(GET) - Target Cooling Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
+					easyDebugInfo(device.name, '(GET) - Target Cooling Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
 				} else {
-					easyDebug(device.name, '(GET) - Target Cooling Temperature:', targetTemp + 'ºC')
+					easyDebugInfo(device.name, '(GET) - Target Cooling Temperature:', targetTemp + 'ºC')
 				}
 
 				callback(null, targetTemp)
@@ -336,13 +336,13 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			HeatingThresholdTemperature: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebug(device.name, `(GET) - Target Heating Temperature: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - Target Heating Temperature: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
 
 				if (!(device instanceof AirConditioner)) {
-					easyDebug(device.name, `(GET) - Target Heating Temperature: ${device.name} is not an instance of AirConditioner!`)
+					easyDebugInfo(device.name, `(GET) - Target Heating Temperature: ${device.name} is not an instance of AirConditioner!`)
 
 					return
 				}
@@ -350,9 +350,9 @@ module.exports = (device, platform) => {
 				const targetTemp = this.sanitize(device.HeaterCoolerService, 'HeatingThresholdTemperature', device.state.targetTemperature)
 
 				if (device.usesFahrenheit) {
-					easyDebug(device.name, '(GET) - Target Heating Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
+					easyDebugInfo(device.name, '(GET) - Target Heating Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
 				} else {
-					easyDebug(device.name, '(GET) - Target Heating Temperature:', targetTemp + 'ºC')
+					easyDebugInfo(device.name, '(GET) - Target Heating Temperature:', targetTemp + 'ºC')
 				}
 
 				callback(null, targetTemp)
@@ -361,12 +361,12 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			TemperatureDisplayUnits: (callback) => {
 				if (!(device instanceof AirConditioner || device instanceof RoomSensor)) {
-					easyDebug(device.name, `(GET) - Temperature Display Units: ${device.name} is not an instance of AirConditioner or RoomSensor!`)
+					easyDebugInfo(device.name, `(GET) - Temperature Display Units: ${device.name} is not an instance of AirConditioner or RoomSensor!`)
 
 					return
 				}
 
-				easyDebug(device.name, '(GET) - Temperature Display Units:', device.temperatureUnit)
+				easyDebugInfo(device.name, '(GET) - Temperature Display Units:', device.temperatureUnit)
 
 				callback(null, device.usesFahrenheit ? this.Characteristic.TemperatureDisplayUnits.FAHRENHEIT : this.Characteristic.TemperatureDisplayUnits.CELSIUS)
 			},
@@ -374,12 +374,12 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentRelativeHumidity: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState || device.state instanceof Classes.InternalSensorState)) {
-					easyDebug(device.name, `(GET) - Current Relative Humidity: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - Current Relative Humidity: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
 
-				easyDebug(device.name, '(GET) - Current Relative Humidity:', device.state.relativeHumidity, '%')
+				easyDebugInfo(device.name, '(GET) - Current Relative Humidity:', device.state.relativeHumidity, '%')
 
 				callback(null, device.state.relativeHumidity)
 			},
@@ -387,14 +387,14 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			ACSwing: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebug(device.name, `(GET) - AC Swing: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - AC Swing: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
 
 				const swing = device.state.verticalSwing
 
-				easyDebug(device.name, '(GET) - AC Swing:', swing)
+				easyDebugInfo(device.name, '(GET) - AC Swing:', swing)
 
 				callback(null, this.Characteristic.SwingMode[swing])
 			},
@@ -402,14 +402,14 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			ACRotationSpeed: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebug(device.name, `(GET) - AC Rotation Speed: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - AC Rotation Speed: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
 
 				const fanSpeed = device.state.fanSpeed ?? 0
 
-				easyDebug(device.name, '(GET) - AC Rotation Speed:', fanSpeed + '%')
+				easyDebugInfo(device.name, '(GET) - AC Rotation Speed:', fanSpeed + '%')
 
 				callback(null, fanSpeed)
 			},
@@ -417,14 +417,14 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			PureRotationSpeed: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebug(device.name, `(GET) - Pure Rotation Speed: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - Pure Rotation Speed: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
 
 				const fanSpeed = device.state.fanSpeed
 
-				easyDebug(device.name, '(GET) - Pure Rotation Speed:', fanSpeed + '%')
+				easyDebugInfo(device.name, '(GET) - Pure Rotation Speed:', fanSpeed + '%')
 
 				callback(null, fanSpeed)
 			},
@@ -433,14 +433,14 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FilterChangeIndication: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebug(device.name, `(GET) - Filter Change Indication: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - Filter Change Indication: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
 
 				const filterChange = device.state.filterChange
 
-				easyDebug(device.name, '(GET) - Filter Change Indication:', filterChange)
+				easyDebugInfo(device.name, '(GET) - Filter Change Indication:', filterChange)
 
 				callback(null, this.Characteristic.FilterChangeIndication[filterChange])
 			},
@@ -448,14 +448,14 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FilterLifeLevel: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebug(device.name, `(GET) - Filter Life Level: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - Filter Life Level: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
 
 				const filterLifeLevel = device.state.filterLifeLevel
 
-				easyDebug(device.name, '(GET) - Filter Life Level:', filterLifeLevel + '%')
+				easyDebugInfo(device.name, '(GET) - Filter Life Level:', filterLifeLevel + '%')
 
 				callback(null, filterLifeLevel)
 			},
@@ -464,7 +464,7 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FanActive: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebug(device.name, `(GET) - Fan Active State: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - Fan Active State: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
@@ -473,11 +473,11 @@ module.exports = (device, platform) => {
 				const mode = device.state.mode
 
 				if (!active || mode !== 'FAN') {
-					easyDebug(device.name, '(GET) - Fan Active State: false')
+					easyDebugInfo(device.name, '(GET) - Fan Active State: false')
 
 					callback(null, 0)
 				} else {
-					easyDebug(device.name, '(GET) - Fan Active State: true')
+					easyDebugInfo(device.name, '(GET) - Fan Active State: true')
 
 					callback(null, 1)
 				}
@@ -486,14 +486,14 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FanSwing: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebug(device.name, `(GET) - Fan Swing: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - Fan Swing: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
 
 				const swing = device.state.verticalSwing
 
-				easyDebug(device.name, '(GET) - Fan Swing:', swing)
+				easyDebugInfo(device.name, '(GET) - Fan Swing:', swing)
 
 				callback(null, this.Characteristic.SwingMode[swing])
 			},
@@ -501,14 +501,14 @@ module.exports = (device, platform) => {
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			FanRotationSpeed: (callback) => {
 				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebug(device.name, `(GET) - Fan Rotation Speed: ${device.state} is not an instance of InternalAcState!`)
+					easyDebugInfo(device.name, `(GET) - Fan Rotation Speed: ${device.state} is not an instance of InternalAcState!`)
 
 					return
 				}
 
 				const fanSpeed = device.state.fanSpeed
 
-				easyDebug(device.name, '(GET) - Fan Rotation Speed:', fanSpeed + '%')
+				easyDebugInfo(device.name, '(GET) - Fan Rotation Speed:', fanSpeed + '%')
 
 				callback(null, fanSpeed)
 			},
@@ -525,11 +525,11 @@ module.exports = (device, platform) => {
 				const mode = device.state.mode
 
 				if (!active || mode !== 'DRY') {
-					easyDebug(device.name, '(GET) - Dry Active State: false')
+					easyDebugInfo(device.name, '(GET) - Dry Active State: false')
 
 					callback(null, 0)
 				} else {
-					easyDebug(device.name, '(GET) - Dry Active State: true')
+					easyDebugInfo(device.name, '(GET) - Dry Active State: true')
 
 					callback(null, 1)
 				}
@@ -546,11 +546,11 @@ module.exports = (device, platform) => {
 				const mode = device.state.mode
 
 				if (!active || mode !== 'DRY') {
-					easyDebug(device.name, '(GET) - Dry Current Dehumidifier State: INACTIVE')
+					easyDebugInfo(device.name, '(GET) - Dry Current Dehumidifier State: INACTIVE')
 
 					callback(null, this.Characteristic.CurrentHumidifierDehumidifierState.INACTIVE)
 				} else {
-					easyDebug(device.name, '(GET) - Dry Current Dehumidifier State: DEHUMIDIFYING')
+					easyDebugInfo(device.name, '(GET) - Dry Current Dehumidifier State: DEHUMIDIFYING')
 
 					callback(null, this.Characteristic.CurrentHumidifierDehumidifierState.DEHUMIDIFYING)
 				}
@@ -558,7 +558,7 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			TargetHumidifierDehumidifierState: (callback) => {
-				easyDebug(device.name, '(GET) - Target Dehumidifier State: DEHUMIDIFIER')
+				easyDebugInfo(device.name, '(GET) - Target Dehumidifier State: DEHUMIDIFIER')
 
 				callback(null, this.Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER)
 			},
@@ -572,7 +572,7 @@ module.exports = (device, platform) => {
 
 				const fanSpeed = device.state.fanSpeed
 
-				easyDebug(device.name, '(GET) - Dry Rotation Speed:', fanSpeed + '%')
+				easyDebugInfo(device.name, '(GET) - Dry Rotation Speed:', fanSpeed + '%')
 
 				callback(null, fanSpeed)
 			},
@@ -586,7 +586,7 @@ module.exports = (device, platform) => {
 
 				const swing = device.state.verticalSwing
 
-				easyDebug(device.name, '(GET) - Dry Swing:', swing)
+				easyDebugInfo(device.name, '(GET) - Dry Swing:', swing)
 
 				callback(null, this.Characteristic.SwingMode[swing])
 			},
@@ -601,7 +601,7 @@ module.exports = (device, platform) => {
 
 				const motionDetected = device.state.motionDetected
 
-				easyDebug(device.name, '(GET) - Motion Detected:', motionDetected)
+				easyDebugInfo(device.name, '(GET) - Motion Detected:', motionDetected)
 
 				callback(null, motionDetected)
 			},
@@ -615,7 +615,7 @@ module.exports = (device, platform) => {
 
 				const lowBattery = device.state.lowBattery
 
-				easyDebug(device.name, '(GET) - Status Low Battery:', lowBattery)
+				easyDebugInfo(device.name, '(GET) - Status Low Battery:', lowBattery)
 
 				callback(null, this.Characteristic.StatusLowBattery[lowBattery])
 			},
@@ -630,7 +630,7 @@ module.exports = (device, platform) => {
 
 				const horizontalSwing = device.state.horizontalSwing
 
-				easyDebug(device.name, '(GET) - Horizontal Swing:', horizontalSwing)
+				easyDebugInfo(device.name, '(GET) - Horizontal Swing:', horizontalSwing)
 
 				callback(null, horizontalSwing === 'SWING_ENABLED')
 			},
@@ -638,14 +638,14 @@ module.exports = (device, platform) => {
 			// AIR CONDITIONER/PURIFIER LIGHT
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			LightSwitch: (callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device.state instanceof Classes.InternalAcState || device.state instanceof Classes.InternalAirPurifierState)) {
 					// TODO: log warning
 					return
 				}
 
 				const light = device.state.light
 
-				easyDebug(device.name, '(GET) - Light:', light ? 'ON' : 'OFF')
+				easyDebugInfo(device.name, '(GET) - Light:', light ? 'ON' : 'OFF')
 
 				callback(null, light)
 			},
@@ -660,7 +660,7 @@ module.exports = (device, platform) => {
 
 				const smartModeEnabled = device.state.smartMode.enabled
 
-				easyDebug(device.name, '(GET) - Climate React Enabled Switch:', smartModeEnabled)
+				easyDebugInfo(device.name, '(GET) - Climate React Enabled Switch:', smartModeEnabled)
 
 				callback(null, smartModeEnabled)
 			},
@@ -675,7 +675,7 @@ module.exports = (device, platform) => {
 
 				const occupancy = device.state.occupancy
 
-				easyDebug(device.name, '(GET) Occupancy Detected:', occupancy)
+				easyDebugInfo(device.name, '(GET) Occupancy Detected:', occupancy)
 
 				callback(null, this.Characteristic.OccupancyDetected[occupancy])
 			},
@@ -683,63 +683,63 @@ module.exports = (device, platform) => {
 			// Air Quality
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			AirQuality: (callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device.state instanceof Classes.InternalAirPurifierState || device.state instanceof Classes.InternalAirQualitySensorState)) {
 					// TODO: log warning
 					return
 				}
 
 				const airQuality = device.state.airQuality
 
-				easyDebug(device.name, '(GET) - Air Quality:', airQuality)
+				easyDebugInfo(device.name, '(GET) - Air Quality:', airQuality)
 
 				callback(null, airQuality)
 			},
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			VOCDensity: (callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device.state instanceof Classes.InternalAirPurifierState  || device.state instanceof Classes.InternalAirQualitySensorState)) {
 					// TODO: log warning
 					return
 				}
 
 				const VOCDensity = device.state.VOCDensity
 
-				easyDebug(device.name, '(GET) - Volatile Organic Compound Density:', VOCDensity)
+				easyDebugInfo(device.name, '(GET) - Volatile Organic Compound Density:', VOCDensity)
 
 				callback(null, VOCDensity)
 			},
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CarbonDioxideDetected: (callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device.state instanceof Classes.InternalAirPurifierState  || device.state instanceof Classes.InternalAirQualitySensorState)) {
 					// TODO: log warning
 					return
 				}
 
 				const carbonDioxideDetected = device.state.carbonDioxideDetected
 
-				easyDebug(device.name, '(GET) - Carbon Dioxide Detected:', carbonDioxideDetected)
+				easyDebugInfo(device.name, '(GET) - Carbon Dioxide Detected:', carbonDioxideDetected)
 
 				callback(null, carbonDioxideDetected)
 			},
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CarbonDioxideLevel: (callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device.state instanceof Classes.InternalAirPurifierState  || device.state instanceof Classes.InternalAirQualitySensorState)) {
 					// TODO: log warning
 					return
 				}
 
 				const carbonDioxideLevel = device.state.carbonDioxideLevel
 
-				easyDebug(device.name, '(GET) - Carbon Dioxide Level:', carbonDioxideLevel)
+				easyDebugInfo(device.name, '(GET) - Carbon Dioxide Level:', carbonDioxideLevel)
 
 				callback(null, carbonDioxideLevel)
 			},
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			SyncButton: (callback) => {
-				easyDebug(device.name, '(GET) - Sync Button, no state change')
+				easyDebugInfo(device.name, '(GET) - Sync Button, no state change')
 
 				callback(null, false)
 			}
@@ -757,20 +757,20 @@ module.exports = (device, platform) => {
 				}
 
 				if (!(device instanceof AirConditioner)) {
-					easyDebug(device.name, `(SET) - AC Active State: ${device.name} is not an instance of AirConditioner!`)
+					easyDebugInfo(device.name, `(SET) - AC Active State: ${device.name} is not an instance of AirConditioner!`)
 
 					return
 				}
 
 				value = !!value
-				easyDebug(device.name, '(SET) - AC Active State:', value)
+				easyDebugInfo(device.name, '(SET) - AC Active State:', value)
 
 				if (value) {
 					device.state.active = true
 					const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
 					const mode = this.characteristicToMode(lastMode)
 
-					easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
+					easyDebugInfo(device.name, '(SET) - HeaterCooler State:', mode)
 					device.state.mode = mode
 				} else if (device.state.mode === 'COOL' || device.state.mode === 'HEAT' || device.state.mode === 'AUTO') {
 					device.state.active = false
@@ -792,13 +792,13 @@ module.exports = (device, platform) => {
 				}
 
 				value = !!value
-				easyDebug(device.name, '(SET) - Pure Active State:', value)
+				easyDebugInfo(device.name, '(SET) - Pure Active State:', value)
 				device.state.active = value
 
 				if (device instanceof AirConditioner) {
 					this.updateClimateReact(device, enableClimateReactAutoSetup)
 				} else {
-					easyDebug(device.name, `(SET) - Pure Active State: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
+					easyDebugInfo(device.name, `(SET) - Pure Active State: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
 				}
 
 				callback()
@@ -816,13 +816,13 @@ module.exports = (device, platform) => {
 
 				const mode = this.characteristicToMode(value)
 
-				easyDebug(device.name, '(SET) - Target HeaterCooler State:', mode)
+				easyDebugInfo(device.name, '(SET) - Target HeaterCooler State:', mode)
 				device.state.mode = mode
 				device.state.active = true
 				if (device instanceof AirConditioner) {
 					this.updateClimateReact(device, enableClimateReactAutoSetup)
 				} else {
-					easyDebug(device.name, `(SET) - Target HeaterCooler State: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
+					easyDebugInfo(device.name, `(SET) - Target HeaterCooler State: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
 				}
 
 				callback()
@@ -839,15 +839,15 @@ module.exports = (device, platform) => {
 				}
 
 				if (!(device instanceof AirConditioner)) {
-					easyDebug(device.name, `(SET) - Target Cooling Temperature: ${device.name} is not an instance of AirConditioner!`)
+					easyDebugInfo(device.name, `(SET) - Target Cooling Temperature: ${device.name} is not an instance of AirConditioner!`)
 
 					return
 				}
 
 				if (device.usesFahrenheit) {
-					easyDebug(device.name, '(SET) - Target Cooling Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
+					easyDebugInfo(device.name, '(SET) - Target Cooling Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
 				} else {
-					easyDebug(device.name, '(SET) - Target Cooling Temperature:', targetTemp + 'ºC')
+					easyDebugInfo(device.name, '(SET) - Target Cooling Temperature:', targetTemp + 'ºC')
 				}
 
 				const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
@@ -855,7 +855,7 @@ module.exports = (device, platform) => {
 
 				device.state.targetTemperature = targetTemp
 				// TODO: do we need the below? Does it turn the unit on if it's currently off?
-				easyDebug(device.name, '(SET) - Target HeaterCooler State:', mode)
+				easyDebugInfo(device.name, '(SET) - Target HeaterCooler State:', mode)
 				device.state.active = true
 				device.state.mode = mode
 
@@ -875,21 +875,21 @@ module.exports = (device, platform) => {
 				}
 
 				if (!(device instanceof AirConditioner)) {
-					easyDebug(device.name, `(SET) - AC Active State: ${device.name} is not an instance of AirConditioner!`)
+					easyDebugInfo(device.name, `(SET) - AC Active State: ${device.name} is not an instance of AirConditioner!`)
 
 					return
 				}
 
 				if (device.usesFahrenheit) {
-					easyDebug(device.name, '(SET) - Target Heating Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
+					easyDebugInfo(device.name, '(SET) - Target Heating Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
 				} else {
-					easyDebug(device.name, '(SET) - Target Heating Temperature:', targetTemp + 'ºC')
+					easyDebugInfo(device.name, '(SET) - Target Heating Temperature:', targetTemp + 'ºC')
 				}
 
 				const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
 				const mode = this.characteristicToMode(lastMode)
 
-				easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
+				easyDebugInfo(device.name, '(SET) - HeaterCooler State:', mode)
 				device.state.targetTemperature = targetTemp
 				device.state.active = true
 				device.state.mode = mode
@@ -910,7 +910,7 @@ module.exports = (device, platform) => {
 				}
 
 				if (!(device instanceof AirConditioner)) {
-					easyDebug(device.name, `(SET) - HeaterCooler State: ${device.name} is not an instance of AirConditioner!`)
+					easyDebugInfo(device.name, `(SET) - HeaterCooler State: ${device.name} is not an instance of AirConditioner!`)
 
 					return
 				}
@@ -919,11 +919,11 @@ module.exports = (device, platform) => {
 				const mode = this.characteristicToMode(lastMode)
 
 				value = value === this.Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
-				easyDebug(device.name, '(SET) - AC Swing:', value)
+				easyDebugInfo(device.name, '(SET) - AC Swing:', value)
 				device.state.verticalSwing = value
 
 				device.state.active = true
-				easyDebug(device.name, '(SET) - Mode To:', mode)
+				easyDebugInfo(device.name, '(SET) - Mode To:', mode)
 				device.state.mode = mode
 
 				this.updateClimateReact(device, enableClimateReactAutoSetup)
@@ -942,23 +942,23 @@ module.exports = (device, platform) => {
 				}
 
 				if (!(device instanceof AirConditioner)) {
-					easyDebug(device.name, `(SET) - AC Rotation Speed: ${device.name} is not an instance of AirConditioner!`)
+					easyDebugInfo(device.name, `(SET) - AC Rotation Speed: ${device.name} is not an instance of AirConditioner!`)
 
 					return
 				}
 				if (!(typeof(value) == 'number')) {
-					easyDebug(device.name, `(SET) - AC Rotation Speed: ${value} is not of type number!`)
+					easyDebugInfo(device.name, `(SET) - AC Rotation Speed: ${value} is not of type number!`)
 
 					return
 				}
 
-				easyDebug(device.name, '(SET) - AC Rotation Speed:', value + '%')
+				easyDebugInfo(device.name, '(SET) - AC Rotation Speed:', value + '%')
 				device.state.fanSpeed = value
 
 				const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
 				const mode = this.characteristicToMode(lastMode)
 
-				easyDebug(device.name, '(SET) - HeaterCooler State:', mode)
+				easyDebugInfo(device.name, '(SET) - HeaterCooler State:', mode)
 				device.state.active = true
 				device.state.mode = mode
 
@@ -978,7 +978,7 @@ module.exports = (device, platform) => {
 				}
 
 				if (value) {
-					easyDebug(device.name, '(SET) - Pure Rotation Speed:', value + '%')
+					easyDebugInfo(device.name, '(SET) - Pure Rotation Speed:', value + '%')
 
 					if (typeof(value) == 'number') {
 						device.state.fanSpeed = value
@@ -993,7 +993,7 @@ module.exports = (device, platform) => {
 				if (device instanceof AirConditioner) {
 					this.updateClimateReact(device, enableClimateReactAutoSetup)
 				} else {
-					easyDebug(device.name, `(SET) - Pure Rotation Speed: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
+					easyDebugInfo(device.name, `(SET) - Pure Rotation Speed: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
 				}
 
 				callback()
@@ -1010,7 +1010,7 @@ module.exports = (device, platform) => {
 					return
 				}
 
-				easyDebug(device.name, '(SET) - Filter Change Indication: RESET')
+				easyDebugInfo(device.name, '(SET) - Filter Change Indication: RESET')
 				device.state.filterChange = 'FILTER_OK'
 				device.state.filterLifeLevel = 100
 
@@ -1029,10 +1029,10 @@ module.exports = (device, platform) => {
 				}
 
 				value = !!value
-				easyDebug(device.name, '(SET) - Fan state Active:', value)
+				easyDebugInfo(device.name, '(SET) - Fan state Active:', value)
 
 				if (value) {
-					easyDebug(device.name, '(SET) - Mode to: FAN')
+					easyDebugInfo(device.name, '(SET) - Mode to: FAN')
 					device.state.mode = 'FAN'
 
 					device.state.active = true
@@ -1054,11 +1054,11 @@ module.exports = (device, platform) => {
 				}
 
 				value = value === this.Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
-				easyDebug(device.name, '(SET) - Fan Swing:', value)
+				easyDebugInfo(device.name, '(SET) - Fan Swing:', value)
 				device.state.verticalSwing = value
 
 				device.state.active = true
-				easyDebug(device.name, '(SET) - Mode to: FAN')
+				easyDebugInfo(device.name, '(SET) - Mode to: FAN')
 				device.state.mode = 'FAN'
 
 				callback()
@@ -1074,7 +1074,7 @@ module.exports = (device, platform) => {
 					return
 				}
 
-				easyDebug(device.name, '(SET) - Fan Rotation Speed:', value + '%')
+				easyDebugInfo(device.name, '(SET) - Fan Rotation Speed:', value + '%')
 				if (typeof(value) == 'number') {
 					device.state.fanSpeed = value
 				} else {
@@ -1082,7 +1082,7 @@ module.exports = (device, platform) => {
 				}
 
 				device.state.active = true
-				easyDebug(device.name, '(SET) - Mode to: FAN')
+				easyDebugInfo(device.name, '(SET) - Mode to: FAN')
 				device.state.mode = 'FAN'
 
 				callback()
@@ -1100,10 +1100,10 @@ module.exports = (device, platform) => {
 				}
 
 				value = !!value
-				easyDebug(device.name, '(SET) - Dry state Active:', value)
+				easyDebugInfo(device.name, '(SET) - Dry state Active:', value)
 				if (value) {
 					device.state.active = true
-					easyDebug(device.name, '(SET) - HeaterCooler State: DRY')
+					easyDebugInfo(device.name, '(SET) - HeaterCooler State: DRY')
 					device.state.mode = 'DRY'
 				} else if (device.state.mode === 'DRY') {
 					device.state.active = false
@@ -1123,7 +1123,7 @@ module.exports = (device, platform) => {
 				}
 
 				device.state.active = true
-				easyDebug(device.name, '(SET) - HeaterCooler State: DRY')
+				easyDebugInfo(device.name, '(SET) - HeaterCooler State: DRY')
 				device.state.mode = 'DRY'
 
 				callback()
@@ -1140,11 +1140,11 @@ module.exports = (device, platform) => {
 				}
 
 				value = value === this.Characteristic.SwingMode.SWING_ENABLED ? 'SWING_ENABLED' : 'SWING_DISABLED'
-				easyDebug(device.name, '(SET) - Dry Swing:', value)
+				easyDebugInfo(device.name, '(SET) - Dry Swing:', value)
 				device.state.verticalSwing = value
 
 				device.state.active = true
-				easyDebug(device.name, '(SET) - Mode to: DRY')
+				easyDebugInfo(device.name, '(SET) - Mode to: DRY')
 				device.state.mode = 'DRY'
 
 				callback()
@@ -1160,7 +1160,7 @@ module.exports = (device, platform) => {
 					return
 				}
 
-				easyDebug(device.name, '(SET) - Dry Rotation Speed:', value + '%')
+				easyDebugInfo(device.name, '(SET) - Dry Rotation Speed:', value + '%')
 				if (typeof(value) == 'number') {
 					device.state.fanSpeed = value
 				} else {
@@ -1168,7 +1168,7 @@ module.exports = (device, platform) => {
 				}
 
 				device.state.active = true
-				easyDebug(device.name + ' (SET) - Mode to: DRY')
+				easyDebugInfo(device.name + ' (SET) - Mode to: DRY')
 				device.state.mode = 'DRY'
 
 				callback()
@@ -1186,13 +1186,13 @@ module.exports = (device, platform) => {
 				}
 
 				value = value ? 'SWING_ENABLED' : 'SWING_DISABLED'
-				easyDebug(device.name, '(SET) - Horizontal Swing:', value)
+				easyDebugInfo(device.name, '(SET) - Horizontal Swing:', value)
 				device.state.horizontalSwing = value
 
 				if (device instanceof AirConditioner) {
 					this.updateClimateReact(device, enableClimateReactAutoSetup)
 				} else {
-					easyDebug(device.name, `(SET) - Horizontal Swing: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
+					easyDebugInfo(device.name, `(SET) - Horizontal Swing: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
 				}
 
 				callback()
@@ -1204,12 +1204,12 @@ module.exports = (device, platform) => {
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
 			LightSwitch: (value, callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device.state instanceof Classes.InternalAcState  || device.state instanceof Classes.InternalAirPurifierState)) {
 					// TODO: log warning
 					return
 				}
 
-				easyDebug(device.name, '(SET) - Light to', value ? 'ON' : 'OFF')
+				easyDebugInfo(device.name, '(SET) - Light to', value ? 'ON' : 'OFF')
 
 				if (typeof(value) == 'boolean') {
 					device.state.light = value
@@ -1220,7 +1220,7 @@ module.exports = (device, platform) => {
 				if (device instanceof AirConditioner) {
 					this.updateClimateReact(device, enableClimateReactAutoSetup)
 				} else {
-					easyDebug(device.name, `(SET) - Light: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
+					easyDebugInfo(device.name, `(SET) - Light: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
 				}
 
 				callback()
@@ -1239,7 +1239,7 @@ module.exports = (device, platform) => {
 				}
 
 				if (value) {
-					easyDebug(device.name, '(SYNC) - AC Active State:', device.state.active)
+					easyDebugInfo(device.name, '(SYNC) - AC Active State:', device.state.active)
 					device.state.syncState()
 				}
 
@@ -1257,7 +1257,7 @@ module.exports = (device, platform) => {
 					return
 				}
 
-				easyDebug(device.name, '(SET) - Climate React Enabled Switch:', value)
+				easyDebugInfo(device.name, '(SET) - Climate React Enabled Switch:', value)
 				const smartModeState = device.state.smartMode
 
 				smartModeState.enabled = !!value
@@ -1275,14 +1275,14 @@ module.exports = (device, platform) => {
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
 			TargetAirPurifierState: (value, callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device.state instanceof Classes.InternalAirPurifierState)) {
 					// TODO: log warning
 					return
 				}
 
 				const pureBoost = !!value
 
-				easyDebug(device.name, '(SET) - Pure Target State (Boost):', pureBoost ? 'AUTO' : 'MANUAL')
+				easyDebugInfo(device.name, '(SET) - Pure Target State (Boost):', pureBoost ? 'AUTO' : 'MANUAL')
 				device.state.pureBoost = pureBoost
 
 				callback()

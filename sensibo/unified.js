@@ -108,9 +108,9 @@ module.exports = {
 				mode.homeKitSupported = true
 			}
 
-			platform.easyDebug(`${device.room.name} - Mode: ${modeString} - Temperature scales:`)
-			platform.easyDebug(`C:\n${JSON.stringify(modeCapabilities.temperatures.C, null, 4)}`)
-			platform.easyDebug(`F:\n${JSON.stringify(modeCapabilities.temperatures.F, null, 4)}`)
+			platform.easyDebugInfo(`${device.room.name} - Mode: ${modeString} - Temperature scales:`)
+			platform.easyDebugInfo(`C:\n${JSON.stringify(modeCapabilities.temperatures.C, null, 4)}`)
+			platform.easyDebugInfo(`F:\n${JSON.stringify(modeCapabilities.temperatures.F, null, 4)}`)
 
 			if (modeCapabilities.temperatures.C || modeCapabilities.temperatures.F) {
 				mode.temperatures = {}
@@ -175,11 +175,71 @@ module.exports = {
 				mode.light = true
 			}
 
-			platform.easyDebug(`${device.room.name} - Mode: ${modeString}, Capabilities:`)
-			platform.easyDebug(JSON.stringify(mode, null, 4))
+			platform.easyDebugInfo(`${device.room.name} - Mode: ${modeString}, Capabilities:`)
+			platform.easyDebugInfo(JSON.stringify(mode, null, 4))
 		}
 
 		return capabilities
+	},
+
+	/**
+	 * @param {import('../types').Device} device
+	 * @returns {import('../types').InternalSmartModeState}
+	 */
+	getInternalSmartModeState: function (device)  {
+		/** @type {null|import('../types').InternalSmartModeState} */
+		let smartModeState = null
+
+		if (device.smartMode) {
+			/** @type {null|import('../types').InternalSmartModeTempratureState} */
+			let highTemperatureState = null
+			/** @type {null|import('../types').InternalSmartModeTempratureState} */
+			let lowTemperatureState = null
+
+			if (device.smartMode.highTemperatureState && device.smartMode.lowTemperatureState) {
+				const highTemperatureStateFanSpeed = this.getFanSpeedForFanLevel(device, device.smartMode.highTemperatureState.mode, device.smartMode.highTemperatureState.fanLevel)
+				const highTemperatureInternalSwingState = this.getInternalSwingStateFromInternalSwingValues(device.smartMode.highTemperatureState.swing, device.smartMode.highTemperatureState.horizontalSwing)
+
+				highTemperatureState = {
+					on: device.smartMode.highTemperatureState.on,
+					light: device.smartMode.highTemperatureState.light,
+					temperatureUnit: device.smartMode.highTemperatureState.temperatureUnit,
+					fanSpeed: highTemperatureStateFanSpeed,
+					mode: device.smartMode.highTemperatureState.mode.toUpperCase(),
+					targetTemperature: device.smartMode.highTemperatureState.targetTemperature,
+					swing: highTemperatureInternalSwingState.verticalSwing,
+					horizontalSwing: highTemperatureInternalSwingState.horizontalSwing
+				}
+
+				const lowTemperatureStateFanSpeed = this.getFanSpeedForFanLevel(device, device.smartMode.lowTemperatureState.mode, device.smartMode.lowTemperatureState.fanLevel)
+				const lowTemperatureInternalSwingState = this.getInternalSwingStateFromInternalSwingValues(device.smartMode.lowTemperatureState.swing, device.smartMode.lowTemperatureState.horizontalSwing)
+
+				lowTemperatureState = {
+					on: device.smartMode.lowTemperatureState.on,
+					light: device.smartMode.lowTemperatureState.light,
+					temperatureUnit: device.smartMode.lowTemperatureState.temperatureUnit,
+					fanSpeed: lowTemperatureStateFanSpeed,
+					mode: device.smartMode.lowTemperatureState.mode.toUpperCase(),
+					targetTemperature: device.smartMode.lowTemperatureState.targetTemperature,
+					swing: lowTemperatureInternalSwingState.verticalSwing,
+					horizontalSwing: lowTemperatureInternalSwingState.horizontalSwing
+				}
+			}
+
+			/** @type {import('../types').InternalSmartModeState} */
+			smartModeState = {
+				enabled: device.smartMode.enabled,
+				type: device.smartMode.type,
+				highTemperatureState: highTemperatureState,
+				highTemperatureThreshold: device.smartMode.highTemperatureThreshold,
+				highTemperatureWebhook: device.smartMode.highTemperatureWebhook,
+				lowTemperatureState: lowTemperatureState,
+				lowTemperatureThreshold: device.smartMode.lowTemperatureThreshold,
+				lowTemperatureWebhook: device.smartMode.lowTemperatureWebhook
+			}
+		}
+
+		return smartModeState
 	},
 
 	/**
@@ -292,89 +352,68 @@ module.exports = {
 	 * @param {import('../types').Device} device
 	 * @returns {Classes.InternalAcState}
 	 */
-	getAcState: function (device) {
-		/** @type {null|import('../types').InternalSmartMode} */
-		let smartModeState = null
-
-		if (device.smartMode) {
-			/** @type {null|import('../types').InternalSmartModeTempratureState} */
-			let highTemperatureState = null
-			/** @type {null|import('../types').InternalSmartModeTempratureState} */
-			let lowTemperatureState = null
-
-			if (device.smartMode.highTemperatureState && device.smartMode.lowTemperatureState) {
-				const highTemperatureStateFanSpeed = this.getFanSpeedForFanLevel(device, device.smartMode.highTemperatureState.mode, device.smartMode.highTemperatureState.fanLevel)
-				const highTemperatureInternalSwingState = this.getInternalSwingStateFromInternalSwingValues(device.smartMode.highTemperatureState.swing, device.smartMode.highTemperatureState.horizontalSwing)
-
-				highTemperatureState = {
-					on: device.smartMode.highTemperatureState.on,
-					light: device.smartMode.highTemperatureState.light,
-					temperatureUnit: device.smartMode.highTemperatureState.temperatureUnit,
-					fanSpeed: highTemperatureStateFanSpeed,
-					mode: device.smartMode.highTemperatureState.mode.toUpperCase(),
-					targetTemperature: device.smartMode.highTemperatureState.targetTemperature,
-					swing: highTemperatureInternalSwingState.verticalSwing,
-					horizontalSwing: highTemperatureInternalSwingState.horizontalSwing
-				}
-
-				const lowTemperatureStateFanSpeed = this.getFanSpeedForFanLevel(device, device.smartMode.lowTemperatureState.mode, device.smartMode.lowTemperatureState.fanLevel)
-				const lowTemperatureInternalSwingState = this.getInternalSwingStateFromInternalSwingValues(device.smartMode.lowTemperatureState.swing, device.smartMode.lowTemperatureState.horizontalSwing)
-
-				lowTemperatureState = {
-					on: device.smartMode.lowTemperatureState.on,
-					light: device.smartMode.lowTemperatureState.light,
-					temperatureUnit: device.smartMode.lowTemperatureState.temperatureUnit,
-					fanSpeed: lowTemperatureStateFanSpeed,
-					mode: device.smartMode.lowTemperatureState.mode.toUpperCase(),
-					targetTemperature: device.smartMode.lowTemperatureState.targetTemperature,
-					swing: lowTemperatureInternalSwingState.verticalSwing,
-					horizontalSwing: lowTemperatureInternalSwingState.horizontalSwing
-				}
-			}
-
-			/** @type {import('../types').InternalSmartMode} */
-			smartModeState = {
-				enabled: device.smartMode.enabled,
-				type: device.smartMode.type,
-				highTemperatureState: highTemperatureState,
-				highTemperatureThreshold: device.smartMode.highTemperatureThreshold,
-				highTemperatureWebhook: device.smartMode.highTemperatureWebhook,
-				lowTemperatureState: lowTemperatureState,
-				lowTemperatureThreshold: device.smartMode.lowTemperatureThreshold,
-				lowTemperatureWebhook: device.smartMode.lowTemperatureWebhook
-			}
-		}
-
-		const filterState = this.getInternalFilterState(device)
-		const swingState = this.getInternalSwingState(device)
+	getInternalAcState: function (device) {
+		const internalSmartModeState = this.getInternalSmartModeState(device)
+		const internalFilterState = this.getInternalFilterState(device)
+		const internalSwingState = this.getInternalSwingState(device)
 		const fanSpeed = this.getFanSpeed(device)
-		const state = new Classes.InternalAcState(
+		const resultingInternalAcState = new Classes.InternalAcState(
 			device.acState.on,
 			device.acState.mode.toUpperCase(),
-			!device.acState.targetTemperature ? null : device.acState.temperatureUnit === 'C' ? device.acState.targetTemperature : this.toCelsius(device.acState.targetTemperature),
+			device.acState.targetTemperature ? device.acState.temperatureUnit === 'C' ? device.acState.targetTemperature : this.toCelsius(device.acState.targetTemperature) : null,
 			device.measurements.temperature,
 			device.measurements.humidity,
-			smartModeState,
+			internalSmartModeState,
 			device.acState.light && device.acState.light !== 'off',
 			device.pureBoostConfig && device.pureBoostConfig.enabled,
-			filterState.filterChange,
-			filterState.filterLifeLevel,
-			swingState.horizontalSwing,
-			swingState.verticalSwing,
-			fanSpeed,
-			null,
-			null,
-			null,
-			null
+			internalFilterState.filterChange,
+			internalFilterState.filterLifeLevel,
+			internalSwingState.horizontalSwing,
+			internalSwingState.verticalSwing,
+			fanSpeed
 		)
 
-		return state
+		return resultingInternalAcState
 	},
 
 	/**
 	 * @param {import('../types').Device} device
 	 * @param {SensiboACPlatform} platform
-	 * @returns {Classes.InternalAcState}
+	 * @returns {Classes.InternalAirPurifierState}
+	 */
+	getInternalAirPurifierState: function (device, platform) {
+		const internalSmartModeState = this.getInternalSmartModeState(device)
+		const internalFilterState = this.getInternalFilterState(device)
+		const internalSwingState = this.getInternalSwingState(device)
+		const fanSpeed = this.getFanSpeed(device)
+		const airQualityState = this.getAirQualityState(device, platform)
+		const resultingInternalAirPurifierState = new Classes.InternalAirPurifierState(
+			device.acState.on,
+			device.acState.mode.toUpperCase(),
+			device.acState.targetTemperature ? device.acState.temperatureUnit === 'C' ? device.acState.targetTemperature : this.toCelsius(device.acState.targetTemperature) : null,
+			device.measurements.temperature,
+			device.measurements.humidity,
+			internalSmartModeState,
+			device.acState.light && device.acState.light !== 'off',
+			device.pureBoostConfig && device.pureBoostConfig.enabled,
+			internalFilterState.filterChange,
+			internalFilterState.filterLifeLevel,
+			internalSwingState.horizontalSwing,
+			internalSwingState.verticalSwing,
+			fanSpeed,
+			airQualityState.airQuality,
+			airQualityState.VOCDensity,
+			airQualityState.carbonDioxideDetected,
+			airQualityState.carbonDioxideLevel
+		)
+
+		return resultingInternalAirPurifierState
+	},
+
+	/**
+	 * @param {import('../types').Device} device
+	 * @param {SensiboACPlatform} platform
+	 * @returns {Classes.InternalAirQualitySensorState}
 	 */
 	getAirQualityState: function (device, platform) {
 		// convert ppb to μg/m3
@@ -406,20 +445,7 @@ module.exports = {
 			carbonDioxideDetected = device.measurements.co2 < platform.carbonDioxideAlertThreshold ? 0 : 1
 		}
 
-		const state = new Classes.InternalAcState(
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
+		const state = new Classes.InternalAirQualitySensorState(
 			airQuality,
 			VOCDensity,
 			carbonDioxideDetected,

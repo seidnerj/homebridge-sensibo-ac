@@ -76,7 +76,7 @@ class OccupancySensor extends SensiboAccessory {
 	}
 
 	addOccupancySensor() {
-		this.easyDebug(`${this.name} - Adding OccupancySensorService`)
+		this.easyDebugInfo(`${this.name} - Adding OccupancySensorService`)
 
 		this.OccupancySensorService = this.platformAccessory.getService(this.Service.OccupancySensor)
 		if (!this.OccupancySensorService) {

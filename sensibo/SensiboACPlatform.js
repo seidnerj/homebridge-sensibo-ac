@@ -1,6 +1,5 @@
 // @ts-ignore
 const path = require('path')
-// eslint-disable-next-line no-unused-vars
 const homebridge = require('homebridge')
 // eslint-disable-next-line no-unused-vars
 const SensiboAccessory = require('../homekit/SensiboAccessory')
@@ -163,10 +162,15 @@ class SensiboACPlatform {
 
 		// define debug method to output debug logs when enabled in the config
 		// TODO: add a "dev" mode to the logger?
-		// this.log.devDebug?
-		this.easyDebug = (...content) => {
+		// TODO: support warning/error etc. in addition to the default "info" level
+		// this.loggger.devDebug?
+		/**
+		 * @param {homebridge.LogLevel} level
+		 * @param  {...any} content
+		 */
+		this.easyDebug = (level, ...content) => {
 			if (this.debug) {
-				this.log.info(content.reduce((previous, current) => {
+				this.log.log(level, content.reduce((previous, current) => {
 					return previous + ' ' + current
 				}))
 			} else {
@@ -175,6 +179,18 @@ class SensiboACPlatform {
 					return previous + ' ' + current
 				}))
 			}
+		}
+
+		this.easyDebugInfo = (...content) => {
+			this.easyDebug(homebridge.LogLevel.INFO, ...content)
+		}
+
+		this.easyDebugError = (...content) => {
+			this.easyDebug(homebridge.LogLevel.ERROR, ...content)
+		}
+
+		this.easyDebugWarning = (...content) => {
+			this.easyDebug(homebridge.LogLevel.WARN, ...content)
 		}
 
 		this.api.on('didFinishLaunching', async () => {

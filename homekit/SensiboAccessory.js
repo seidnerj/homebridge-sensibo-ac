@@ -30,7 +30,7 @@ class SensiboAccessory {
 		/** @type {import('../types').PlatformState} */
 		this.cachedState = platform.cachedState
 		/** @type {(...content: any[]) => void} */
-		this.easyDebug = platform.easyDebug
+		this.easyDebugInfo = platform.easyDebugInfo
 
 		this.Utils = require('../sensibo/Utils')(this, platform)
 
@@ -46,7 +46,7 @@ class SensiboAccessory {
 		this.lastStateRefresh = minDate
 
 		// FIXME: this is populated by the subclass but should probably be moved here
-		/** @type {Classes.InternalAcState|Classes.InternalOccupancyState|Classes.InternalSensorState} */
+		/** @type {Classes.InternalAcState|Classes.InternalOccupancyState|Classes.InternalSensorState|Classes.InternalAirQualitySensorState} */
 		this.state = null
 	}
 

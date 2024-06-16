@@ -67,7 +67,7 @@ class ClimateReactSwitch extends SensiboAccessory {
 	}
 
 	addClimateReactSwitchService() {
-		this.easyDebug(`${this.name} - Adding ClimateReactSwitchService`)
+		this.easyDebugInfo(`${this.name} - Adding ClimateReactSwitchService`)
 
 		this.ClimateReactSwitchService = this.platformAccessory.getService(this.name)
 		if (!this.ClimateReactSwitchService) {

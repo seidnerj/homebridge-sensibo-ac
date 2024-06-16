@@ -76,7 +76,7 @@ class HumiditySensor extends SensiboAccessory {
 	}
 
 	addHumiditySensorService() {
-		this.easyDebug(`${this.name} - Adding HumiditySensorService`)
+		this.easyDebugInfo(`${this.name} - Adding HumiditySensorService`)
 
 		this.HumiditySensorService = this.platformAccessory.getService(this.Service.HumiditySensor)
 		if (!this.HumiditySensorService) {
