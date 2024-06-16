@@ -19,13 +19,13 @@ module.exports = (platform) => {
 	return () => {
 		platform.devices.forEach(discoveredDevice => {
 			if (platform.ignoreHomeKitDevices && discoveredDevice.homekitSupported) {
-				platform.easyDebug(`Ignoring Homekit supported device: ${discoveredDevice.id}`)
+				platform.easyDebugInfo(`Ignoring Homekit supported device: ${discoveredDevice.id}`)
 
 				return
 			}
 
 			if (!discoveredDevice.remoteCapabilities) {
-				platform.easyDebug(`Ignoring as no remote capabilities available for device: ${discoveredDevice.id}`)
+				platform.easyDebugInfo(`Ignoring as no remote capabilities available for device: ${discoveredDevice.id}`)
 
 				return
 			}
@@ -39,7 +39,7 @@ module.exports = (platform) => {
 					return accessory.type === 'AirConditioner' && accessory.id === discoveredDevice.id
 				})
 
-				platform.easyDebug(`Device: ${discoveredDevice.id}, Model: ${discoveredDevice.productModel}, airConditionerIsNew: ${airConditionerIsNew}`)
+				platform.easyDebugInfo(`Device: ${discoveredDevice.id}, Model: ${discoveredDevice.productModel}, airConditionerIsNew: ${airConditionerIsNew}`)
 
 				if (airConditionerIsNew) {
 					// TODO: What if the air conditioner isn't needed at all (all services disabled)? Do we still push it?
@@ -92,7 +92,7 @@ module.exports = (platform) => {
 					return accessory.type === 'AirPurifier' && accessory.id === discoveredDevice.id
 				})
 
-				platform.easyDebug(`Device: ${discoveredDevice.id}, airPurifierIsNew: ${airPurifierIsNew}`)
+				platform.easyDebugInfo(`Device: ${discoveredDevice.id}, airPurifierIsNew: ${airPurifierIsNew}`)
 
 				if (airPurifierIsNew) {
 					const airPurifier = new AirPurifier(discoveredDevice, platform)
@@ -117,7 +117,7 @@ module.exports = (platform) => {
 						return accessory.type === 'RoomSensor' && accessory.id === sensor.id
 					})
 
-					platform.easyDebug(`Device: ${discoveredDevice.id}, roomSensorIsNew: ${roomSensorIsNew}`)
+					platform.easyDebugInfo(`Device: ${discoveredDevice.id}, roomSensorIsNew: ${roomSensorIsNew}`)
 
 					if (roomSensorIsNew) {
 						const roomSensor = new RoomSensor(sensor, discoveredDevice, platform)
@@ -142,7 +142,7 @@ module.exports = (platform) => {
 
 		platform.cachedAccessories.forEach(cachedAccessory => {
 			if (!cachedAccessory.context.type) {
-				platform.easyDebug(`Old cached accessory to be removed, name: ${cachedAccessory.displayName}`)
+				platform.easyDebugInfo(`Old cached accessory to be removed, name: ${cachedAccessory.displayName}`)
 				accessoriesToRemove.push(cachedAccessory)
 			}
 
@@ -152,7 +152,7 @@ module.exports = (platform) => {
 
 			if (!isActive) {
 				// TODO: should we remove non-active accessories immediately? see also AirQualitySensor below
-				platform.easyDebug(`Accessory type: ${cachedAccessory.context.type}, Name: ${cachedAccessory.displayName}, not in activeAccessories[]`)
+				platform.easyDebugInfo(`Accessory type: ${cachedAccessory.context.type}, Name: ${cachedAccessory.displayName}, not in activeAccessories[]`)
 			}
 
 			let deviceExists, sensorExists, locationExists
@@ -168,7 +168,7 @@ module.exports = (platform) => {
 									|| device.productModel.includes('sky'))
 					})
 					if (!deviceExists) {
-						platform.easyDebug(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
+						platform.easyDebugInfo(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
 						accessoriesToRemove.push(cachedAccessory)
 					}
 					break
@@ -178,7 +178,7 @@ module.exports = (platform) => {
 						return device.id === cachedAccessory.context.deviceId && device.remoteCapabilities && device.productModel === 'pure'
 					})
 					if (!deviceExists) {
-						platform.easyDebug(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
+						platform.easyDebugInfo(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
 						accessoriesToRemove.push(cachedAccessory)
 					}
 					break
@@ -189,7 +189,7 @@ module.exports = (platform) => {
 					})
 					// TODO: should disabled check be moved out? see also isActive above
 					if (!deviceExists || (deviceExists && platform.disableAirQuality && platform.disableCarbonDioxide)) {
-						platform.easyDebug(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
+						platform.easyDebugInfo(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
 						accessoriesToRemove.push(cachedAccessory)
 					}
 					break
@@ -199,14 +199,14 @@ module.exports = (platform) => {
 						return device.id === cachedAccessory.context.deviceId
 					})
 					if (!deviceExists || !Array.isArray(deviceExists.motionSensors)) {
-						platform.easyDebug(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
+						platform.easyDebugInfo(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
 						accessoriesToRemove.push(cachedAccessory)
 					} else {
 						sensorExists = deviceExists.motionSensors.find(sensor => {
 							return sensor.id === cachedAccessory.context.sensorId
 						})
 						if (!sensorExists) {
-							platform.easyDebug(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
+							platform.easyDebugInfo(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
 							accessoriesToRemove.push(cachedAccessory)
 						}
 					}
@@ -217,7 +217,7 @@ module.exports = (platform) => {
 						return device.id === cachedAccessory.context.deviceId && device.remoteCapabilities
 					})
 					if (!deviceExists || !platform.externalHumiditySensor) {
-						platform.easyDebug(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
+						platform.easyDebugInfo(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
 						accessoriesToRemove.push(cachedAccessory)
 					}
 					break
@@ -228,7 +228,7 @@ module.exports = (platform) => {
 					})
 
 					if (!deviceExists || !platform.enableSyncButton || platform.syncButtonInAccessory) {
-						platform.easyDebug(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
+						platform.easyDebugInfo(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
 						accessoriesToRemove.push(cachedAccessory)
 					}
 					break
@@ -240,7 +240,7 @@ module.exports = (platform) => {
 					})
 
 					if (!deviceExists || !platform.enableClimateReactSwitch || platform.climateReactSwitchInAccessory) {
-						platform.easyDebug(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
+						platform.easyDebugInfo(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
 						accessoriesToRemove.push(cachedAccessory)
 					}
 					break
@@ -251,7 +251,7 @@ module.exports = (platform) => {
 					})
 
 					if (!locationExists || !platform.enableOccupancySensor) {
-						platform.easyDebug(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
+						platform.easyDebugInfo(`Cached ${cachedAccessory.context.type} accessory to be removed, name: ${cachedAccessory.displayName}`)
 						accessoriesToRemove.push(cachedAccessory)
 						// TODO: check why platform.locations is updated below
 						platform.locations = platform.locations.filter(location => {
@@ -266,8 +266,8 @@ module.exports = (platform) => {
 		})
 
 		if (accessoriesToRemove.length) {
-			platform.easyDebug('Unregistering Unnecessary Cached Devices:')
-			platform.easyDebug(accessoriesToRemove)
+			platform.easyDebugInfo('Unregistering Unnecessary Cached Devices:')
+			platform.easyDebugInfo(accessoriesToRemove)
 
 			// unregistering accessories
 			platform.api.unregisterPlatformAccessories(platform.pluginName, platform.platformName, accessoriesToRemove)

@@ -39,12 +39,12 @@ class AirPurifier extends SensiboAccessory {
 		/** @type {import('../types').Measurements} */
 		this.measurements = undefined
 
-		/** @type {ProxyHandler<Classes.InternalAcState>} */
+		/** @type {ProxyHandler<Classes.InternalAirPurifierState>} */
 		const StateHandler = require('./StateHandler')(this, platform)
-		const state = unified.getAcState(device)
+		const state = unified.getInternalAirPurifierState(device, platform)
 
 		this.cachedState.devices[this.id] = state
-		/** @type {Classes.InternalAcState} */
+		/** @type {Classes.InternalAirPurifierState} */
 		this.state = new Proxy(state, StateHandler)
 		this.StateManager = require('./StateManager')(this, platform)
 
@@ -100,7 +100,7 @@ class AirPurifier extends SensiboAccessory {
 	}
 
 	addAirPurifierService() {
-		this.easyDebug(`${this.name} - Adding AirPurifierService`)
+		this.easyDebugInfo(`${this.name} - Adding AirPurifierService`)
 		this.AirPurifierService = this.platformAccessory.getService(this.Service.AirPurifier)
 		if (!this.AirPurifierService) {
 			this.AirPurifierService = this.platformAccessory.addService(this.Service.AirPurifier, this.name, this.type)
@@ -134,7 +134,7 @@ class AirPurifier extends SensiboAccessory {
 	}
 
 	addLightSwitch() {
-		this.easyDebug(`${this.name} - Adding LightSwitchService`)
+		this.easyDebugInfo(`${this.name} - Adding LightSwitchService`)
 
 		this.PureLightSwitchService = this.platformAccessory.getService(this.room.name + ' Pure Light')
 		if (!this.PureLightSwitchService) {
@@ -151,7 +151,7 @@ class AirPurifier extends SensiboAccessory {
 
 		if (LightSwitch) {
 			// remove service
-			this.easyDebug(`${this.name} - Removing LightSwitchService`)
+			this.easyDebugInfo(`${this.name} - Removing LightSwitchService`)
 			this.platformAccessory.removeService(LightSwitch)
 			delete this.PureLightSwitchService
 		}

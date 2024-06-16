@@ -57,7 +57,7 @@ class AirConditioner extends SensiboAccessory {
 
 		/** @type {ProxyHandler<Classes.InternalAcState>} */
 		const StateHandler = require('./StateHandler')(this, platform)
-		const state = unified.getAcState(device)
+		const state = unified.getInternalAcState(device)
 
 		this.cachedState.devices[this.id] = state
 		/** @type {Classes.InternalAcState} */
@@ -109,7 +109,7 @@ class AirConditioner extends SensiboAccessory {
 			this.addHeaterCoolerService()
 		} else {
 			if (this.disableAirConditioner) {
-				this.easyDebug(`${this.name} - Skipping adding HeaterCooler due to disableAirConditioner: ${this.disableAirConditioner}`)
+				this.easyDebugInfo(`${this.name} - Skipping adding HeaterCooler due to disableAirConditioner: ${this.disableAirConditioner}`)
 			}
 			this.removeHeaterCoolerService()
 		}
@@ -157,7 +157,7 @@ class AirConditioner extends SensiboAccessory {
 
 	// TODO: move this in to Utils.js
 	addCharacteristicToService(ServiceName, CharacteristicName, Props = null, Setter = true) {
-		this.easyDebug(`${this.name} - Adding ${CharacteristicName} to ${ServiceName}`)
+		this.easyDebugInfo(`${this.name} - Adding ${CharacteristicName} to ${ServiceName}`)
 
 		const service = this.platformAccessory.getService(this.Service[ServiceName])
 		const characteristic = service?.getCharacteristic(this.Characteristic[CharacteristicName])
@@ -182,7 +182,7 @@ class AirConditioner extends SensiboAccessory {
 			}
 			characteristic.setProps(Props)
 		} else {
-			this.easyDebug(`${this.name} - Props not set for ${CharacteristicName}, proceeding with defaults.`)
+			this.easyDebugInfo(`${this.name} - Props not set for ${CharacteristicName}, proceeding with defaults.`)
 		}
 
 		characteristic
@@ -195,7 +195,7 @@ class AirConditioner extends SensiboAccessory {
 	}
 
 	addHeaterCoolerService() {
-		this.easyDebug(`${this.name} - Adding HeaterCoolerService`)
+		this.easyDebugInfo(`${this.name} - Adding HeaterCoolerService`)
 		this.HeaterCoolerService = this.platformAccessory.getService(this.Service.HeaterCooler)
 		if (!this.HeaterCoolerService) {
 			this.HeaterCoolerService = this.platformAccessory.addService(this.Service.HeaterCooler, this.name, 'HeaterCooler')
@@ -217,7 +217,7 @@ class AirConditioner extends SensiboAccessory {
 			this.addCharacteristicToService('HeaterCooler', 'CurrentRelativeHumidity', null, false)
 		} else {
 			// TODO: WIP trying to find a way to remove the Humidity characteristic immediately
-			this.easyDebug(`${this.name} - Removing Humidity characteristic`)
+			this.easyDebugInfo(`${this.name} - Removing Humidity characteristic`)
 			// @ts-ignore
 			this.HeaterCoolerService.removeCharacteristic(this.Characteristic.CurrentRelativeHumidity)
 		}
@@ -288,11 +288,11 @@ class AirConditioner extends SensiboAccessory {
 			return
 		}
 
-		// this.easyDebug(`${this.name} - Calculated TargetHeaterCoolerState validValues: ${validModes.forEach(mode => {
+		// this.easyDebugInfo(`${this.name} - Calculated TargetHeaterCoolerState validValues: ${validModes.forEach(mode => {
 		// 	return this.StateManager.characteristicToMode(mode)
 		// })}`)
 		// TODO: use a helper function to return names for the mode numbers
-		this.easyDebug(`${this.name} - Calculated TargetHeaterCoolerState validValues: [${validModes}]`)
+		this.easyDebugInfo(`${this.name} - Calculated TargetHeaterCoolerState validValues: [${validModes}]`)
 
 		// Below is specific logic to change TargetHeaterCoolerState and prevent warnings when its current value is not
 		// in the list of valid modes
@@ -303,7 +303,7 @@ class AirConditioner extends SensiboAccessory {
 			const tempValidModes = [...validModes] // make a shallow copy
 			const newMinValue = Math.min(...validModes) // validModes is an array of numbers (enums) that represent modes in HomeKit
 
-			this.easyDebug(`${this.name} - Temporarily including current value ${currentValue} to prevent warning,`
+			this.easyDebugInfo(`${this.name} - Temporarily including current value ${currentValue} to prevent warning,`
 						+ ` then updating value to new minimum of ${newMinValue}`)
 			tempValidModes.push(currentValue)
 
@@ -329,7 +329,7 @@ class AirConditioner extends SensiboAccessory {
 			//       3. Remove and re-add the whole service or accessory?
 			//       4. Try to see if the characteristic exists? this.HeaterCoolerService.testCharacteristic(Characteristic.SwingMode)
 			//       5. Set StatusActive Characteristic - https://github.com/homebridge/HAP-NodeJS/wiki/Presenting-Erroneous-Accessory-State-to-the-User
-			this.easyDebug(`${this.name} - Removing Vertical Swing (Oscillate) button`)
+			this.easyDebugInfo(`${this.name} - Removing Vertical Swing (Oscillate) button`)
 			// @ts-ignore
 			this.HeaterCoolerService.removeCharacteristic(this.Characteristic.SwingMode)
 		}
@@ -345,7 +345,7 @@ class AirConditioner extends SensiboAccessory {
 			// Apple HomeKit limitations mean a warning will be thrown as Filter characteristics doesn't exist under
 			// the HeaterCooler service and a separate Filter service doesn't seem to show up in the Home app.
 			// Home app also doesn't support Filter reset out of the box... could add a stateless switch?
-			this.easyDebug(`${this.name} - Adding Filter characteristics to ${this.name}`)
+			this.easyDebugInfo(`${this.name} - Adding Filter characteristics to ${this.name}`)
 
 			this.HeaterCoolerService.getCharacteristic(this.Characteristic.FilterChangeIndication)
 				.on('get', this.StateManager.get.FilterChangeIndication)
@@ -363,13 +363,13 @@ class AirConditioner extends SensiboAccessory {
 
 		if (HeaterCoolerService) {
 			// remove service
-			this.easyDebug(`${this.name} - Removing HeaterCoolerService`)
+			this.easyDebugInfo(`${this.name} - Removing HeaterCoolerService`)
 			this.platformAccessory.removeService(HeaterCoolerService)
 		}
 	}
 
 	addFanService() {
-		this.easyDebug(`${this.name} - Adding FanService`)
+		this.easyDebugInfo(`${this.name} - Adding FanService`)
 
 		this.FanService = this.platformAccessory.getService(this.Service.Fanv2)
 		if (!this.FanService) {
@@ -386,7 +386,7 @@ class AirConditioner extends SensiboAccessory {
 				.on('set', this.StateManager.set.FanSwing)
 		} else {
 			// TODO: WIP trying to find a way to remove the Vertical Swing (Oscillate) button immediately without needing the user to remove/reset the accessory.
-			this.easyDebug(`${this.name} - Removing Vertical Swing (Oscillate) button`)
+			this.easyDebugInfo(`${this.name} - Removing Vertical Swing (Oscillate) button`)
 			// @ts-ignore
 			this.FanService.removeCharacteristic(this.Characteristic.SwingMode)
 		}
@@ -403,13 +403,13 @@ class AirConditioner extends SensiboAccessory {
 
 		if (FanService) {
 			// remove service
-			this.easyDebug(`${this.name} - Removing FanService`)
+			this.easyDebugInfo(`${this.name} - Removing FanService`)
 			this.platformAccessory.removeService(FanService)
 		}
 	}
 
 	addDryService() {
-		this.easyDebug(`${this.name} - Adding DehumidifierService`)
+		this.easyDebugInfo(`${this.name} - Adding DehumidifierService`)
 
 		this.DryService = this.platformAccessory.getService(this.Service.HumidifierDehumidifier)
 		if (!this.DryService) {
@@ -442,7 +442,7 @@ class AirConditioner extends SensiboAccessory {
 				.on('set', this.StateManager.set.DrySwing)
 		} else {
 			// TODO: WIP trying to find a way to remove the Vertical Swing (Oscillate) button immediately without needing the user to remove/reset the accessory.
-			this.easyDebug(`${this.name} - Removing Vertical Swing (Oscillate) button`)
+			this.easyDebugInfo(`${this.name} - Removing Vertical Swing (Oscillate) button`)
 			// @ts-ignore
 			this.DryService.removeCharacteristic(this.Characteristic.SwingMode)
 		}
@@ -459,7 +459,7 @@ class AirConditioner extends SensiboAccessory {
 
 		if (DryService) {
 			// remove service
-			this.easyDebug(`${this.name} - Removing DehumidifierService`)
+			this.easyDebugInfo(`${this.name} - Removing DehumidifierService`)
 			this.platformAccessory.removeService(DryService)
 		}
 	}
@@ -468,7 +468,7 @@ class AirConditioner extends SensiboAccessory {
 		// TODO: review the logging... maybe line below becomes "Add HorizontalSwingSwitch" and
 		//       new log line several rows below for Adding if doesn't already exist?
 		//       do the same for other "add" functions
-		this.easyDebug(`${this.name} - Adding HorizontalSwingSwitchService`)
+		this.easyDebugInfo(`${this.name} - Adding HorizontalSwingSwitchService`)
 
 		this.HorizontalSwingSwitchService = this.platformAccessory.getService(this.room.name + ' Horizontal Swing')
 		if (!this.HorizontalSwingSwitchService) {
@@ -486,13 +486,13 @@ class AirConditioner extends SensiboAccessory {
 
 		if (HorizontalSwingSwitch) {
 			// remove service
-			this.easyDebug(`${this.name} - Removing HorizontalSwingSwitchService`)
+			this.easyDebugInfo(`${this.name} - Removing HorizontalSwingSwitchService`)
 			this.platformAccessory.removeService(HorizontalSwingSwitch)
 		}
 	}
 
 	addLightSwitch() {
-		this.easyDebug(`${this.name} - Adding LightSwitchService`)
+		this.easyDebugInfo(`${this.name} - Adding LightSwitchService`)
 
 		this.LightSwitchService = this.platformAccessory.getService(this.room.name + 'AC Light')
 		if (!this.LightSwitchService) {
@@ -510,13 +510,13 @@ class AirConditioner extends SensiboAccessory {
 
 		if (LightSwitch) {
 			// remove service
-			this.easyDebug(`${this.name} - Removing LightSwitchService`)
+			this.easyDebugInfo(`${this.name} - Removing LightSwitchService`)
 			this.platformAccessory.removeService(LightSwitch)
 		}
 	}
 
 	addSyncButtonService() {
-		this.easyDebug(`${this.name} - Adding SyncButtonSwitchService`)
+		this.easyDebugInfo(`${this.name} - Adding SyncButtonSwitchService`)
 
 		this.SyncButtonService = this.platformAccessory.getService(this.room.name + ' Sync')
 		if (!this.SyncButtonService) {
@@ -541,13 +541,13 @@ class AirConditioner extends SensiboAccessory {
 
 		if (SyncButtonService) {
 			// remove service
-			this.easyDebug(`${this.name} - Removing SyncButtonSwitchService`)
+			this.easyDebugInfo(`${this.name} - Removing SyncButtonSwitchService`)
 			this.platformAccessory.removeService(SyncButtonService)
 		}
 	}
 
 	addClimateReactService() {
-		this.easyDebug(`${this.room.name} - Adding Climate React Service`)
+		this.easyDebugInfo(`${this.room.name} - Adding Climate React Service`)
 
 		this.ClimateReactService = this.platformAccessory.getService(this.room.name + ' Climate React')
 		if (!this.ClimateReactService) {
@@ -565,7 +565,7 @@ class AirConditioner extends SensiboAccessory {
 
 		if (ClimateReactService) {
 			// remove service
-			this.easyDebug(`${this.room.name} - Removing Climate React Switch Service`)
+			this.easyDebugInfo(`${this.room.name} - Removing Climate React Switch Service`)
 			this.platformAccessory.removeService(ClimateReactService)
 		}
 	}

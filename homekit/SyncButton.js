@@ -68,7 +68,7 @@ class SyncButton extends SensiboAccessory {
 	}
 
 	addSyncButtonService() {
-		this.easyDebug(`${this.name} - Adding SyncButtonService`)
+		this.easyDebugInfo(`${this.name} - Adding SyncButtonService`)
 
 		this.SyncButtonService = this.platformAccessory.getService(this.Service.Switch)
 		if (!this.SyncButtonService) {

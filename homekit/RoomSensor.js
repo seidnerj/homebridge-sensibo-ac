@@ -97,7 +97,7 @@ class RoomSensor extends SensiboAccessory {
 	}
 
 	addMotionSensor() {
-		this.easyDebug(`${this.name} - Adding MotionSensorService`)
+		this.easyDebugInfo(`${this.name} - Adding MotionSensorService`)
 
 		this.MotionSensorService = this.platformAccessory.getService(this.Service.MotionSensor)
 		if (!this.MotionSensorService) {
@@ -112,7 +112,7 @@ class RoomSensor extends SensiboAccessory {
 	}
 
 	addTemperatureSensor() {
-		this.easyDebug(`${this.name} - Adding TemperatureSensorService`)
+		this.easyDebugInfo(`${this.name} - Adding TemperatureSensorService`)
 
 		this.TemperatureSensorService = this.platformAccessory.getService(this.Service.TemperatureSensor)
 		if (!this.TemperatureSensorService) {
@@ -132,7 +132,7 @@ class RoomSensor extends SensiboAccessory {
 	}
 
 	addHumiditySensor() {
-		this.easyDebug(`${this.name} - Adding HumiditySensorService`)
+		this.easyDebugInfo(`${this.name} - Adding HumiditySensorService`)
 
 		this.HumiditySensorService = this.platformAccessory.getService(this.Service.HumiditySensor)
 		if (!this.HumiditySensorService) {

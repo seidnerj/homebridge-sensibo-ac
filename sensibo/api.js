@@ -6,6 +6,8 @@ const SensiboACPlatform = require('./SensiboACPlatform')
 const axios = require('axios')
 const retry = require('axios-retry-after')
 
+// TODO: Currently we only retry when we encounter a 429 status code.
+//       However, we intermittently get a 400 status code even when the request seems to be perfectly valid - we should retry as well in such cases.
 axios.interceptors.response.use(null, retry(axios))
 const integrationName = `${pluginName}@${version}`
 const baseURL = 'https://home.sensibo.com/api/v2'
@@ -24,7 +26,7 @@ function getToken(platform) {
 		// TODO: what happens if returned token doesn't work? E.g. password change... should token be "checked" for validity?
 		// TODO: Looks like Token expiry might be 15 years?!
 		if (token && token.username && token.username === platform.username && new Date().getTime() < token.expirationDate) {
-			platform.easyDebug('Found valid token in storage')
+			platform.easyDebugInfo('Found valid token in storage')
 			resolve(token.key)
 
 			return
@@ -55,7 +57,7 @@ function getToken(platform) {
 					expirationDate: new Date().getTime() + response.data.expires_in*1000
 				}
 
-				platform.easyDebug('Token successfully acquired from Sensibo\'s API')
+				platform.easyDebugInfo('Token successfully acquired from Sensibo\'s API')
 				await platform.storage.setItem('token', token)
 				resolve(token.key)
 			} else {
@@ -73,12 +75,12 @@ function getToken(platform) {
 				platform.log.error('getToken:', errorContent.message)
 
 				if (err.response) {
-					platform.easyDebug('Error response:')
-					platform.easyDebug(err.response.data)
+					platform.easyDebugInfo('Error response:')
+					platform.easyDebugInfo(err.response.data)
 					errorContent.response = err.response.data
 				}
 
-				// platform.easyDebug(err)
+				// platform.easyDebugInfo(err)
 				reject(errorContent)
 			})
 	})
@@ -116,7 +118,7 @@ async function apiRequest(platform, method, url, data) {
 
 	// TODO: could add auto-retry for timeouts etc
 	if (!axios.defaults?.params?.apiKey && !axios.defaults?.headers?.common?.Authorization) {
-		platform.easyDebug('apiRequest error: No API Token or Authorization Header found')
+		platform.easyDebugInfo('apiRequest error: No API Token or Authorization Header found')
 
 		try {
 			const token = await getToken(platform)
@@ -129,10 +131,10 @@ async function apiRequest(platform, method, url, data) {
 	}
 
 	return new Promise((resolve, reject) => {
-		platform.easyDebug(`Creating ${method.toUpperCase()} request to Sensibo API ->`)
-		platform.easyDebug(baseURL + url)
+		platform.easyDebugInfo(`Creating ${method.toUpperCase()} request to Sensibo API ->`)
+		platform.easyDebugInfo(baseURL + url)
 		if (data) {
-			platform.easyDebug(`data:\n${JSON.stringify(data, null, 4)}`)
+			platform.easyDebugInfo(`data:\n${JSON.stringify(data, null, 4)}`)
 		}
 
 		/** @type {axios.AxiosRequestConfig} */
@@ -147,7 +149,7 @@ async function apiRequest(platform, method, url, data) {
 			let results
 
 			if (json.status && json.status == 'success') {
-				platform.easyDebug(`Successful ${method.toUpperCase()} response (response value not logged)`)
+				platform.easyDebugInfo(`Successful ${method.toUpperCase()} response (response value not logged)`)
 
 				// TODO: The below is only relevant for getAllDevices (and should be moved).
 				//       This prevents address details being logged through (and adds ClimateReact settings if they are missing),
@@ -159,7 +161,7 @@ async function apiRequest(platform, method, url, data) {
 				}
 
 				// TODO: revert commenting? (it just takes up too much of the log to make any sense of the rest)
-				// platform.easyDebug(JSON.stringify(results, null, 4))
+				// platform.easyDebugInfo(JSON.stringify(results, null, 4))
 				resolve(results)
 			} else {
 				const error = json
@@ -179,7 +181,7 @@ async function apiRequest(platform, method, url, data) {
 
 				if (err.response) {
 					errorContent.response = err.response.data
-					platform.easyDebug(`Error response:\n${JSON.stringify(errorContent.response, null, 4)}`)
+					platform.easyDebugInfo(`Error response:\n${JSON.stringify(errorContent.response, null, 4)}`)
 				}
 
 				reject(errorContent)

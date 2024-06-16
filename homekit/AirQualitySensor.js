@@ -36,12 +36,12 @@ class AirQualitySensor extends SensiboAccessory {
 		this.disableAirQuality = platform.disableAirQuality
 		this.disableCarbonDioxide = platform.disableCarbonDioxide
 
-		/** @type {ProxyHandler<Classes.InternalAcState>} */
+		/** @type {ProxyHandler<Classes.InternalAirQualitySensorState>} */
 		const StateHandler = require('./StateHandler')(this, platform)
-		const state = unified.getAcState(airConditionerOrPurifier.device)
+		const state = unified.getAirQualityState(airConditionerOrPurifier.device, platform)
 
 		this.cachedState.devices[this.id] = state
-		/** @type {Classes.InternalAcState} */
+		/** @type {Classes.InternalAirQualitySensorState} */
 		this.state = new Proxy(state, StateHandler)
 		this.StateManager = require('./StateManager')(this, platform)
 
@@ -101,7 +101,7 @@ class AirQualitySensor extends SensiboAccessory {
 	}
 
 	addAirQualityService() {
-		this.easyDebug(`${this.name} - Adding AirQualitySensorService`)
+		this.easyDebugInfo(`${this.name} - Adding AirQualitySensorService`)
 		this.AirQualitySensorService = this.platformAccessory.getService(this.Service.AirQualitySensor)
 
 		if (!this.AirQualitySensorService) {
@@ -120,13 +120,13 @@ class AirQualitySensor extends SensiboAccessory {
 
 		if (AirQualitySensor) {
 			// remove service
-			this.easyDebug(`${this.name} - Removing AirQualitySensorService`)
+			this.easyDebugInfo(`${this.name} - Removing AirQualitySensorService`)
 			this.platformAccessory.removeService(AirQualitySensor)
 		}
 	}
 
 	addCarbonDioxideService() {
-		this.easyDebug(`${this.name} - Adding CarbonDioxideSensorService`)
+		this.easyDebugInfo(`${this.name} - Adding CarbonDioxideSensorService`)
 		this.CarbonDioxideSensorService = this.platformAccessory.getService(this.Service.CarbonDioxideSensor)
 
 		if (!this.CarbonDioxideSensorService) {
@@ -144,13 +144,13 @@ class AirQualitySensor extends SensiboAccessory {
 
 		if (CarbonDioxideSensor) {
 			// remove service
-			this.easyDebug(`${this.name} - Removing CarbonDioxideSensorService`)
+			this.easyDebugInfo(`${this.name} - Removing CarbonDioxideSensorService`)
 			this.platformAccessory.removeService(CarbonDioxideSensor)
 		}
 	}
 
 	updateHomeKit() {
-		if (!(this.state instanceof Classes.InternalAcState)) {
+		if (!(this.state instanceof Classes.InternalAirPurifierState)) {
 			// TODO: log warning
 			return
 		}

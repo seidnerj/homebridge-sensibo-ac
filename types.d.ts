@@ -1,4 +1,4 @@
-import { InternalAcState, InternalOccupancyState, InternalSensorState } from "./classes"
+import { InternalAcState, InternalOccupancyState, InternalSensorState, InternalAirQualitySensorState } from "./classes"
 
 export declare type DeviceInfo = {
     id: string,
@@ -47,6 +47,7 @@ export declare type InternalFilterState = {
     filterLifeLevel: null|number
 }
 
+// TODO: change name to DeviceState?
 export declare type Device = {
     id: string,
     temperatureUnit: string,
@@ -60,11 +61,11 @@ export declare type Device = {
     pureBoostConfig: null|PureBoostConfig,
     homekitSupported: boolean,
     remoteCapabilities: RemoteCapabilities,
-    smartMode: SmartMode,
+    smartMode: SmartModeState,
     measurements: Measurements
 }
 
-export declare type SmartMode = {
+export declare type SmartModeState = {
     enabled: boolean,
     type: string,
     deviceUid: string,
@@ -77,7 +78,7 @@ export declare type SmartMode = {
     sync_with_ac_power: boolean
 }
 
-export declare type InternalSmartMode = {
+export declare type InternalSmartModeState = {
     enabled: boolean,
     type: string,
     highTemperatureState: InternalSmartModeTempratureState,
@@ -168,7 +169,6 @@ export declare type Location = {
     occupancy: string,
     name: string,
     id: string
-
 }
 
 export declare type Token = {
@@ -302,7 +302,7 @@ export declare type Measurements = {
 }
 
 export declare type PlatformState = {
-    devices: { [id: string]: InternalAcState|InternalSensorState },
+    devices: { [id: string]: InternalAcState|InternalSensorState|InternalAirQualitySensorState},
     sensors: { [id: string]: InternalSensorState },
     occupancy: { [id: string]: InternalOccupancyState },
 }
