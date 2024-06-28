@@ -24,6 +24,7 @@
 			"disableVerticalSwing": false,
 			"enableClimateReactAutoSetup": false,
 			"climateReactAutoSetupOffset": 0,
+			"climateReactAutoSetupMultiplier": 1,
 			"enableRepeatClimateReactAction": false,
 			"enableClimateReactSwitch": false,			
 			"enableHistoryStorage": false,

@@ -19,6 +19,7 @@ module.exports = (device, platform) => {
 	const easyDebugInfo = platform.easyDebugInfo
 	const enableClimateReactAutoSetup = platform.enableClimateReactAutoSetup
 	const climateReactAutoSetupOffset = platform.climateReactAutoSetupOffset
+	const climateReactAutoSetupMultiplier = platform.climateReactAutoSetupMultiplier
 
 	/**
 	 * @param {number} value
@@ -100,7 +101,7 @@ module.exports = (device, platform) => {
 		smartModeState.lowTemperatureWebhook = null
 
 		if (device.state.mode === 'COOL') {
-			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1) + climateReactAutoSetupOffset
+			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)*climateReactAutoSetupMultiplier + climateReactAutoSetupOffset
 			smartModeState.highTemperatureState = {
 				on: true,
 				targetTemperature: device.state.targetTemperature,
@@ -112,7 +113,7 @@ module.exports = (device, platform) => {
 				light: device.state.light ? 'on' : 'off'
 			}
 
-			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1) + climateReactAutoSetupOffset
+			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)*climateReactAutoSetupMultiplier + climateReactAutoSetupOffset
 			smartModeState.lowTemperatureState = {
 				on: false,
 				targetTemperature: device.state.targetTemperature,
@@ -124,7 +125,7 @@ module.exports = (device, platform) => {
 				light: device.state.light ? 'on' : 'off'
 			}
 		} else if (device.state.mode === 'HEAT') {
-			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1) + climateReactAutoSetupOffset
+			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)*climateReactAutoSetupMultiplier + climateReactAutoSetupOffset
 			smartModeState.highTemperatureState = {
 				on: false,
 				targetTemperature: device.state.targetTemperature,
@@ -136,7 +137,7 @@ module.exports = (device, platform) => {
 				light: device.state.light ? 'on' : 'off'
 			}
 
-			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1) + climateReactAutoSetupOffset
+			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)*climateReactAutoSetupMultiplier + climateReactAutoSetupOffset
 			smartModeState.lowTemperatureState = {
 				on: true,
 				targetTemperature: device.state.targetTemperature,
