@@ -142,6 +142,13 @@
                 "default": 0,
                 "required": false
             },
+			"climateReactAutoSetupMultiplier": {
+                "title": "Climate React Auto Setup Multiplier",
+                "description": "Temprature multiplier used when automatically setting Climate React's thresholds",
+                "type": "number",
+                "default": 1,
+                "required": false
+            },
 			"enableClimateReactSwitch": {
 				"title": "Enable Climate React Switch",
 				"description": "Add Climate React (Smart mode) switch",

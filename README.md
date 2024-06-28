@@ -88,6 +88,7 @@ If you don't use Homebridge UI or HOOBS, or if you want to know more about the p
 		"disableVerticalSwing": false,
 		"enableClimateReactAutoSetup": false,
 		"climateReactAutoSetupOffset": 0,
+		"climateReactAutoSetupMultiplier": 1,
 		"enableRepeatClimateReactAction": false,
 		"enableClimateReactSwitch": false,	
 		"enableHistoryStorage": false,
@@ -128,6 +129,7 @@ See below the table for additional details on these settings.
 | `enableClimateReactSwitch` |  Adds a switch to enable/disable Climate React (Smart mode)      |          |  `false` |  Boolean |
 | `enableClimateReactAutoSetup` |  When set to `true`, will auto-update the Climate React (Smart mode) settings to match whenever the AC state is set or changed  |          |  `false` |  Boolean  |
 | `climateReactAutoSetupOffset` |  "Temprature offset used when automatically setting Climate React  |          |  `0` |  Number  |
+| `climateReactAutoSetupMultiplier` |  "Temprature multiplier used when automatically setting Climate React  |          |  `1` |  Number  |
 | `enableRepeatClimateReactAction` |  When set to `true`, will Repeat the last Climate React triggered action to decrease the likelihood of AC State discrepancies  |          |  `false` |  Boolean  |
 | `climateReactSwitchInAccessory` |  When set to `true`, adds a **Climate React** switch (like `enableClimateReactSwitch` above) but within the AC accessory. It will also remove the standalone AC Climate React switch (if one exists). Works only when `enableClimateReactSwitch` is also set to true  |          |  `false` |  Boolean  |
 | `enableHistoryStorage`     |  When set to `true`, temperature & humidity measurements will be stored over time, viewable as History in the Eve app  |          |  `false` |   Boolean |
