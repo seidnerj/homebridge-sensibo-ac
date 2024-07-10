@@ -61,6 +61,7 @@ If you don't use Homebridge UI or HOOBS, or if you want to know more about the p
 "platforms": [
     {
         "platform": "SensiboAC",
+		"auth": "usernamePassword",
         "username": "******@*******.***",
         "password": "******"
     }
