@@ -2,7 +2,7 @@
   "displayName": "Sensibo for Homebridge",
   "name": "homebridge-sensibo-ac",
   "platformName": "SensiboAC",
-  "version": "2.5.0-alpha.4",
+  "version": "v2.6.0-alpha.0",
   "description": "Homebridge plugin for Sensibo - Smart AC Control",
   "license": "GNU",
   "repository": {
