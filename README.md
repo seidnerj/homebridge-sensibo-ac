@@ -289,7 +289,7 @@ To enable **Climate React Auto Setup**, add `"enableClimateReactAutoSetup": true
 
 In some scenarios an AC does not receive commands issued by Climate React but the system still "believes" it did. To decrease the likelihood of such a discrepancy persisting, we can repeat (once) the last climate react triggered action, when relevant.
 
-When enabled, the plugin will periodically check and, when relevant, repeat the last Climate React triggered action to decrease the likelihood of of the scenario described above.
+When enabled, the plugin will periodically check and, when relevant, repeat the last Climate React triggered action to decrease the likelihood of any mismatch.
 
 To enable **Repeat Climate React Action**, add `"enableRepeatClimateReactAction": true` to your config.
 
