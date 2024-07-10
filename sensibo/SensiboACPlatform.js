@@ -7,8 +7,9 @@ const sensiboApi = require('./api')
 const syncHomeKitCache = require('./syncHomeKitCache')
 const refreshState = require('./refreshState')
 const storage = require('node-persist')
-const pluginName = require('./../package.json').name
-const platformName = require('./../package.json').platformName
+const packageInfo = require('./../package.json')
+const pluginName = packageInfo.name
+const platformName = packageInfo.platformName
 
 /**
  * @implements {homebridge.DynamicPlatformPlugin}
