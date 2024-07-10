@@ -137,14 +137,14 @@
             },
 			"climateReactAutoSetupOffset": {
                 "title": "Climate React Auto Setup Offset",
-                "description": "Temprature offset used when automatically setting Climate React's thresholds",
+                "description": "Offset, in degrees, above or below AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled",
                 "type": "number",
                 "default": 0,
                 "required": false
             },
 			"climateReactAutoSetupMultiplier": {
                 "title": "Climate React Auto Setup Multiplier",
-                "description": "Temprature multiplier used when automatically setting Climate React's thresholds",
+                "description": "Multiplier above or below AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled",
                 "type": "number",
                 "default": 1,
                 "required": false
