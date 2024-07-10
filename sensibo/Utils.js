@@ -72,7 +72,7 @@ module.exports = (device, platform) => {
 
 			// FIXME: what does this line actually check for? Does it look for not false and false (not true) at the same time?
 			if (newValue !== 0 && newValue !== false && (typeof newValue === 'undefined' || !newValue)) {
-				easyDebugError(`${device.name} - '${newValue}' bad value for ${characteristicName} for ${serviceName}... skipping update`)
+				easyDebugError(`${device.name} - '${newValue}' bad value for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
 
 				return
 			}
