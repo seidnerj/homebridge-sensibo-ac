@@ -991,11 +991,6 @@ module.exports = (device, platform) => {
 				} else {
 					device.state.active = false
 				}
-				if (device instanceof AirConditioner) {
-					this.updateClimateReact(device, enableClimateReactAutoSetup)
-				} else {
-					easyDebugInfo(device.name, `(SET) - Pure Rotation Speed: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
-				}
 
 				callback()
 			},
