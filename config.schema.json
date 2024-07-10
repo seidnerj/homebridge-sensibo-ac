@@ -149,13 +149,6 @@
                 "default": 1,
                 "required": false
             },
-			"enableClimateReactSwitch": {
-				"title": "Enable Climate React Switch",
-				"description": "Add Climate React (Smart mode) switch",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
 			"enableRepeatClimateReactAction": {
 				"title": "Enable Climate React Repeat",
 				"description": "Repeat the last Climate React triggered action to decrease the likelihood of AC State discrepancies",
@@ -163,6 +156,13 @@
 				"default": false,
 				"required": false
 			},
+			"enableClimateReactSwitch": {
+				"title": "Enable Climate React Switch",
+				"description": "Add Climate React (Smart mode) switch",
+				"type": "boolean",
+				"default": false,
+				"required": false
+			},			
             "climateReactSwitchInAccessory": {
                 "title": "Climate React Switch in AC Accessory",
                 "description": "Show the Climate React (Smart mode) switch in ACs (only works when `enableClimateReactSwitch` is set to true)",
