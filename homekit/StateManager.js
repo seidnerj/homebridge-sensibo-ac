@@ -973,7 +973,7 @@ module.exports = (device, platform) => {
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
 			PureRotationSpeed: (value, callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device.state instanceof Classes.InternalAirPurifierState)) {
 					// TODO: log warning
 					return
 				}

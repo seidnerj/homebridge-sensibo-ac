@@ -46,7 +46,7 @@ class SensiboAccessory {
 		this.lastStateRefresh = minDate
 
 		// FIXME: this is populated by the subclass but should probably be moved here
-		/** @type {Classes.InternalAcState|Classes.InternalOccupancyState|Classes.InternalSensorState|Classes.InternalAirQualitySensorState} */
+		/** @type {Classes.InternalAcState|Classes.InternalOccupancyState|Classes.InternalSensorState|Classes.InternalAirQualitySensorState|Classes.InternalAirPurifierState} */
 		this.state = null
 	}
 
