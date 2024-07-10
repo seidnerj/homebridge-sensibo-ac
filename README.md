@@ -128,7 +128,7 @@ See below the table for additional details on these settings.
 | `disableVerticalSwing`     |  When set to `true`, will remove the vertical swing control (Oscillate) from the accessory  |          |  `false` |  Boolean |
 | `enableClimateReactSwitch` |  Adds a switch to enable/disable Climate React (Smart mode)      |          |  `false` |  Boolean |
 | `enableClimateReactAutoSetup` |  When set to `true`, will auto-update the Climate React (Smart mode) settings to match whenever the AC state is set or changed  |          |  `false` |  Boolean  |
-| `climateReactAutoSetupOffset` |  "Temprature offset used when automatically setting Climate React  |          |  `0` |  Number  |
+| `climateReactAutoSetupOffset` |  Offset, in degrees, above or below AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled  |          |  `0` |  Integer  |
 | `climateReactAutoSetupMultiplier` |  "Temprature multiplier used when automatically setting Climate React  |          |  `1` |  Number  |
 | `enableRepeatClimateReactAction` |  When set to `true`, will Repeat the last Climate React triggered action to decrease the likelihood of AC State discrepancies  |          |  `false` |  Boolean  |
 | `climateReactSwitchInAccessory` |  When set to `true`, adds a **Climate React** switch (like `enableClimateReactSwitch` above) but within the AC accessory. It will also remove the standalone AC Climate React switch (if one exists). Works only when `enableClimateReactSwitch` is also set to true  |          |  `false` |  Boolean  |
