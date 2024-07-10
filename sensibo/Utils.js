@@ -59,7 +59,7 @@ module.exports = (device, platform) => {
 		 * @param  {Number|String|Boolean} newValue   The value that the Characteristic should be set to
 		 */
 		updateValue: (serviceName, characteristicName, newValue) => {
-			// easyDebugInfo(`${device.name} - updateValue: ${newValue} for  ${characteristicName} for ${serviceName}`)
+			// easyDebugInfo(`${device.name} - updateValue: ${newValue} for characteristic ${characteristicName} on service ${serviceName}`)
 			// Could we use .validateUserInput or .validateClientSuppliedValue from HAP Characteristics definition? Probably not as both are private...
 
 			const characteristic = device[serviceName]?.getCharacteristic(Characteristic[characteristicName])
