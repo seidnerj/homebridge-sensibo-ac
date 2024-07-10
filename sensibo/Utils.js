@@ -78,7 +78,7 @@ module.exports = (device, platform) => {
 			}
 
 			if (newValue === undefined || newValue === null) {
-				easyDebugError(`${device.name} - '${newValue}' undefined or null for ${characteristicName} for ${serviceName}... skipping update`)
+				easyDebugError(`${device.name} - '${newValue}' undefined or null for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
 
 				return
 			}
