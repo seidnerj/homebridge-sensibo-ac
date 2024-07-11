@@ -141,7 +141,9 @@ async function apiRequest(platform, method, url, data) {
 		const axiosInstanceConfig = {
 			url: url,
 			method: method,
-			data: data
+			data: data,
+      headers: { 'Accept-Encoding': 'gzip' },
+      decompress: true
 		}
 
 		axios(axiosInstanceConfig).then(async response => {
