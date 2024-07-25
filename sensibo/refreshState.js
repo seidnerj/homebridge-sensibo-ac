@@ -87,7 +87,7 @@ async function refreshDeviceState(handledLocations, platform, device) {
 		// it did. To decrease the likelihood of such a discrepancy persisting, we will repeat the last climate react triggered action - once.
 		//
 		// The logic of the code is as follows:
-		// Set the AC State to the the last AC State set by Climate React if the AC State has not since been set by a non Climate React "reason"
+		// Set the AC State to the last AC State set by Climate React if the AC State has not since been set by a non Climate React "reason"
 
 		if (airConditioner.lastStateRefresh.getTime() == minDate.getTime()) {
 			platform.easyDebugInfo(`Repeat Climate React Action for ${airConditioner.name}: last state refresh is ${JSON.stringify(airConditioner.lastStateRefresh, null, 4)}, skipping.`)
