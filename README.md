@@ -280,9 +280,11 @@ To show the **Climate React** switch within the AC accessory, instead of a separ
 
 When enabled, every time an AC's state is set or changed, the Climate React configuration will be updated so that the desired temperature is maintained.
 
-For example, if setting an AC to Cool and 25°C, Climate React will be set up such that when the temperature rises above 25°C the AC starts to cool and when the temperature drops below 24° (the target temperature minus 1 degree C, or the equivalent F delta), the AC will be turned off.
+For example: if setting an AC to Cool and 25°C, Climate React will be set up such that when the temperature rises above 26°C (the target temperature plus 1 degrees C, or 1.8 degree F), the AC turns on cooling and when the temperature drops below 24° (the target temperature minus 1 degree C, or 1.8 degrees F), the AC will be turned off.
 
-When setting an AC to Heat with a target temprature, Climate React will be set to plus 1 degree C, or equivalent F delta.
+Another example, if setting an AC to Heat and 25°C, Climate React will be set up such that when the temperature rises above 26°C (the target temperature plus 1 degrees C, or 1.8 degree F), the AC will be turn off and when the temperature drops below 24° (the target temperature minus 1 degree C, or 1.8 degrees F), the AC will be turned on heating.
+
+The lower/uppers bounds is defined as "targetTemprature +/- 1*climateReactAutoSetupMultiplier + climateReactAutoSetupOffset", for C. For F, climateReactAutoSetupMultiplier is multiplied by 1.8. By changing climateReactAutoSetupMultiplier and climateReactAutoSetupOffset one can influence climate react auto setup's bounds' values.
 
 To enable **Climate React Auto Setup**, add `"enableClimateReactAutoSetup": true` to your config.
 
