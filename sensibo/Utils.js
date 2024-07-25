@@ -124,7 +124,7 @@ module.exports = (device, platform) => {
 
 				return
 			} else if (maxValue && newValue > maxValue) {
-				easyDebugError(`${device.name} - '${newValue}' greater than maxValue: ${maxValue} for ${characteristicName} for ${serviceName}... skipping update`)
+				easyDebugError(`${device.name} - '${newValue}' greater than maxValue: ${maxValue} for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
 
 				return
 			}
