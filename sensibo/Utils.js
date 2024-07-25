@@ -38,7 +38,7 @@ module.exports = (device, platform) => {
 		 * @return {Number} The degrees in F
 		 */
 		toFahrenheit: (degreesC) => {
-			const degreesF = unified.toFarenheight(degreesC)
+			const degreesF = Math.round((degreesC * 1.8) + 32)
 
 			easyDebugInfo(`${device.name} - Utils toFahrenheit - degreesC: ${degreesC}, degreesF: ${degreesF}`)
 
