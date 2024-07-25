@@ -1,4 +1,3 @@
-// @ts-ignore
 const path = require('path')
 const homebridge = require('homebridge')
 // eslint-disable-next-line no-unused-vars
