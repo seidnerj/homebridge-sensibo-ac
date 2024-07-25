@@ -97,7 +97,7 @@ module.exports = (device, platform) => {
 			}
 
 			if (validValues && !validValues.includes(newValue)) {
-				easyDebugError(`${device.name} - '${newValue}' not in validValues: ${validValues} for ${characteristicName} for ${serviceName}... skipping update`)
+				easyDebugError(`${device.name} - '${newValue}' not in validValues: ${validValues} for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
 
 				return
 			}
