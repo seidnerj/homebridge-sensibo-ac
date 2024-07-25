@@ -109,7 +109,7 @@ module.exports = (device, platform) => {
 					const roundedValue = minStep < 1 ? Math.round((newValuePlusEpsilon) * 10) / 10 : Math.round(newValuePlusEpsilon)
 
 					if (roundedValue !== newValue) {
-						easyDebugWarning(`${device.name} - '${newValue}' doesn't meet required rounding (minStep = ${minStep}) for ${characteristicName} for ${serviceName}, rounding: ${roundedValue}`)
+						easyDebugWarning(`${device.name} - '${newValue}' doesn't meet required rounding (minStep = ${minStep}) for characteristic ${characteristicName} on service ${serviceName}, rounding: ${roundedValue}`)
 						newValue = roundedValue
 					}
 				} else{
