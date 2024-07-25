@@ -120,7 +120,7 @@ module.exports = (device, platform) => {
 			}
 
 			if (minValue && newValue < minValue) {
-				easyDebugError(`${device.name} - '${newValue}' less than minValue: ${minValue} for ${characteristicName} for ${serviceName}... skipping update`)
+				easyDebugError(`${device.name} - '${newValue}' less than minValue: ${minValue} for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
 
 				return
 			} else if (maxValue && newValue > maxValue) {
