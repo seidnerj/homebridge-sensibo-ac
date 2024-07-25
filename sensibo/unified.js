@@ -105,6 +105,7 @@ module.exports = {
 			capabilities[modeString] = mode
 
 			if (!['DRY','FAN'].includes(modeString)) {
+				// TODO: rename homeKitSupported to remove confusion as a similar attribute name is returned in API response
 				mode.homeKitSupported = true
 			}
 
