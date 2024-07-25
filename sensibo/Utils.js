@@ -135,7 +135,7 @@ module.exports = (device, platform) => {
 				return
 			}
 
-			easyDebugInfo(`${device.name} - Setting '${newValue}' for ${characteristicName} on service ${serviceName}, value was '${currentValue}'`)
+			easyDebugInfo(`${device.name} - Setting '${newValue}' for characteristic ${characteristicName} on service ${serviceName}, value was '${currentValue}'`)
 			characteristic.updateValue(newValue)
 
 			return
