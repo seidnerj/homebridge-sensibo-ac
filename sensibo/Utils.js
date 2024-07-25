@@ -93,7 +93,7 @@ module.exports = (device, platform) => {
 			if (Number.isNaN(newValue)) {
 				// non-number is valid for many use cases
 				// TODO: could check if props.format is float or int, then compare and fail if needed?
-				easyDebugError(`${device.name} - '${newValue}' is not a number for ${characteristicName} (expected format '${format}') for ${serviceName}... continuing`)
+				easyDebugError(`${device.name} - '${newValue}' is not a number for characteristic ${characteristicName} (expected format '${format}') on service ${serviceName}... continuing`)
 			}
 
 			if (validValues && !validValues.includes(newValue)) {
