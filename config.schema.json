@@ -137,7 +137,7 @@
             },
 			"climateReactAutoSetupOffset": {
                 "title": "Climate React Auto Setup Offset",
-                "description": "Offset, in degrees, above or below AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled",
+                "description": "Offset, in degrees, above or below AC target temperature that will be used to toggle AC when Enable Climate React Auto Setup above is true",
                 "type": "number",
                 "default": 0,
                 "required": false
