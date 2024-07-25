@@ -106,7 +106,7 @@ class InternalSensorState {
 	constructor(motionDetected, currentTemperature, relativeHumidity, lowBattery) {
 		this.motionDetected = motionDetected
 		this.currentTemperature = currentTemperature
-		this.relativeHumidity =relativeHumidity
+		this.relativeHumidity = relativeHumidity
 		this.lowBattery = lowBattery
 		this.update = null // this is overriden by StateHandler which wraps this class's instance
 	}
