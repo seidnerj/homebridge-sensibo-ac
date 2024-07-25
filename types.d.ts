@@ -268,7 +268,7 @@ export declare type Event = {
 }
 
 export declare type EventDetails = {
-        user: UserDetails,
+    user: UserDetails,
         acState: AcState,
         resultingAcState: AcState,
         causedByUser: FullUserDetails,
