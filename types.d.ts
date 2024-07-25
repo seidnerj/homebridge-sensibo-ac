@@ -269,15 +269,15 @@ export declare type Event = {
 
 export declare type EventDetails = {
     user: UserDetails,
-        acState: AcState,
-        resultingAcState: AcState,
-        causedByUser: FullUserDetails,
-        reason: string,
-        changedProperties: string[],
-        status: string,
-        thirdPartyReason: null|object,
-        measurements: EventMeasurements,
-        weather: null|object
+    acState: AcState,
+    resultingAcState: AcState,
+    causedByUser: FullUserDetails,
+    reason: string,
+    changedProperties: string[],
+    status: string,
+    thirdPartyReason: null|object,
+    measurements: EventMeasurements,
+    weather: null|object
 }
 
 export declare type EventMeasurements = {
