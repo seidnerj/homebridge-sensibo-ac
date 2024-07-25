@@ -113,7 +113,7 @@ module.exports = (device, platform) => {
 						newValue = roundedValue
 					}
 				} else{
-					easyDebugError(`${device.name} - '${newValue}' for ${characteristicName} for ${serviceName} is not of type 'number'... skipping update`)
+					easyDebugError(`${device.name} - '${newValue}' for characteristic ${characteristicName} on service ${serviceName} is not of type 'number'... skipping update`)
 
 					return
 				}
