@@ -130,7 +130,7 @@ module.exports = (device, platform) => {
 			}
 
 			if (currentValue === newValue) {
-				easyDebugInfo(`${device.name} - '${newValue}' equals '${currentValue}' for ${characteristicName} for ${serviceName}... skipping update`)
+				easyDebugInfo(`${device.name} - '${newValue}' equals '${currentValue}' for characteristic ${characteristicName} on service ${serviceName}... skipping update`)
 
 				return
 			}
