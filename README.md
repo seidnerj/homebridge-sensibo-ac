@@ -131,7 +131,8 @@ See below the table for additional details on these settings.
 | `enableClimateReactSwitch` |  Adds a switch to enable/disable Climate React (Smart mode)      |          |  `false` |  Boolean |
 | `enableClimateReactAutoSetup` |  When set to `true`, will auto-update the Climate React (Smart mode) settings to match whenever the AC state is set or changed  |          |  `false` |  Boolean  |
 | `climateReactAutoSetupOffset` |  Offset, in degrees, above or below AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled  |          |  `0` |  Integer  |
-| `climateReactAutoSetupMultiplier` |  Multiplier above or below AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled  |          |  `1` |  Integer  |
+| `positiveClimateReactAutoSetupMultiplier` |  Multiplier above AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled  |          |  `1` |  Integer  |
+| `negativeClimateReactAutoSetupMultiplier` |  Multiplier below AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled  |          |  `1` |  Integer  |
 | `enableRepeatClimateReactAction` |  When set to `true`, will Repeat the last Climate React action triggered, used to decrease the likelihood of AC State discrepancies  |          |  `false` |  Boolean  |
 | `climateReactSwitchInAccessory` |  When set to `true`, adds a **Climate React** switch (like `enableClimateReactSwitch` above) but within the AC accessory. It will also remove the standalone AC Climate React switch (if one exists). Works only when `enableClimateReactSwitch` is also set to true  |          |  `false` |  Boolean  |
 | `enableHistoryStorage`     |  When set to `true`, temperature & humidity measurements will be stored over time, viewable as History in the Eve app  |          |  `false` |   Boolean |
