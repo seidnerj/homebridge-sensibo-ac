@@ -5,258 +5,259 @@
 	"headerDisplay": "Homebridge plugin for Sensibo - Smart AC Control",
 	"footerDisplay": "Created by @nitaybz",
 	"schema": {
-		"type": "object",
-		"properties": {
-			"auth": {
-				"title": "Auth Mode",
-				"type": "string",
-				"default": "api-key",
-				"oneOf": [
-					{ "title": "API Key", "enum": ["api-key"] },
-					{ "title": "Username and Password", "enum": ["usernamePassword"] }
-				],
-				"required": true
-			},
-			"apiKey": {
-				"title": "API Key",
-				"description": "An API Key can be used instead of username/password, to create a Sensibo API key visit https://home.sensibo.com/me/api",
-				"type": "string",
-				"placeholder": "API Key",
-				"required": false,
-				"condition": {
-					"functionBody": "return model.auth === \"api-key\";"
-				}
-			},
-			"username": {
-				"title": "Username",
-				"description": "Your Sensibo account username/email",
-				"type": "string",
-				"required": false,				
-				"placeholder": "Username",
-				"condition": {
-					"functionBody": "return model.auth === \"usernamePassword\";"
-				}
-			},
-			"password": {
-				"title": "Password",
-				"description": "Your Sensibo account password",
-				"type": "string",
-				"placeholder": "Password",
-				"required": false,
-				"condition": {
-					"functionBody": "return model.auth === \"usernamePassword\";"
-				}
-			},
-			"allowRepeatedCommands": {
-				"title": "Allow Repeated Commands",
-				"description": "Allow the plugin to send the same state command again",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"carbonDioxideAlertThreshold": {
-				"title": "Carbon Dioxide (CO2) Alert Threshold",
-				"description": "Value, in PPM, over which the Apple Home app will alert you to high CO2 readings.  Default is 1500. Requires the Carbon Dioxide Sensor be enabled and a compatible device",
-				"type": "integer",
-				"minimum": 0,
-				"placeholder": 1500,
-				"required": false,
-				"condition": {
-					"functionBody": "return model.disableCarbonDioxide === false;"
-				}
-			},
-			"disableAirQuality": {
-				"title": "Disable Air Quality Sensor",
-				"description": "Remove Air Quality and TVOC readings",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"disableCarbonDioxide": {
-				"title": "Disable Carbon Dioxide Sensor",
-				"description": "Remove carbon dioxide (CO2) readings",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"disableDry": {
-				"title": "Disable Dry Accessory",
-				"description": "*Deprecated* Remove dehumidifier (dry) mode from ACs",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"disableFan": {
-				"title": "Disable Fan Accessory",
-				"description": "*Deprecated* Remove fan mode from ACs",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"disableHumidity": {
-				"title": "Disable Humidity Sensor",
-				"description": "Remove Humidity readings",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"externalHumiditySensor": {
-				"title": "Enable External Humidity Sensor",
-				"description": "Add (additional) standalone Humidity Sensor accessory",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"disableLightSwitch": {
-				"title": "Disable Light Switch",
-				"description": "Remove light switch",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"disableHorizontalSwing": {
-				"title": "Disable Horizontal Swing",
-				"description": "Remove horizontal swing control switch",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"disableVerticalSwing": {
-				"title": "Disable Vertical Swing",
-				"description": "Remove vertical swing (Oscillate) control switch from accessory",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-            "enableClimateReactAutoSetup": {
-                "title": "Enable Climate React Auto Setup",
-                "description": "Auto-update the Climate React (Smart mode) configuration whenever the AC state is set or changed",
-                "type": "boolean",
-                "default": false,
-                "required": false
-            },
-			"climateReactAutoSetupOffset": {
-                "title": "Climate React Auto Setup Offset",
-                "description": "Offset, in degrees, above or below AC target temperature that will be used to toggle AC when Enable Climate React Auto Setup above is true",
-                "type": "number",
-                "default": 0,
-                "required": false
-            },
-			"climateReactAutoSetupMultiplier": {
-                "title": "Climate React Auto Setup Multiplier",
-                "description": "Multiplier above or below AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled",
-                "type": "number",
-                "default": 1,
-                "required": false
-            },
-			"enableRepeatClimateReactAction": {
-				"title": "Enable Climate React Repeat",
-				"description": "Repeat the last Climate React triggered action to decrease the likelihood of AC State discrepancies",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"enableClimateReactSwitch": {
-				"title": "Enable Climate React Switch",
-				"description": "Add Climate React (Smart mode) switch",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},			
-            "climateReactSwitchInAccessory": {
-                "title": "Climate React Switch in AC Accessory",
-                "description": "Show the Climate React (Smart mode) switch in ACs (only works when `enableClimateReactSwitch` is set to true)",
-                "type": "boolean",
-                "default": false,
-                "required": false
-            },
-			"enableHistoryStorage": {
-				"title": "Enable History Storage",
-				"description": "Record temperature & humidity measurements over time, viewable as History in the Eve app",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"enableOccupancySensor": {
-				"title": "Enable Occupancy Sensor",
-				"description": "Add occupancy sensor to represent the state of someone at home/away",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"enableSyncButton": {
-				"title": "Enable Sync Switch",
-				"description": "Add a switch to toggle the state of the AC, without sending commands to the unit",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"syncButtonInAccessory": {
-				"title": "Sync Button in AC Accessory",
-				"description": "Show the AC Sync switch in accessory",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"ignoreHomeKitDevices": {
-				"title": "Ignore HomeKit Devices",
-				"description": "Automatically ignore, skip or remove HomeKit supported devices",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			},
-			"devicesToExclude": {
-				"title": "Devices to Exclude (Name/ID/Serial)",
-				"description": "Add device identifiers (Name, ID from logs or serial from Home app) to exclude them from homebridge",
-				"type": "array",
-				"items": {
-					"type": "string"
-				}
-			},
-			"locationsToInclude": {
-				"title": "Device Locations to Include",
-				"description": "Add device location IDs or names to include when discovering Sensibo devices (leave empty for all locations)",
-				"type": "array",
-				"items": {
-					"type": "string"
-				}
-			},
-			"modesToExclude": {
-				"title": "Air Conditioning Modes to Exclude",
-				"description": "Select the AC modes you want removed from your AC Accessories in the Home app (leave empty to keep all available modes)",
-				"type": "array",
-				"items": {
-					"type": "string",
-					"enum": [
-						"AUTO",
-						"COOL",
-						"DRY",
-						"FAN",
-						"HEAT"
-					]
-				}
-			},
-			"debug": {
-				"title": "Enable Debug Logs",
-				"description": "Enable extra logging for debugging purposes",
-				"type": "boolean",
-				"default": false,
-				"required": false
-			}
-		},
-		"anyOf": [
-			{
-				"properties": {
-					"auth": { "const": "api-key" }
-				},
-				"required": ["apiKey"]
-			},
-			{
-				"properties": {
-					"auth": { "const": "usernamePassword" }
-				},
-				"required": ["username","password"]
-			}
-		]
-	}
+    "type": "object",
+    "properties": {
+      "auth": {
+        "title": "Auth Mode",
+        "type": "string",
+        "default": "api-key",
+        "oneOf": [
+          { "title": "API Key", "enum": ["api-key"] },
+          { "title": "Username and Password", "enum": ["usernamePassword"] }
+        ],
+        "required": true
+      },
+      "apiKey": {
+        "title": "API Key",
+        "description": "An API Key can be used instead of username/password, to create a Sensibo API key visit https://home.sensibo.com/me/api",
+        "type": "string",
+        "placeholder": "API Key",
+        "required": false,
+        "condition": {
+          "functionBody": "return model.auth === \"api-key\";"
+        }
+      },
+      "username": {
+        "title": "Username",
+        "description": "Your Sensibo account username/email",
+        "type": "string",
+        "required": false,
+        "placeholder": "Username",
+        "condition": {
+          "functionBody": "return model.auth === \"usernamePassword\";"
+        }
+      },
+      "password": {
+        "title": "Password",
+        "description": "Your Sensibo account password",
+        "type": "string",
+        "placeholder": "Password",
+        "required": false,
+        "condition": {
+          "functionBody": "return model.auth === \"usernamePassword\";"
+        }
+      },
+      "allowRepeatedCommands": {
+        "title": "Allow Repeated Commands",
+        "description": "Allow the plugin to send the same state command again",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "carbonDioxideAlertThreshold": {
+        "title": "Carbon Dioxide (CO2) Alert Threshold",
+        "description": "Value, in PPM, over which the Apple Home app will alert you to high CO2 readings.  Default is 1500. Requires the Carbon Dioxide Sensor be enabled and a compatible device",
+        "type": "integer",
+        "minimum": 0,
+        "placeholder": 1500,
+        "required": false,
+        "condition": {
+          "functionBody": "return model.disableCarbonDioxide === false;"
+        }
+      },
+      "disableAirQuality": {
+        "title": "Disable Air Quality Sensor",
+        "description": "Remove Air Quality and TVOC readings",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "disableCarbonDioxide": {
+        "title": "Disable Carbon Dioxide Sensor",
+        "description": "Remove carbon dioxide (CO2) readings",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "disableDry": {
+        "title": "Disable Dry Accessory",
+        "description": "*Deprecated* Remove dehumidifier (dry) mode from ACs",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "disableFan": {
+        "title": "Disable Fan Accessory",
+        "description": "*Deprecated* Remove fan mode from ACs",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "disableHumidity": {
+        "title": "Disable Humidity Sensor",
+        "description": "Remove Humidity readings",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "externalHumiditySensor": {
+        "title": "Enable External Humidity Sensor",
+        "description": "Add (additional) standalone Humidity Sensor accessory",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "disableLightSwitch": {
+        "title": "Disable Light Switch",
+        "description": "Remove light switch",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "disableHorizontalSwing": {
+        "title": "Disable Horizontal Swing",
+        "description": "Remove horizontal swing control switch",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "disableVerticalSwing": {
+        "title": "Disable Vertical Swing",
+        "description": "Remove vertical swing (Oscillate) control switch from accessory",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "enableClimateReactAutoSetup": {
+        "title": "Enable Climate React Auto Setup",
+        "description": "Auto-update the Climate React (Smart mode) configuration whenever the AC state is set or changed",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "climateReactAutoSetupOffset": {
+        "title": "Climate React Auto Setup Offset",
+        "description": "Offset, in degrees, above or below AC target temperature that will be used to toggle AC when Enable Climate React Auto Setup above is true",
+        "type": "number",
+        "default": 0,
+        "required": false
+      },
+      "positiveClimateReactAutoSetupMultiplier": {
+        "title": "Positive Climate React Auto Setup Multiplier",
+        "description": "Multiplier above AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled",
+        "type": "number",
+        "default": 1,
+        "required": false
+      },
+      "negativeClimateReactAutoSetupMultiplier": {
+        "title": "Negative Climate React Auto Setup Multiplier",
+        "description": "Multiplier below AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled",
+        "type": "number",
+        "default": 1,
+        "required": false
+      },
+      "enableRepeatClimateReactAction": {
+        "title": "Enable Climate React Repeat",
+        "description": "Repeat the last Climate React triggered action to decrease the likelihood of AC State discrepancies",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "enableClimateReactSwitch": {
+        "title": "Enable Climate React Switch",
+        "description": "Add Climate React (Smart mode) switch",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "climateReactSwitchInAccessory": {
+        "title": "Climate React Switch in AC Accessory",
+        "description": "Show the Climate React (Smart mode) switch in ACs (only works when `enableClimateReactSwitch` is set to true)",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "enableHistoryStorage": {
+        "title": "Enable History Storage",
+        "description": "Record temperature & humidity measurements over time, viewable as History in the Eve app",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "enableOccupancySensor": {
+        "title": "Enable Occupancy Sensor",
+        "description": "Add occupancy sensor to represent the state of someone at home/away",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "enableSyncButton": {
+        "title": "Enable Sync Switch",
+        "description": "Add a switch to toggle the state of the AC, without sending commands to the unit",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "syncButtonInAccessory": {
+        "title": "Sync Button in AC Accessory",
+        "description": "Show the AC Sync switch in accessory",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "ignoreHomeKitDevices": {
+        "title": "Ignore HomeKit Devices",
+        "description": "Automatically ignore, skip or remove HomeKit supported devices",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "devicesToExclude": {
+        "title": "Devices to Exclude (Name/ID/Serial)",
+        "description": "Add device identifiers (Name, ID from logs or serial from Home app) to exclude them from homebridge",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "locationsToInclude": {
+        "title": "Device Locations to Include",
+        "description": "Add device location IDs or names to include when discovering Sensibo devices (leave empty for all locations)",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "modesToExclude": {
+        "title": "Air Conditioning Modes to Exclude",
+        "description": "Select the AC modes you want removed from your AC Accessories in the Home app (leave empty to keep all available modes)",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["AUTO", "COOL", "DRY", "FAN", "HEAT"]
+        }
+      },
+      "debug": {
+        "title": "Enable Debug Logs",
+        "description": "Enable extra logging for debugging purposes",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      }
+    },
+    "anyOf": [
+      {
+        "properties": {
+          "auth": { "const": "api-key" }
+        },
+        "required": ["apiKey"]
+      },
+      {
+        "properties": {
+          "auth": { "const": "usernamePassword" }
+        },
+        "required": ["username", "password"]
+      }
+    ]
+  }
 }

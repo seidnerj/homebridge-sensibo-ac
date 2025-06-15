@@ -90,7 +90,9 @@ class SensiboACPlatform {
 		/** @type {number} */
 		this.climateReactAutoSetupOffset = config['climateReactAutoSetupOffset'] || 0
 		/** @type {number} */
-		this.climateReactAutoSetupMultiplier = config['climateReactAutoSetupMultiplier'] || 1
+		this.positiveClimateReactAutoSetupMultiplier = config['positiveClimateReactAutoSetupMultiplier'] || 1
+		/** @type {number} */
+		this.negativeClimateReactAutoSetupMultiplier = config['negativeClimateReactAutoSetupMultiplier'] || 1
 		/** @type {boolean} */
 		this.enableClimateReactSwitch = config['enableClimateReactSwitch'] || false
 		/** @type {boolean} */
