@@ -31,8 +31,9 @@ class SensiboACPlatform {
 		}
 
 		JSON.stringify(configForLogging, null, 2).split('\n').forEach(line => {
-			log.info(line)
+			log.debug(line)
 		})
+
 		/** @type {string} */
 		this.pluginName = pluginName
 		/** @type {string} */
@@ -219,7 +220,7 @@ class SensiboACPlatform {
 		}
 
 		JSON.stringify(resolvedConfig, null, 2).split('\n').forEach(line => {
-			log.info(line)
+			log.debug(line)
 		})
 
 		// define debug method to output debug logs when enabled in the config
