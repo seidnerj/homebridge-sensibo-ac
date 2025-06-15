@@ -21,6 +21,15 @@ class SensiboACPlatform {
 	 * @param {homebridge.API} api
 	 */
 	constructor(log, config, api) {
+		const configForLogging = { ...config }
+
+		if (configForLogging.apiKey) {
+			configForLogging.apiKey = '[REDACTED]'
+		}
+		if (configForLogging.password) {
+			configForLogging.password = '[REDACTED]'
+		}
+		log.info('Config:', JSON.stringify(configForLogging, null, 2))
 		/** @type {string} */
 		this.pluginName = pluginName
 		/** @type {string} */
@@ -163,6 +172,50 @@ class SensiboACPlatform {
 		this.repeatClimateReactActionMinGapMilliseconds = 45*1000  // this must be smaller than platform.requestedInterval
 
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+
+		// Log all resolved configuration properties
+		const resolvedConfig = {
+			pluginName: this.pluginName,
+			platformName: this.platformName,
+			debug: this.debug,
+			apiKey: this.apiKey ? '[REDACTED]' : undefined,
+			username: this.username,
+			password: this.password ? '[REDACTED]' : undefined,
+			name: this.name,
+			allowRepeatedCommands: this.allowRepeatedCommands,
+			carbonDioxideAlertThreshold: this.carbonDioxideAlertThreshold,
+			climateReactSwitchInAccessory: this.climateReactSwitchInAccessory,
+			disableAirQuality: this.disableAirQuality,
+			disableCarbonDioxide: this.disableCarbonDioxide,
+			devicesToExclude: this.devicesToExclude,
+			disableDry: this.disableDry,
+			disableFan: this.disableFan,
+			disableHorizontalSwing: this.disableHorizontalSwing,
+			disableHumidity: this.disableHumidity,
+			disableLightSwitch: this.disableLightSwitch,
+			disableVerticalSwing: this.disableVerticalSwing,
+			enableClimateReactAutoSetup: this.enableClimateReactAutoSetup,
+			climateReactAutoSetupOffset: this.climateReactAutoSetupOffset,
+			positiveClimateReactAutoSetupMultiplier: this.positiveClimateReactAutoSetupMultiplier,
+			negativeClimateReactAutoSetupMultiplier: this.negativeClimateReactAutoSetupMultiplier,
+			enableClimateReactSwitch: this.enableClimateReactSwitch,
+			enableRepeatClimateReactAction: this.enableRepeatClimateReactAction,
+			enableHistoryStorage: this.enableHistoryStorage,
+			enableOccupancySensor: this.enableOccupancySensor,
+			enableSyncButton: this.enableSyncButton,
+			ignoreHomeKitDevices: this.ignoreHomeKitDevices,
+			syncButtonInAccessory: this.syncButtonInAccessory,
+			externalHumiditySensor: this.externalHumiditySensor,
+			locationsToInclude: this.locationsToInclude,
+			modesToExclude: this.modesToExclude,
+			disableAirConditioner: this.disableAirConditioner,
+			persistPath: this.persistPath,
+			pollingInterval: this.pollingInterval,
+			refreshDelay: this.refreshDelay,
+			repeatClimateReactActionMinGapMilliseconds: this.repeatClimateReactActionMinGapMilliseconds
+		}
+
+		log.info('Resolved Configuration:', JSON.stringify(resolvedConfig, null, 2))
 
 		// define debug method to output debug logs when enabled in the config
 		// TODO: add a "dev" mode to the logger?
