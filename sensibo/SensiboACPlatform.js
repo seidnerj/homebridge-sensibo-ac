@@ -29,7 +29,10 @@ class SensiboACPlatform {
 		if (configForLogging.password) {
 			configForLogging.password = '[REDACTED]'
 		}
-		log.info('Config:', JSON.stringify(configForLogging, null, 2))
+
+		JSON.stringify(configForLogging, null, 2).split('\n').forEach(line => {
+			log.info(line)
+		})
 		/** @type {string} */
 		this.pluginName = pluginName
 		/** @type {string} */
@@ -49,7 +52,7 @@ class SensiboACPlatform {
 		/** @type {function} */
 		this.syncHomeKitCache = syncHomeKitCache(this)
 		/** @type {boolean} */
-		this.debug = config['debug'] || false
+		this.debug = config['debug'] != null ? config['debug'] : false
 
 		// ~~~~~~~~~~~~~~~~~~~~~ Sensibo Specific ~~~~~~~~~~~~~~~~~~~~~ //
 
@@ -69,57 +72,57 @@ class SensiboACPlatform {
 		}
 
 		/** @type {string} */
-		this.name = config['name'] || platformName
+		this.name = config['name'] != null ? config['name'] : platformName
 		/** @type {boolean} */
-		this.allowRepeatedCommands = config['allowRepeatedCommands'] || false
+		this.allowRepeatedCommands = config['allowRepeatedCommands'] != null ? config['allowRepeatedCommands'] : false
 		/** @type {number} */
-		this.carbonDioxideAlertThreshold = config['carbonDioxideAlertThreshold'] || 1500
+		this.carbonDioxideAlertThreshold = config['carbonDioxideAlertThreshold'] != null ? config['carbonDioxideAlertThreshold'] : 1500
 		/** @type {boolean} */
-		this.climateReactSwitchInAccessory = config['climateReactSwitchInAccessory'] || false
+		this.climateReactSwitchInAccessory = config['climateReactSwitchInAccessory'] != null ? config['climateReactSwitchInAccessory'] : false
 		/** @type {boolean} */
-		this.disableAirQuality = config['disableAirQuality'] || false
+		this.disableAirQuality = config['disableAirQuality'] != null ? config['disableAirQuality'] : false
 		/** @type {boolean} */
-		this.disableCarbonDioxide = config['disableCarbonDioxide'] || false
+		this.disableCarbonDioxide = config['disableCarbonDioxide'] != null ? config['disableCarbonDioxide'] : false
 		/** @type {any[]} */
-		this.devicesToExclude = config['devicesToExclude'] || []
+		this.devicesToExclude = config['devicesToExclude'] != null ? config['devicesToExclude'] : []
 		/** @type {boolean} */
-		this.disableDry = config['disableDry'] || false
+		this.disableDry = config['disableDry'] != null ? config['disableDry'] : false
 		/** @type {boolean} */
-		this.disableFan = config['disableFan'] || false
+		this.disableFan = config['disableFan'] != null ? config['disableFan'] : false
 		/** @type {boolean} */
-		this.disableHorizontalSwing = config['disableHorizontalSwing'] || false
+		this.disableHorizontalSwing = config['disableHorizontalSwing'] != null ? config['disableHorizontalSwing'] : false
 		/** @type {boolean} */
-		this.disableHumidity = config['disableHumidity'] || false
+		this.disableHumidity = config['disableHumidity'] != null ? config['disableHumidity'] : false
 		/** @type {boolean} */
-		this.disableLightSwitch = config['disableLightSwitch'] || false
+		this.disableLightSwitch = config['disableLightSwitch'] != null ? config['disableLightSwitch'] : false
 		/** @type {boolean} */
-		this.disableVerticalSwing = config['disableVerticalSwing'] || false
+		this.disableVerticalSwing = config['disableVerticalSwing'] != null ? config['disableVerticalSwing'] : false
 		/** @type {boolean} */
-		this.enableClimateReactAutoSetup = config['enableClimateReactAutoSetup'] || false
+		this.enableClimateReactAutoSetup = config['enableClimateReactAutoSetup'] != null ? config['enableClimateReactAutoSetup'] : false
 		/** @type {number} */
-		this.climateReactAutoSetupOffset = config['climateReactAutoSetupOffset'] || 0
+		this.climateReactAutoSetupOffset = config['climateReactAutoSetupOffset'] != null ? config['climateReactAutoSetupOffset'] : 0
 		/** @type {number} */
-		this.positiveClimateReactAutoSetupMultiplier = config['positiveClimateReactAutoSetupMultiplier'] || 1
+		this.positiveClimateReactAutoSetupMultiplier = config['positiveClimateReactAutoSetupMultiplier'] != null ? config['positiveClimateReactAutoSetupMultiplier'] : 1
 		/** @type {number} */
-		this.negativeClimateReactAutoSetupMultiplier = config['negativeClimateReactAutoSetupMultiplier'] || 1
+		this.negativeClimateReactAutoSetupMultiplier = config['negativeClimateReactAutoSetupMultiplier'] != null ? config['negativeClimateReactAutoSetupMultiplier'] : 1
 		/** @type {boolean} */
-		this.enableClimateReactSwitch = config['enableClimateReactSwitch'] || false
+		this.enableClimateReactSwitch = config['enableClimateReactSwitch'] != null ? config['enableClimateReactSwitch'] : false
 		/** @type {boolean} */
-		this.enableRepeatClimateReactAction = config['enableRepeatClimateReactAction'] || false
+		this.enableRepeatClimateReactAction = config['enableRepeatClimateReactAction'] != null ? config['enableRepeatClimateReactAction'] : false
 		/** @type {boolean} */
-		this.enableHistoryStorage = config['enableHistoryStorage'] || false
+		this.enableHistoryStorage = config['enableHistoryStorage'] != null ? config['enableHistoryStorage'] : false
 		/** @type {boolean} */
-		this.enableOccupancySensor = config['enableOccupancySensor'] || false
+		this.enableOccupancySensor = config['enableOccupancySensor'] != null ? config['enableOccupancySensor'] : false
 		/** @type {boolean} */
-		this.enableSyncButton = config['enableSyncButton'] || false
+		this.enableSyncButton = config['enableSyncButton'] != null ? config['enableSyncButton'] : false
 		/** @type {boolean} */
-		this.ignoreHomeKitDevices = config['ignoreHomeKitDevices'] || false
+		this.ignoreHomeKitDevices = config['ignoreHomeKitDevices'] != null ? config['ignoreHomeKitDevices'] : false
 		/** @type {boolean} */
-		this.syncButtonInAccessory = config['syncButtonInAccessory'] || false
+		this.syncButtonInAccessory = config['syncButtonInAccessory'] != null ? config['syncButtonInAccessory'] : false
 		/** @type {boolean} */
-		this.externalHumiditySensor = config['externalHumiditySensor'] || false
+		this.externalHumiditySensor = config['externalHumiditySensor'] != null ? config['externalHumiditySensor'] : false
 		/** @type {any[]} */
-		this.locationsToInclude = config['locationsToInclude'] || []
+		this.locationsToInclude = config['locationsToInclude'] != null ? config['locationsToInclude'] : []
 		/** @type {import('../types').Device[]} */
 		this.devices = []
 
@@ -128,9 +131,9 @@ class SensiboACPlatform {
 		}
 
 		/** @type {string[]} */
-		this.modesToExclude = config['modesToExclude']?.map(mode => {
+		this.modesToExclude = config['modesToExclude'] != null ? config['modesToExclude'].map(mode => {
 			return mode.toUpperCase()
-		}) || []
+		}) : []
 
 		/** @type {boolean} */
 		this.disableAirConditioner = ['AUTO','COOL','HEAT'].every(mode => {
@@ -215,7 +218,9 @@ class SensiboACPlatform {
 			repeatClimateReactActionMinGapMilliseconds: this.repeatClimateReactActionMinGapMilliseconds
 		}
 
-		log.info('Resolved Configuration:', JSON.stringify(resolvedConfig, null, 2))
+		JSON.stringify(resolvedConfig, null, 2).split('\n').forEach(line => {
+			log.info(line)
+		})
 
 		// define debug method to output debug logs when enabled in the config
 		// TODO: add a "dev" mode to the logger?
