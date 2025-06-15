@@ -89,7 +89,8 @@ If you don't use Homebridge UI or HOOBS, or if you want to know more about the p
 		"disableVerticalSwing": false,
 		"enableClimateReactAutoSetup": false,
 		"climateReactAutoSetupOffset": 0,
-		"climateReactAutoSetupMultiplier": 1,
+		"positiveClimateReactAutoSetupMultiplier": 1,
+        "negativeClimateReactAutoSetupMultiplier": 1,
 		"enableRepeatClimateReactAction": false,
 		"enableClimateReactSwitch": false,	
 		"enableHistoryStorage": false,
@@ -284,7 +285,7 @@ For example: if setting an AC to Cool and 25°C, Climate React will be set up su
 
 Another example, if setting an AC to Heat and 25°C, Climate React will be set up such that when the temperature rises above 26°C (the target temperature plus 1 degrees C, or 1.8 degree F), the AC will be turn off and when the temperature drops below 24° (the target temperature minus 1 degree C, or 1.8 degrees F), the AC will be turned on heating.
 
-The lower/uppers bounds is defined as "targetTemprature +/- 1*climateReactAutoSetupMultiplier + climateReactAutoSetupOffset", for C. For F, climateReactAutoSetupMultiplier is multiplied by 1.8. By changing climateReactAutoSetupMultiplier and climateReactAutoSetupOffset one can influence climate react auto setup's bounds' values.
+The lower/uppers bounds is defined as "targetTemprature +/- 1*positiveClimateReactAutoSetupMultiplier/negativeClimateReactAutoSetupMultiplier + climateReactAutoSetupOffset", for C. For F, positiveClimateReactAutoSetupMultiplier/negativeClimateReactAutoSetupMultiplier is multiplied by 1.8. By changing positiveClimateReactAutoSetupMultiplier/negativeClimateReactAutoSetupMultiplier and climateReactAutoSetupOffset one can influence climate react auto setup's bounds' values.
 
 To enable **Climate React Auto Setup**, add `"enableClimateReactAutoSetup": true` to your config.
 
