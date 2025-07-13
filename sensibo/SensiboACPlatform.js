@@ -110,6 +110,10 @@ class SensiboACPlatform {
 		this.enableClimateReactSwitch = config['enableClimateReactSwitch'] != null ? config['enableClimateReactSwitch'] : false
 		/** @type {boolean} */
 		this.enableRepeatClimateReactAction = config['enableRepeatClimateReactAction'] != null ? config['enableRepeatClimateReactAction'] : false
+		/** @type {number} */
+		this.commandRepeatCount = config['commandRepeatCount'] != null ? config['commandRepeatCount'] : 1
+		/** @type {number} */
+		this.commandRepeatDelay = config['commandRepeatDelay'] != null ? config['commandRepeatDelay'] : 1000
 		/** @type {boolean} */
 		this.enableHistoryStorage = config['enableHistoryStorage'] != null ? config['enableHistoryStorage'] : false
 		/** @type {boolean} */

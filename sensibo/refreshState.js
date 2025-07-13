@@ -156,6 +156,24 @@ async function refreshDeviceState(handledLocations, platform, device) {
 						// 		 module that updates the entire state with "resultingInternalAcState" and then calls
 						// 		 Sensibo's API to update the state.
 						airConditioner.state['_'] = resultingInternalAcState
+
+						/*
+                         * WARNING: When using command repetition, repeated commands will execute the same command multiple times with delays between them.
+                         * This may override user changes made during the repeat interval if the delay is too long.
+                         * Use with caution for long delays to avoid conflicting with manual user adjustments.
+                        */
+
+						// Inline repeat logic: schedule all repeats immediately with different timeouts
+						if (platform.commandRepeatCount > 1) {
+							platform.easyDebugInfo(`Scheduling ${platform.commandRepeatCount - 1} additional commands with ${platform.commandRepeatDelay}ms intervals`)
+
+							for (let i = 1; i < platform.commandRepeatCount; i++) {
+								setTimeout(() => {
+									// Re-execute the selected line: setting the special property to trigger StateHandler
+									airConditioner.state['_'] = resultingInternalAcState
+								}, platform.commandRepeatDelay * i)
+							}
+						}
 					}
 				} else {
 					platform.easyDebugInfo(`Repeat Climate React Action for ${airConditioner.name}: postLastAcStateChangeEvents.length is "${postLastAcStateChangeEvents.length}" > 0, skipping.`)
