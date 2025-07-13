@@ -165,13 +165,13 @@ async function refreshDeviceState(handledLocations, platform, device) {
 
 						// Inline repeat logic: schedule all repeats immediately with different timeouts
 						if (platform.commandRepeatCount > 1) {
-							platform.easyDebugInfo(`Scheduling ${platform.commandRepeatCount - 1} additional commands with ${platform.commandRepeatDelay}ms intervals`)
+							platform.easyDebugInfo(`Scheduling ${platform.commandRepeatCount - 1} additional commands with ${platform.commandRepeatDelayMilliseconds / 1000}s intervals`)
 
 							for (let i = 1; i < platform.commandRepeatCount; i++) {
 								setTimeout(() => {
 									// Re-execute the selected line: setting the special property to trigger StateHandler
 									airConditioner.state['_'] = resultingInternalAcState
-								}, platform.commandRepeatDelay * i)
+								}, platform.commandRepeatDelayMilliseconds * i)
 							}
 						}
 					}

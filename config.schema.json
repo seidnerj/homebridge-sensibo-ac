@@ -172,13 +172,13 @@
         "default": 1,
         "required": false
       },
-      "commandRepeatDelay": {
-        "title": "Command Repeat Delay (ms)",
-        "description": "Delay in milliseconds between repeated commands (1-60000ms). Warning: Long delays increase the likelihood of conflict with user changes made in the meanwhile",
+      "commandRepeatDelaySeconds": {
+        "title": "Command Repeat Delay (seconds)",
+        "description": "Delay in seconds between repeated commands (1-60 seconds). Warning: Long delays increase the likelihood of conflict with user changes made in the meanwhile",
         "type": "integer",
         "minimum": 1,
-        "maximum": 60000,
-        "default": 1000,
+        "maximum": 60,
+        "default": 1,
         "required": false
       },
       "enableClimateReactSwitch": {
