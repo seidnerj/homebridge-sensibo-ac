@@ -163,6 +163,24 @@
         "default": false,
         "required": false
       },
+      "commandRepeatCount": {
+        "title": "Command Repeat Count",
+        "description": "Number of times to repeat the last command (1-3). Warning: Repeated commands may override user changes made during the repeat interval",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 3,
+        "default": 1,
+        "required": false
+      },
+      "commandRepeatDelay": {
+        "title": "Command Repeat Delay (ms)",
+        "description": "Delay in milliseconds between repeated commands (1-60000ms). Warning: Long delays increase the likelihood of conflict with user changes made in the meanwhile",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 1000,
+        "required": false
+      },
       "enableClimateReactSwitch": {
         "title": "Enable Climate React Switch",
         "description": "Add Climate React (Smart mode) switch",
