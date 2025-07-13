@@ -111,9 +111,9 @@ class SensiboACPlatform {
 		/** @type {boolean} */
 		this.enableRepeatClimateReactAction = config['enableRepeatClimateReactAction'] != null ? config['enableRepeatClimateReactAction'] : false
 		/** @type {number} */
-		this.commandRepeatCount = config['commandRepeatCount'] != null ? config['commandRepeatCount'] : 1
+		this.commandRepeatCount = Math.max(1, Math.min(3, config['commandRepeatCount'] != null ? config['commandRepeatCount'] : 1))
 		/** @type {number} */
-		this.commandRepeatDelay = config['commandRepeatDelay'] != null ? config['commandRepeatDelay'] : 1000
+		this.commandRepeatDelayMilliseconds = Math.max(1, Math.min(60, config['commandRepeatDelaySeconds'] != null ? config['commandRepeatDelaySeconds'] : 1)) * 1000
 		/** @type {boolean} */
 		this.enableHistoryStorage = config['enableHistoryStorage'] != null ? config['enableHistoryStorage'] : false
 		/** @type {boolean} */
