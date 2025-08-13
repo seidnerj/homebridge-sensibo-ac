@@ -171,6 +171,7 @@ async function refreshDeviceState(handledLocations, platform, device) {
 								setTimeout(() => {
 									// Re-execute the selected line: setting the special property to trigger StateHandler
 									airConditioner.state['_'] = resultingInternalAcState
+									platform.easyDebugInfo(`Executing repeat command #${i + 1} for ${airConditioner.name}`)
 								}, platform.commandRepeatDelayMilliseconds * i)
 							}
 						}
