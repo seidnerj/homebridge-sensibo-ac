@@ -151,28 +151,26 @@ async function refreshDeviceState(handledLocations, platform, device) {
 							resultingInternalSwingState.verticalSwing,
 							resultingFanSpeed
 						)
-
-						// NOTE: Setting this a "special" property ("_") will trigger code in the StateHandler
-						// 		 module that updates the entire state with "resultingInternalAcState" and then calls
-						// 		 Sensibo's API to update the state.
-						airConditioner.state['_'] = resultingInternalAcState
-						platform.easyDebugInfo(`Executing repeat command #1 for ${airConditioner.name}`)
-
 						/*
                          * WARNING: When using command repetition, repeated commands will execute the same command multiple times with delays between them.
-                         * This may override user changes made during the repeat interval if the delay is too long.
-                         * Use with caution for long delays to avoid conflicting with manual user adjustments.
+                         *          This may override user changes made during the repeat interval if the delay is too long. Use with caution for long delays
+                         *          to avoid conflicting with manual user adjustments.
                         */
 
-						// Inline repeat logic: schedule all repeats immediately with different timeouts
-						if (platform.commandRepeatCount > 1) {
+						// Inline repeat logic: schedule all repeats immediately with different timeouts (first with 0 timeout, i.e. immediately, etc.)
+						if (platform.commandRepeatCount > 0) {
 							platform.easyDebugInfo(`Scheduling ${platform.commandRepeatCount - 1} additional commands with ${platform.commandRepeatDelayMilliseconds / 1000}s intervals`)
 
-							for (let i = 1; i < platform.commandRepeatCount; i++) {
+							for (let i = 0; i < platform.commandRepeatCount; i++) {
 								setTimeout(() => {
 									// Re-execute the selected line: setting the special property to trigger StateHandler
+
+									// NOTE: Setting this a "special" property ("_") will trigger code in the StateHandler
+									// 		 module that updates the entire state with "resultingInternalAcState" and then calls
+									// 		 Sensibo's API to update the state.
+
 									airConditioner.state['_'] = resultingInternalAcState
-									platform.easyDebugInfo(`Executing repeat command #${i + 1} for ${airConditioner.name}`)
+									platform.easyDebugInfo(`Repeating command (#${i + 1} time) for ${airConditioner.name}`)
 								}, platform.commandRepeatDelayMilliseconds * i)
 							}
 						}
