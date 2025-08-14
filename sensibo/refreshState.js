@@ -156,6 +156,7 @@ async function refreshDeviceState(handledLocations, platform, device) {
 						// 		 module that updates the entire state with "resultingInternalAcState" and then calls
 						// 		 Sensibo's API to update the state.
 						airConditioner.state['_'] = resultingInternalAcState
+						platform.easyDebugInfo(`Executing repeat command #1 for ${airConditioner.name}`)
 
 						/*
                          * WARNING: When using command repetition, repeated commands will execute the same command multiple times with delays between them.
