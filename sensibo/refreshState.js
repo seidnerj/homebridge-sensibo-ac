@@ -317,9 +317,19 @@ module.exports = (platform) => {
 				/** @type {any[]} */
 				const handledLocations = []
 
-				platform.devices.forEach(async device => {
-					await refreshDeviceState(handledLocations, platform, device)
-				})
+				// NOTE: Must NOT use `forEach(async ...)` here - it discards the returned
+				//       promises, so a rejection (e.g. a 504 from getDeviceEvents) becomes an
+				//       UnhandledPromiseRejection that crashes the child bridge. Await them and
+				//       catch so one device's API failure can't take down the whole bridge.
+				const refreshResults = await Promise.allSettled(platform.devices.map(device => refreshDeviceState(handledLocations, platform, device)))
+
+				refreshResults
+					.filter(result => result.status === 'rejected')
+					.forEach(result => {
+						const err = result.reason
+
+						platform.easyDebugInfo(`Refresh device state failed: ${(err && (err.message || JSON.stringify(err))) || err}`)
+					})
 
 				// register new devices & unregister removed devices
 				platform.easyDebugInfo('Syncing HomeKit Cache')
