@@ -27,7 +27,20 @@ async function refreshDeviceState(handledLocations, platform, device) {
 		}
 
 		platform.easyDebugInfo(`Updating AC state in Cache + HomeKit for ${airConditioner.name}`)
-		airConditioner.state.update(unified.getInternalAcState(device))
+		const incomingAcState = unified.getInternalAcState(device)
+
+		// Broken thermostat: we deliberately send the AC an extreme target temperature,
+		// so Sensibo echoes that extreme back. Don't let it overwrite the user's stored
+		// target (which HomeKit displays). Nulling the field makes update() skip it,
+		// preserving the existing value. Cold start (no stored value) accepts the echo.
+		if (platform.brokenThermostat
+			&& incomingAcState.smartMode && incomingAcState.smartMode.enabled
+			&& (incomingAcState.mode === 'COOL' || incomingAcState.mode === 'HEAT')
+			&& airConditioner.state.targetTemperature != null) {
+			incomingAcState.targetTemperature = null
+		}
+
+		airConditioner.state.update(incomingAcState)
 
 		// Update Climate React Switch state in HomeKit
 		const climateReactSwitch = platform.activeAccessories.find(accessory => {
