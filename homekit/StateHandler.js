@@ -5,6 +5,7 @@ const SensiboAccessory = require('./SensiboAccessory')
 const Classes = require('../classes')
 const AirConditioner = require('./AirConditioner')
 const AirPurifier = require('./AirPurifier')
+const unified = require('../sensibo/unified')
 
 /**
 * @param {number} value
@@ -73,7 +74,7 @@ function swingMode(mode, state) {
 * @param {Classes.InternalAcState} internalAcState
 * @return {import('../types').AcState}
 */
-function sensiboFormattedACState(device, internalAcState) {
+function sensiboFormattedACState(device, internalAcState, brokenThermostat) {
 	device.easyDebugInfo(`${device.name} -> sensiboFormattedACState: internalAcState =`)
 	device.easyDebugInfo(JSON.stringify(internalAcState, null, 4))
 
@@ -83,7 +84,20 @@ function sensiboFormattedACState(device, internalAcState) {
 		on: internalAcState.active,
 		mode: internalAcState.mode.toLowerCase(),
 		temperatureUnit: device.temperatureUnit,
-		targetTemperature: device.usesFahrenheit ? toFahrenheit(internalAcState.targetTemperature) : internalAcState.targetTemperature,
+		targetTemperature: (() => {
+			const useForcedTemp = brokenThermostat
+				&& internalAcState.smartMode && internalAcState.smartMode.enabled
+				&& (internalAcState.mode === 'COOL' || internalAcState.mode === 'HEAT')
+			let targetTemperatureCelsius
+
+			if (useForcedTemp) {
+				targetTemperatureCelsius = unified.getForcedBrokenThermostatTemp(device, internalAcState.mode)
+			} else {
+				targetTemperatureCelsius = internalAcState.targetTemperature
+			}
+
+			return device.usesFahrenheit ? toFahrenheit(targetTemperatureCelsius) : targetTemperatureCelsius
+		})(),
 		swingModes: swingMode(mode, internalAcState)
 	}
 
@@ -349,7 +363,7 @@ module.exports = (device, platform) => {
 						preventTurningOff = false
 					}
 
-					const sensiboNewACState = sensiboFormattedACState(device, state)
+					const sensiboNewACState = sensiboFormattedACState(device, state, platform.brokenThermostat)
 
 					easyDebugInfo(`${device.name} - before calling API to set new state:\n${JSON.stringify(sensiboNewACState, null, 4)}`)
 
