@@ -7,6 +7,7 @@ const SensiboAccessory = require('./SensiboAccessory')
 const Classes = require('../classes')
 const AirConditioner = require('./AirConditioner')
 const RoomSensor = require('./RoomSensor')
+const unified = require('../sensibo/unified')
 
 // TODO: perhaps make this a class?
 /**
@@ -21,6 +22,8 @@ module.exports = (device, platform) => {
 	const climateReactAutoSetupOffset = platform.climateReactAutoSetupOffset
 	const positiveClimateReactAutoSetupMultiplier = platform.positiveClimateReactAutoSetupMultiplier
 	const negativeClimateReactAutoSetupMultiplier = platform.negativeClimateReactAutoSetupMultiplier
+	const brokenThermostat = platform.brokenThermostat
+	const forceClimateReactIfBrokenThermostat = platform.forceClimateReactIfBrokenThermostat
 
 	/**
 	 * @param {number} value
@@ -97,6 +100,22 @@ module.exports = (device, platform) => {
 
 		const smartModeState = device.state.smartMode
 
+		// Under force mode the plugin owns whether Climate React is on: enabled iff
+		// the AC is actively cooling/heating (only COOL/HEAT are exposed in that mode).
+		if (forceClimateReactIfBrokenThermostat) {
+			smartModeState.enabled = device.state.active
+				&& (device.state.mode === 'COOL' || device.state.mode === 'HEAT')
+		}
+
+		// Broken thermostat: the AC is driven to its extreme, so Climate React's
+		// ON-state must re-apply that same extreme each time it switches the unit on.
+		// Thresholds below remain based on the user's target temperature.
+		let forcedTemperature = null
+
+		if (brokenThermostat && (device.state.mode === 'COOL' || device.state.mode === 'HEAT')) {
+			forcedTemperature = unified.getForcedBrokenThermostatTemp(device, device.state.mode)
+		}
+
 		smartModeState.type = 'temperature'
 		smartModeState.highTemperatureWebhook = null
 		smartModeState.lowTemperatureWebhook = null
@@ -105,7 +124,7 @@ module.exports = (device, platform) => {
 			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)*positiveClimateReactAutoSetupMultiplier + climateReactAutoSetupOffset
 			smartModeState.highTemperatureState = {
 				on: true,
-				targetTemperature: device.state.targetTemperature,
+				targetTemperature: (forcedTemperature != null) ? forcedTemperature : device.state.targetTemperature,
 				temperatureUnit: device.temperatureUnit,
 				mode: device.state.mode,
 				fanSpeed: device.state.fanSpeed,
@@ -117,7 +136,7 @@ module.exports = (device, platform) => {
 			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)*negativeClimateReactAutoSetupMultiplier + climateReactAutoSetupOffset
 			smartModeState.lowTemperatureState = {
 				on: false,
-				targetTemperature: device.state.targetTemperature,
+				targetTemperature: (forcedTemperature != null) ? forcedTemperature : device.state.targetTemperature,
 				temperatureUnit: device.temperatureUnit,
 				mode: device.state.mode,
 				fanSpeed: device.state.fanSpeed,
@@ -129,7 +148,7 @@ module.exports = (device, platform) => {
 			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)*positiveClimateReactAutoSetupMultiplier + climateReactAutoSetupOffset
 			smartModeState.highTemperatureState = {
 				on: false,
-				targetTemperature: device.state.targetTemperature,
+				targetTemperature: (forcedTemperature != null) ? forcedTemperature : device.state.targetTemperature,
 				temperatureUnit: device.temperatureUnit,
 				mode: device.state.mode,
 				fanSpeed: device.state.fanSpeed,
@@ -141,7 +160,7 @@ module.exports = (device, platform) => {
 			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)*negativeClimateReactAutoSetupMultiplier + climateReactAutoSetupOffset
 			smartModeState.lowTemperatureState = {
 				on: true,
-				targetTemperature: device.state.targetTemperature,
+				targetTemperature: (forcedTemperature != null) ? forcedTemperature : device.state.targetTemperature,
 				temperatureUnit: device.temperatureUnit,
 				mode: device.state.mode,
 				fanSpeed: device.state.fanSpeed,
