@@ -36,6 +36,44 @@ module.exports = {
 	},
 
 	/**
+	 * Returns the forced "broken thermostat" target temperature, in Celsius, for
+	 * the given mode: the coldest supported temperature for COOL and the hottest
+	 * for HEAT. Falls back to 16 (COOL) / 30 (HEAT) when capabilities are missing.
+	 * Fahrenheit-only capabilities are converted to Celsius; callers convert back
+	 * to the device unit at their existing emit boundary. Callers gate on COOL/HEAT.
+	 * @param {import('../homekit/AirConditioner')} device
+	 * @param {string} mode - 'COOL' or 'HEAT'
+	 * @returns {number} forced target temperature in Celsius
+	 */
+	getForcedBrokenThermostatTemp: function (device, mode) {
+		if (mode === 'COOL') {
+			const temps = device.capabilities.COOL?.temperatures
+
+			if (temps?.C) {
+				return temps.C.min
+			}
+
+			if (temps?.F) {
+				return this.toCelsius(temps.F.min)
+			}
+
+			return 16
+		}
+
+		const temps = device.capabilities.HEAT?.temperatures
+
+		if (temps?.C) {
+			return temps.C.max
+		}
+
+		if (temps?.F) {
+			return this.toCelsius(temps.F.max)
+		}
+
+		return 30
+	},
+
+	/**
 	 * Convert degrees C to degrees F
 	 * @param  {Number} degreesC The degrees in C to convert
 	 * @return {Number} The degrees in F
