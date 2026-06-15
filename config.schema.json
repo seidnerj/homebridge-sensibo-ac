@@ -135,6 +135,20 @@
         "default": false,
         "required": false
       },
+      "brokenThermostat": {
+        "title": "Broken Thermostat Mode",
+        "description": "When enabled and Climate React is on, force the AC to its coldest setting in COOL / hottest in HEAT and rely on Climate React (using Sensibo's temperature readings) to switch the unit on/off. HomeKit still shows the temperature you selected. Requires Enable Climate React Auto Setup to also manage Climate React's target temperature.",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "forceClimateReactIfBrokenThermostat": {
+        "title": "Force Climate React For Broken Thermostat",
+        "description": "When enabled, the plugin fully manages Climate React: it is turned on automatically for COOL/HEAT and off otherwise, no Climate React switch is exposed, and only COOL and HEAT modes are available. Requires Broken Thermostat Mode and Enable Climate React Auto Setup to both be enabled (the plugin will fail to start otherwise).",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
       "climateReactAutoSetupOffset": {
         "title": "Climate React Auto Setup Offset",
         "description": "Offset, in degrees, above or below AC target temperature that will be used to toggle AC when Enable Climate React Auto Setup above is true",
