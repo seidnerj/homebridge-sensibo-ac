@@ -306,3 +306,9 @@ export declare type PlatformState = {
     sensors: { [id: string]: InternalSensorState },
     occupancy: { [id: string]: InternalOccupancyState },
 }
+declare module 'axios' {
+    interface InternalAxiosRequestConfig {
+        /** Number of automatic retries already performed for this request (see sensibo/api.js). */
+        retryCount?: number
+    }
+}
