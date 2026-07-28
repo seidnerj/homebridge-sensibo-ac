@@ -5,12 +5,91 @@ const SensiboACPlatform = require('./SensiboACPlatform')
 // TODO: should we revert removing ".default" and all the subsequent changes emanating from this change?
 const axios = require('axios')
 const retry = require('axios-retry-after')
-
-// TODO: Currently we only retry when we encounter a 429 status code.
-//       However, we intermittently get a 400 status code even when the request seems to be perfectly valid - we should retry as well in such cases.
-axios.interceptors.response.use(null, retry(axios))
+// TODO: We still do not retry the intermittent 400 status code we sometimes get back even when the request seems to be perfectly valid.
 const integrationName = `${pluginName}@${version}`
 const baseURL = 'https://home.sensibo.com/api/v2'
+// Sensibo's API intermittently answers with a gateway error or drops the connection. These are
+// transient, so retrying a few times usually succeeds and keeps the failure out of the log.
+const transientStatusCodes = [408, 429, 502, 503, 504]
+const transientNetworkCodes = ['ECONNABORTED', 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN', 'EPIPE']
+// Only idempotent methods are retried - re-sending a POST/PATCH could re-issue an AC command.
+const idempotentMethods = ['get', 'head', 'options', 'put', 'delete']
+const maxRetries = 3
+const retryBaseDelayMilliseconds = 1000
+const maxRetryDelayMilliseconds = 8000
+/**
+ * Set once the platform is available, so the retry interceptor can write to the debug log.
+ * @type {(content: any) => void}
+ */
+let easyDebugInfo = () => {}
+
+/**
+ * @param {import('axios').AxiosError} err
+ */
+function isTransientError(err) {
+	if (err.response) {
+		return transientStatusCodes.includes(err.response.status)
+	}
+
+	// no response at all -> connection level failure
+	return transientNetworkCodes.includes(err.code)
+}
+
+/**
+ * @param {import('axios').AxiosError} err
+ */
+function isRetryable(err) {
+	if (!err.config || !isTransientError(err)) {
+		return false
+	}
+
+	if (!idempotentMethods.includes((err.config.method || 'get').toLowerCase())) {
+		return false
+	}
+
+	return (err.config.retryCount || 0) < maxRetries
+}
+
+/**
+ * @param {import('axios').AxiosError} err
+ */
+function retryDelay(err) {
+	const retryAfter = err.response && err.response.headers['retry-after']
+
+	if (retryAfter) {
+		const parsedRetryAfter = parseInt(retryAfter)
+		const timeToWait = Number.isNaN(parsedRetryAfter) ? Date.parse(retryAfter) - Date.now() : parsedRetryAfter * 1000
+
+		if (timeToWait > 0) {
+			return timeToWait
+		}
+	}
+
+	// exponential backoff with jitter, so several devices failing at once don't retry in lockstep
+	const backoff = Math.min(retryBaseDelayMilliseconds * Math.pow(2, err.config.retryCount || 0), maxRetryDelayMilliseconds)
+
+	return backoff / 2 + Math.random() * (backoff / 2)
+}
+
+/**
+ * @param {import('axios').AxiosError} err
+ */
+function wait(err) {
+	err.config.retryCount = (err.config.retryCount || 0) + 1
+	const timeToWait = retryDelay(err)
+	const reason = err.response ? `status code ${err.response.status}` : err.code || err.message
+
+	easyDebugInfo(`Retrying ${(err.config.method || 'get').toUpperCase()} ${err.config.url} in ${Math.round(timeToWait)}ms (attempt ${err.config.retryCount} of ${maxRetries}) after ${reason}`)
+
+	return new Promise(resolve => {
+		return setTimeout(resolve, timeToWait)
+	})
+}
+
+axios.interceptors.response.use(null, retry(axios, {
+	isRetryable,
+	wait
+}))
 
 /**
  * @param {SensiboACPlatform} platform
@@ -178,8 +257,17 @@ async function apiRequest(platform, method, url, data) {
 
 				errorContent.errorURL = baseURL + url
 				errorContent.message = err.message
-				platform.log.error(`Error URL: ${errorContent.errorURL}`)
-				platform.log.error(`Error message: ${errorContent.message}`)
+
+				if (isTransientError(err)) {
+					// Sensibo's API is having a bad moment - we already retried, the next poll will try again.
+					// Log it as a single warning line rather than as an error, to keep the log readable.
+					const attempts = (err.config && err.config.retryCount || 0) + 1
+
+					platform.log.warn(`Sensibo API temporarily unavailable (${errorContent.message}) after ${attempts} attempt(s): ${errorContent.errorURL}`)
+				} else {
+					platform.log.error(`Error URL: ${errorContent.errorURL}`)
+					platform.log.error(`Error message: ${errorContent.message}`)
+				}
 
 				if (err.response) {
 					errorContent.response = err.response.data
@@ -297,6 +385,10 @@ async function setDeviceClimateReactState (platform, deviceId, climateReactState
  * @param {SensiboACPlatform} platform
  */
 module.exports = async function (platform) {
+	easyDebugInfo = content => {
+		return platform.easyDebugInfo(content)
+	}
+
 	// Pretty sure the below only runs during first load...
 	if (platform.apiKey) {
 		axios.defaults.params = {
