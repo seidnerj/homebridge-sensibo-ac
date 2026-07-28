@@ -329,15 +329,18 @@ module.exports = (platform) => {
 
 				/** @type {any[]} */
 				const handledLocations = []
-
 				// NOTE: Must NOT use `forEach(async ...)` here - it discards the returned
 				//       promises, so a rejection (e.g. a 504 from getDeviceEvents) becomes an
 				//       UnhandledPromiseRejection that crashes the child bridge. Await them and
 				//       catch so one device's API failure can't take down the whole bridge.
-				const refreshResults = await Promise.allSettled(platform.devices.map(device => refreshDeviceState(handledLocations, platform, device)))
+				const refreshResults = await Promise.allSettled(platform.devices.map(device => {
+					return refreshDeviceState(handledLocations, platform, device)
+				}))
 
 				refreshResults
-					.filter(result => result.status === 'rejected')
+					.filter(result => {
+						return result.status === 'rejected'
+					})
 					.forEach(result => {
 						const err = result.reason
 
