@@ -8,11 +8,17 @@ const retry = require('axios-retry-after')
 // TODO: We still do not retry the intermittent 400 status code we sometimes get back even when the request seems to be perfectly valid.
 const integrationName = `${pluginName}@${version}`
 const baseURL = 'https://home.sensibo.com/api/v2'
-// Sensibo's API intermittently answers with a gateway error or drops the connection. These are
-// transient, so retrying a few times usually succeeds and keeps the failure out of the log.
-const transientStatusCodes = [408, 429, 502, 503, 504]
+// Sensibo's API intermittently rate limits us or answers with a server/gateway error. Both are
+// transient, but they differ in what we can safely do about it, so they are classified separately.
+//
+// Rejected: the server explicitly refused the request without acting on it (and, for 429, tells us
+// when to come back). Re-sending cannot double-apply a command, so ANY method may be retried -
+// which matters, because in practice it is the acStates/smartmode POSTs that get rate limited.
+const rejectedStatusCodes = [429]
+// Ambiguous: the request may well have reached the AC before the error came back, so only idempotent
+// methods are retried - re-sending a POST/PATCH here could re-issue an AC command.
+const ambiguousStatusCodes = [408, 500, 502, 503, 504]
 const transientNetworkCodes = ['ECONNABORTED', 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN', 'EPIPE']
-// Only idempotent methods are retried - re-sending a POST/PATCH could re-issue an AC command.
 const idempotentMethods = ['get', 'head', 'options', 'put', 'delete']
 const maxRetries = 3
 const retryBaseDelayMilliseconds = 1000
@@ -28,7 +34,7 @@ let easyDebugInfo = () => {}
  */
 function isTransientError(err) {
 	if (err.response) {
-		return transientStatusCodes.includes(err.response.status)
+		return rejectedStatusCodes.includes(err.response.status) || ambiguousStatusCodes.includes(err.response.status)
 	}
 
 	// no response at all -> connection level failure
@@ -39,15 +45,16 @@ function isTransientError(err) {
  * @param {import('axios').AxiosError} err
  */
 function isRetryable(err) {
-	if (!err.config || !isTransientError(err)) {
+	if (!err.config || !isTransientError(err) || (err.config.retryCount || 0) >= maxRetries) {
 		return false
 	}
 
-	if (!idempotentMethods.includes((err.config.method || 'get').toLowerCase())) {
-		return false
+	// A rejected request never reached the AC, so re-sending it is safe whatever the method is.
+	if (err.response && rejectedStatusCodes.includes(err.response.status)) {
+		return true
 	}
 
-	return (err.config.retryCount || 0) < maxRetries
+	return idempotentMethods.includes((err.config.method || 'get').toLowerCase())
 }
 
 /**
@@ -228,6 +235,12 @@ async function apiRequest(platform, method, url, data) {
 		axios(axiosInstanceConfig).then(async response => {
 			const json = response.data
 			let results
+
+			// Only fires when the request actually had to be retried, so it stays silent in normal
+			// operation while making a recovery visible instead of leaving the retry path unproven.
+			if (response.config && response.config.retryCount) {
+				platform.log.info(`Sensibo API recovered after ${response.config.retryCount} retry/retries: ${baseURL + url}`)
+			}
 
 			if (json.status && json.status == 'success') {
 				platform.easyDebugInfo(`Successful ${method.toUpperCase()} response (response value not logged)`)
