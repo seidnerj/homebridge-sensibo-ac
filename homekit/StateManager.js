@@ -1,6 +1,7 @@
 let Characteristic
 let log
 let MINIMUM_NODE
+let platformPrivate
 
 function characteristicToMode(characteristic) {
 	// log.easyDebug(`characteristicToMode - characteristic: ${characteristic}`)
@@ -40,7 +41,12 @@ function updateClimateReact(device, enableClimateReactAutoSetup) {
 	// FIXME: check this
 	// If nothing (relevant) has changed should we skip...? Like we do in StateHandler for SET?
 
-	const smartModeState = device.state.smartMode
+	// A new object, so StateHandler's "already equal" check sees the change. The plugin takes Climate React over:
+	// the thresholds and both states are rebuilt from the AC's state, replacing what was set up in the Sensibo app.
+	const smartModeState = { ...device.state.smartMode }
+	const degree = device.usesFahrenheit ? 1.8 : 1
+	const highTemperatureThreshold = device.state.targetTemperature + degree * platformPrivate.positiveClimateReactAutoSetupMultiplier + platformPrivate.climateReactAutoSetupOffset
+	const lowTemperatureThreshold = device.state.targetTemperature - degree * platformPrivate.negativeClimateReactAutoSetupMultiplier + platformPrivate.climateReactAutoSetupOffset
 
 	smartModeState.type = 'temperature'
 	smartModeState.highTemperatureWebhook = null
@@ -64,14 +70,14 @@ function updateClimateReact(device, enableClimateReactAutoSetup) {
 	}
 
 	if (device.state.mode === 'COOL') {
-		smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)
+		smartModeState.highTemperatureThreshold = highTemperatureThreshold
 		smartModeState.highTemperatureState.on = true
-		smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)
+		smartModeState.lowTemperatureThreshold = lowTemperatureThreshold
 		smartModeState.lowTemperatureState.on = false
 	} else if (device.state.mode === 'HEAT') {
-		smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)
+		smartModeState.highTemperatureThreshold = highTemperatureThreshold
 		smartModeState.highTemperatureState.on = false
-		smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)
+		smartModeState.lowTemperatureThreshold = lowTemperatureThreshold
 		smartModeState.lowTemperatureState.on = true
 	}
 
@@ -113,6 +119,7 @@ export default (device, platform) => {
 	Characteristic = platform.api.hap.Characteristic
 	log = platform.log
 	MINIMUM_NODE = platform.MINIMUM_NODE
+	platformPrivate = platform
 
 	const enableClimateReactAutoSetup = platform.enableClimateReactAutoSetup
 
@@ -777,9 +784,11 @@ export default (device, platform) => {
 			// CLIMATE REACT
 			ClimateReactSwitch: (state, callback) => {
 				log.easyDebug(device.name, '(SET) - Climate React Enabled Switch:', state)
-				const smartModeState = device.state.smartMode
-
-				smartModeState.enabled = !!state
+				// A new object, so StateHandler's "already equal" check sees the change
+				const smartModeState = {
+					...device.state.smartMode,
+					enabled: !!state
+				}
 
 				// NOTE: we must set the 'smartMode' property directly (and NOT for example like so: device.state.smartMode.enabled = true),
 				//       otherwise the StateHandler's setter code will not be executed and any changes will not take effect.
