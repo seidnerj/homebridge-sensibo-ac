@@ -2,9 +2,12 @@ import {
 	afterEach, beforeEach, mock, test
 } from 'node:test'
 import assert from 'node:assert/strict'
+import * as hap from 'hap-nodejs'
 import {
 	acDevice, makeAirConditioner
 } from './helpers.js'
+
+const { CurrentHeaterCoolerState } = hap.Characteristic
 
 beforeEach(() => {
 	mock.timers.enable({ apis: ['setTimeout'] })
@@ -61,4 +64,20 @@ test('sending a command blocks refreshes until 1.5s after the API call', async (
 	mock.timers.tick(500)
 
 	assert.equal(platform.setProcessing, false)
+})
+
+test('updateHomeKit guesses the AUTO heater-cooler state from the room temperature', () => {
+	const currentState = targetTemperature => {
+		const { ac } = makeAirConditioner({}, {
+			mode: 'auto',
+			targetTemperature
+		})
+
+		return ac.HeaterCoolerService.getCharacteristic(CurrentHeaterCoolerState).value
+	}
+
+	// The room is at 26.5
+	assert.equal(currentState(24), CurrentHeaterCoolerState.COOLING)
+	assert.equal(currentState(28), CurrentHeaterCoolerState.HEATING)
+	assert.equal(currentState(26.5), CurrentHeaterCoolerState.IDLE)
 })
