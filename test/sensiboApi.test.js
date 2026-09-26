@@ -154,24 +154,25 @@ test('a non-success response rejects with the response body', async () => {
 	})
 })
 
-test('an HTTP error is not retried and rejects with the URL and message', async () => {
+test('a non-transient HTTP error is not retried and rejects with the URL and message', async () => {
 	const api = await SensiboApi(apiPlatform({}))
 
 	axios.defaults.adapter = async config => {
 		requests.push(config)
-		const error = new Error('Request failed with status code 429')
+		const error = new Error('Request failed with status code 400')
 
+		error.config = config
 		error.response = {
-			data: { reason: 'rate limit' },
-			status: 429
+			data: { reason: 'bad request' },
+			status: 400
 		}
 		throw error
 	}
 
 	await assert.rejects(api.setDeviceACState('pod1', {}), {
 		errorURL: 'https://home.sensibo.com/api/v2/pods/pod1/acStates',
-		message: 'Request failed with status code 429',
-		response: { reason: 'rate limit' }
+		message: 'Request failed with status code 400',
+		response: { reason: 'bad request' }
 	})
 	assert.equal(requests.length, 1)
 })
