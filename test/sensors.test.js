@@ -179,15 +179,15 @@ test('room sensor state is converted from the sensor measurements', () => {
 	})
 })
 
-test('room sensor battery is low only at a battery voltage of 100 or below', () => {
+test('room sensor battery is low only at a reported battery voltage of 100 or below', () => {
 	const lowBattery = batteryVoltage => {
 		return new RoomSensor(motionSensor({ batteryVoltage }), acDevice({}), fakePlatform({})).state.lowBattery
 	}
 
 	assert.equal(lowBattery(101), 'BATTERY_LEVEL_NORMAL')
 	assert.equal(lowBattery(100), 'BATTERY_LEVEL_LOW')
-	// A sensor that reports no battery voltage is shown as low battery
-	assert.equal(lowBattery(undefined), 'BATTERY_LEVEL_LOW')
+	// A sensor that reports no battery voltage is not shown as low battery
+	assert.equal(lowBattery(undefined), 'BATTERY_LEVEL_NORMAL')
 })
 
 test('the room sensor pushes motion, temperature (rounded to 0.1), humidity and battery to every service', async () => {
