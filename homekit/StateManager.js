@@ -23,7 +23,6 @@ module.exports = (device, platform) => {
 	const positiveClimateReactAutoSetupMultiplier = platform.positiveClimateReactAutoSetupMultiplier
 	const negativeClimateReactAutoSetupMultiplier = platform.negativeClimateReactAutoSetupMultiplier
 	const brokenThermostat = platform.brokenThermostat
-	const forceClimateReactIfBrokenThermostat = platform.forceClimateReactIfBrokenThermostat
 
 	/**
 	 * @param {number} value
@@ -100,11 +99,9 @@ module.exports = (device, platform) => {
 
 		const smartModeState = device.state.smartMode
 
-		// Under force mode the plugin owns whether Climate React is on: enabled iff
-		// the AC is actively cooling/heating (only COOL/HEAT are exposed in that mode).
-		if (forceClimateReactIfBrokenThermostat) {
-			smartModeState.enabled = device.state.active
-				&& (device.state.mode === 'COOL' || device.state.mode === 'HEAT')
+		// Climate React as auto: the plugin owns whether Climate React is on
+		if (device.autoClimateReact) {
+			smartModeState.enabled = device.autoClimateReact.climateReactEnabled()
 		}
 
 		// Broken thermostat: the AC is driven to its extreme, so Climate React's
@@ -184,7 +181,49 @@ module.exports = (device, platform) => {
 		device.state.smartMode = smartModeState
 	}
 
+	/**
+	 * Switch the AC on in the given HomeKit mode. In Climate React as auto, AUTO is never sent to the AC: the plugin
+	 * takes over (and updates Climate React itself), and COOL/HEAT run through Climate React with the direction pinned.
+	 * @param {AirConditioner} device
+	 * @param {string} mode
+	 * @returns {boolean} whether the caller still needs to update Climate React
+	 */
+	this.setMode = function(device, mode) {
+		if (device.autoClimateReact) {
+			if (mode === 'AUTO') {
+				device.autoClimateReact.enterAuto()
+
+				return false
+			}
+
+			device.autoClimateReact.selectManual(mode)
+		}
+
+		const acState = /** @type {Classes.InternalAcState} */ (device.state)
+
+		acState.active = true
+		acState.mode = mode
+
+		return true
+	}
+
+	/**
+	 * FAN/DRY take the AC out of Climate React as auto
+	 * @param {SensiboAccessory} device
+	 */
+	this.leaveClimateReact = function(device) {
+		if (device instanceof AirConditioner && device.autoClimateReact?.state.active) {
+			device.autoClimateReact.setActive(false)
+			this.updateClimateReact(device, enableClimateReactAutoSetup)
+		}
+	}
+
 	return {
+		updateClimateReact: () => {
+			if (device instanceof AirConditioner) {
+				this.updateClimateReact(device, enableClimateReactAutoSetup)
+			}
+		},
 
 		get: {
 			// TODO: refactor this similar to PureActive below?
@@ -195,8 +234,9 @@ module.exports = (device, platform) => {
 					return
 				}
 
-				const active = device.state.active
-				const mode = device.state.mode
+				const acState = device.state
+				const active = acState.active || (device instanceof AirConditioner && !!device.autoClimateReact?.state.active)
+				const mode = acState.mode
 
 				if (!active || mode === 'FAN' || mode === 'DRY') {
 					easyDebugInfo(device.name, '(GET) - AC Active State: false')
@@ -252,29 +292,15 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			CurrentHeaterCoolerState: (callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device instanceof AirConditioner)) {
 					// TODO: log warning
 					return
 				}
 
-				const active = device.state.active
-				const mode = device.state.mode
-				const targetTemp = device.state.targetTemperature
-				const currentTemp = device.state.currentTemperature
+				const currentState = device.currentHeaterCoolerState()
 
-				easyDebugInfo(device.name, '(GET) - Current HeaterCooler State:', active ? mode : 'OFF')
-
-				if (!active || mode === 'FAN' || mode === 'DRY') {
-					callback(null, this.Characteristic.CurrentHeaterCoolerState.INACTIVE)
-				} else if (mode === 'COOL') {
-					callback(null, this.Characteristic.CurrentHeaterCoolerState.COOLING)
-				} else if (mode === 'HEAT') {
-					callback(null, this.Characteristic.CurrentHeaterCoolerState.HEATING)
-				} else if (currentTemp > targetTemp) {
-					callback(null, this.Characteristic.CurrentHeaterCoolerState.COOLING)
-				} else {
-					callback(null, this.Characteristic.CurrentHeaterCoolerState.HEATING)
-				}
+				easyDebugInfo(device.name, '(GET) - Current HeaterCooler State:', currentState)
+				callback(null, currentState)
 			},
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
@@ -293,6 +319,13 @@ module.exports = (device, platform) => {
 
 				const active = device.state.active
 				const mode = device.state.mode
+
+				if (device.autoClimateReact?.state.auto) {
+					easyDebugInfo(device.name, '(GET) - Target HeaterCooler State: AUTO (Climate React as auto)')
+					callback(null, this.Characteristic.TargetHeaterCoolerState.AUTO)
+
+					return
+				}
 
 				easyDebugInfo(device.name, '(GET) - Target HeaterCooler State:', active ? mode : 'OFF')
 				if (!active || mode === 'FAN' || mode === 'DRY') {
@@ -343,7 +376,8 @@ module.exports = (device, platform) => {
 					return
 				}
 
-				const targetTemp = this.sanitize(device.HeaterCoolerService, 'CoolingThresholdTemperature', device.state.targetTemperature)
+				const setpoint = device.autoClimateReact?.state.auto ? device.autoClimateReact.state.coolTo : device.state.targetTemperature
+				const targetTemp = this.sanitize(device.HeaterCoolerService, 'CoolingThresholdTemperature', setpoint)
 
 				if (device.usesFahrenheit) {
 					easyDebugInfo(device.name, '(GET) - Target Cooling Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
@@ -368,7 +402,8 @@ module.exports = (device, platform) => {
 					return
 				}
 
-				const targetTemp = this.sanitize(device.HeaterCoolerService, 'HeatingThresholdTemperature', device.state.targetTemperature)
+				const setpoint = device.autoClimateReact?.state.auto ? device.autoClimateReact.state.heatTo : device.state.targetTemperature
+				const targetTemp = this.sanitize(device.HeaterCoolerService, 'HeatingThresholdTemperature', setpoint)
 
 				if (device.usesFahrenheit) {
 					easyDebugInfo(device.name, '(GET) - Target Heating Temperature:', this.toFahrenheit(targetTemp) + 'ºF')
@@ -787,13 +822,18 @@ module.exports = (device, platform) => {
 				easyDebugInfo(device.name, '(SET) - AC Active State:', value)
 
 				if (value) {
-					device.state.active = true
 					const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
 					const mode = this.characteristicToMode(lastMode)
 
 					easyDebugInfo(device.name, '(SET) - HeaterCooler State:', mode)
-					device.state.mode = mode
+
+					if (!this.setMode(device, mode)) {
+						callback()
+
+						return
+					}
 				} else if (device.state.mode === 'COOL' || device.state.mode === 'HEAT' || device.state.mode === 'AUTO') {
+					device.autoClimateReact?.setActive(false)
 					device.state.active = false
 				}
 
@@ -838,10 +878,10 @@ module.exports = (device, platform) => {
 				const mode = this.characteristicToMode(value)
 
 				easyDebugInfo(device.name, '(SET) - Target HeaterCooler State:', mode)
-				device.state.mode = mode
-				device.state.active = true
 				if (device instanceof AirConditioner) {
-					this.updateClimateReact(device, enableClimateReactAutoSetup)
+					if (this.setMode(device, mode)) {
+						this.updateClimateReact(device, enableClimateReactAutoSetup)
+					}
 				} else {
 					easyDebugInfo(device.name, `(SET) - Target HeaterCooler State: ${device.name} device is not an instance of AirConditioner, skipping climate react auto setup.`)
 				}
@@ -874,13 +914,18 @@ module.exports = (device, platform) => {
 				const lastMode = device.HeaterCoolerService.getCharacteristic(this.Characteristic.TargetHeaterCoolerState).value
 				const mode = this.characteristicToMode(lastMode)
 
-				device.state.targetTemperature = targetTemp
+				device.autoClimateReact?.setCoolTo(targetTemp)
+
+				if (!(device.autoClimateReact && mode === 'AUTO')) {
+					device.state.targetTemperature = targetTemp
+				}
+
 				// TODO: do we need the below? Does it turn the unit on if it's currently off?
 				easyDebugInfo(device.name, '(SET) - Target HeaterCooler State:', mode)
-				device.state.active = true
-				device.state.mode = mode
 
-				this.updateClimateReact(device, enableClimateReactAutoSetup)
+				if (this.setMode(device, mode)) {
+					this.updateClimateReact(device, enableClimateReactAutoSetup)
+				}
 
 				callback()
 			},
@@ -911,11 +956,15 @@ module.exports = (device, platform) => {
 				const mode = this.characteristicToMode(lastMode)
 
 				easyDebugInfo(device.name, '(SET) - HeaterCooler State:', mode)
-				device.state.targetTemperature = targetTemp
-				device.state.active = true
-				device.state.mode = mode
+				device.autoClimateReact?.setHeatTo(targetTemp)
 
-				this.updateClimateReact(device, enableClimateReactAutoSetup)
+				if (!(device.autoClimateReact && mode === 'AUTO')) {
+					device.state.targetTemperature = targetTemp
+				}
+
+				if (this.setMode(device, mode)) {
+					this.updateClimateReact(device, enableClimateReactAutoSetup)
+				}
 
 				callback()
 			},
@@ -943,11 +992,11 @@ module.exports = (device, platform) => {
 				easyDebugInfo(device.name, '(SET) - AC Swing:', value)
 				device.state.verticalSwing = value
 
-				device.state.active = true
 				easyDebugInfo(device.name, '(SET) - Mode To:', mode)
-				device.state.mode = mode
 
-				this.updateClimateReact(device, enableClimateReactAutoSetup)
+				if (this.setMode(device, mode)) {
+					this.updateClimateReact(device, enableClimateReactAutoSetup)
+				}
 
 				callback()
 			},
@@ -980,10 +1029,10 @@ module.exports = (device, platform) => {
 				const mode = this.characteristicToMode(lastMode)
 
 				easyDebugInfo(device.name, '(SET) - HeaterCooler State:', mode)
-				device.state.active = true
-				device.state.mode = mode
 
-				this.updateClimateReact(device, enableClimateReactAutoSetup)
+				if (this.setMode(device, mode)) {
+					this.updateClimateReact(device, enableClimateReactAutoSetup)
+				}
 
 				callback()
 			},
@@ -1052,6 +1101,7 @@ module.exports = (device, platform) => {
 					device.state.mode = 'FAN'
 
 					device.state.active = true
+					this.leaveClimateReact(device)
 				} else if (device.state.mode === 'FAN') {
 					device.state.active = false
 				}
@@ -1076,6 +1126,7 @@ module.exports = (device, platform) => {
 				device.state.active = true
 				easyDebugInfo(device.name, '(SET) - Mode to: FAN')
 				device.state.mode = 'FAN'
+				this.leaveClimateReact(device)
 
 				callback()
 			},
@@ -1100,6 +1151,7 @@ module.exports = (device, platform) => {
 				device.state.active = true
 				easyDebugInfo(device.name, '(SET) - Mode to: FAN')
 				device.state.mode = 'FAN'
+				this.leaveClimateReact(device)
 
 				callback()
 			},
@@ -1121,6 +1173,7 @@ module.exports = (device, platform) => {
 					device.state.active = true
 					easyDebugInfo(device.name, '(SET) - HeaterCooler State: DRY')
 					device.state.mode = 'DRY'
+					this.leaveClimateReact(device)
 				} else if (device.state.mode === 'DRY') {
 					device.state.active = false
 				}
@@ -1141,6 +1194,7 @@ module.exports = (device, platform) => {
 				device.state.active = true
 				easyDebugInfo(device.name, '(SET) - HeaterCooler State: DRY')
 				device.state.mode = 'DRY'
+				this.leaveClimateReact(device)
 
 				callback()
 			},
@@ -1162,6 +1216,7 @@ module.exports = (device, platform) => {
 				device.state.active = true
 				easyDebugInfo(device.name, '(SET) - Mode to: DRY')
 				device.state.mode = 'DRY'
+				this.leaveClimateReact(device)
 
 				callback()
 			},
@@ -1186,6 +1241,7 @@ module.exports = (device, platform) => {
 				device.state.active = true
 				easyDebugInfo(device.name + ' (SET) - Mode to: DRY')
 				device.state.mode = 'DRY'
+				this.leaveClimateReact(device)
 
 				callback()
 			},

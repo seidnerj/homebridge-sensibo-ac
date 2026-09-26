@@ -86,7 +86,6 @@ function sensiboFormattedACState(device, internalAcState, brokenThermostat) {
 		temperatureUnit: device.temperatureUnit,
 		targetTemperature: (() => {
 			const useForcedTemp = brokenThermostat
-				&& internalAcState.smartMode && internalAcState.smartMode.enabled
 				&& (internalAcState.mode === 'COOL' || internalAcState.mode === 'HEAT')
 			let targetTemperatureCelsius
 

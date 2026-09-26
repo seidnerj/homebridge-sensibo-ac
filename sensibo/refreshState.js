@@ -34,13 +34,15 @@ async function refreshDeviceState(handledLocations, platform, device) {
 		// target (which HomeKit displays). Nulling the field makes update() skip it,
 		// preserving the existing value. Cold start (no stored value) accepts the echo.
 		if (platform.brokenThermostat
-			&& incomingAcState.smartMode && incomingAcState.smartMode.enabled
 			&& (incomingAcState.mode === 'COOL' || incomingAcState.mode === 'HEAT')
 			&& airConditioner.state.targetTemperature != null) {
 			incomingAcState.targetTemperature = null
 		}
 
 		airConditioner.state.update(incomingAcState)
+		const autoClimateReact = /** @type {import('../homekit/AirConditioner')} */ (airConditioner).autoClimateReact
+
+		autoClimateReact?.onRefresh()
 
 		// Update Climate React Switch state in HomeKit
 		const climateReactSwitch = platform.activeAccessories.find(accessory => {

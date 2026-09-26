@@ -336,6 +336,19 @@ async function getDeviceEvents (platform, deviceId) {
 /**
 * @param {SensiboACPlatform} platform
 * @param {string} deviceId
+* @param {number} days Sensibo allows at most 1 without a subscription
+* @return {Promise<{temperature: {time: string, value: number}[], humidity: {time: string, value: number}[]}>}
+*/
+async function getDeviceHistoricalMeasurements (platform, deviceId, days) {
+	const path = `/pods/${deviceId}/historicalMeasurements`
+	const response = await apiRequest(platform, 'get', path + '?days=' + days)
+
+	return response.result
+}
+
+/**
+* @param {SensiboACPlatform} platform
+* @param {string} deviceId
 * @param {import('../types').AcState} acState
 */
 async function setDeviceACState (platform, deviceId, acState) {
@@ -435,6 +448,14 @@ module.exports = async function (platform) {
 		*/
 		getDeviceEvents: async function (deviceId) {
 			return await getDeviceEvents(platform, deviceId)
+		},
+
+		/**
+		* @param {string} deviceId
+		* @param {number} days
+		*/
+		getDeviceHistoricalMeasurements: async function (deviceId, days) {
+			return await getDeviceHistoricalMeasurements(platform, deviceId, days)
 		},
 
 		/**

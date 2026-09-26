@@ -103,7 +103,7 @@ class SensiboACPlatform {
 		/** @type {boolean} */
 		this.brokenThermostat = config['brokenThermostat'] != null ? config['brokenThermostat'] : false
 		/** @type {boolean} */
-		this.forceClimateReactIfBrokenThermostat = config['forceClimateReactIfBrokenThermostat'] != null ? config['forceClimateReactIfBrokenThermostat'] : false
+		this.climateReactAsAuto = config['climateReactAsAuto'] != null ? config['climateReactAsAuto'] : false
 		/** @type {number} */
 		this.climateReactAutoSetupOffset = config['climateReactAutoSetupOffset'] != null ? config['climateReactAutoSetupOffset'] : 0
 		/** @type {number} */
@@ -144,27 +144,11 @@ class SensiboACPlatform {
 			return mode.toUpperCase()
 		}) : []
 
-		// Broken thermostat: validate dependencies and, when forcing Climate React,
-		// take full ownership of Climate React and restrict modes to COOL/HEAT.
-		if (this.forceClimateReactIfBrokenThermostat) {
-			if (!this.brokenThermostat || !this.enableClimateReactAutoSetup) {
-				this.log.error('forceClimateReactIfBrokenThermostat requires both brokenThermostat and enableClimateReactAutoSetup to be enabled. Aborting.')
-
-				throw new Error('Invalid configuration: forceClimateReactIfBrokenThermostat requires brokenThermostat and enableClimateReactAutoSetup to be true')
-			}
-
-			// The plugin fully owns Climate React: hide every user-facing CR control.
+		// Climate React as auto: the plugin owns Climate React, so it is always set up and never user-facing
+		if (this.climateReactAsAuto) {
+			this.enableClimateReactAutoSetup = true
 			this.enableClimateReactSwitch = false
 			this.climateReactSwitchInAccessory = false
-
-			// Expose only COOL and HEAT.
-			for (const mode of ['AUTO', 'FAN', 'DRY']) {
-				if (!this.modesToExclude.includes(mode)) {
-					this.modesToExclude.push(mode)
-				}
-			}
-		} else if (this.brokenThermostat && !this.enableClimateReactAutoSetup) {
-			this.log.warn('brokenThermostat is enabled but enableClimateReactAutoSetup is not: the AC command will be forced to its temperature extreme, but the plugin will not manage Climate React\'s ON-state temperature.')
 		}
 
 		/** @type {boolean} */
@@ -231,7 +215,7 @@ class SensiboACPlatform {
 			disableVerticalSwing: this.disableVerticalSwing,
 			enableClimateReactAutoSetup: this.enableClimateReactAutoSetup,
 			brokenThermostat: this.brokenThermostat,
-			forceClimateReactIfBrokenThermostat: this.forceClimateReactIfBrokenThermostat,
+			climateReactAsAuto: this.climateReactAsAuto,
 			climateReactAutoSetupOffset: this.climateReactAutoSetupOffset,
 			positiveClimateReactAutoSetupMultiplier: this.positiveClimateReactAutoSetupMultiplier,
 			negativeClimateReactAutoSetupMultiplier: this.negativeClimateReactAutoSetupMultiplier,
