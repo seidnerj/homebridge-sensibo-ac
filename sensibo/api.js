@@ -82,8 +82,10 @@ function retryDelay(err) {
  * @param {import('axios').AxiosError} err
  */
 function wait(err) {
-	err.config.retryCount = (err.config.retryCount || 0) + 1
+	// the delay is based on the retries made so far, so the first retry uses the base tier
 	const timeToWait = retryDelay(err)
+
+	err.config.retryCount = (err.config.retryCount || 0) + 1
 	const reason = err.response ? `status code ${err.response.status}` : err.code || err.message
 
 	easyDebugInfo(`Retrying ${(err.config.method || 'get').toUpperCase()} ${err.config.url} in ${Math.round(timeToWait)}ms (attempt ${err.config.retryCount} of ${maxRetries}) after ${reason}`)
@@ -272,11 +274,12 @@ async function apiRequest(platform, method, url, data) {
 				errorContent.message = err.message
 
 				if (isTransientError(err)) {
-					// Sensibo's API is having a bad moment - we already retried, the next poll will try again.
+					// Sensibo's API is having a bad moment - we retried where it was safe, the next poll will try again.
 					// Log it as a single warning line rather than as an error, to keep the log readable.
-					const attempts = (err.config && err.config.retryCount || 0) + 1
+					const retries = err.config && err.config.retryCount || 0
+					const outcome = retries >= maxRetries ? 'retries exhausted' : 'not retried'
 
-					platform.log.warn(`Sensibo API temporarily unavailable (${errorContent.message}) after ${attempts} attempt(s): ${errorContent.errorURL}`)
+					platform.log.warn(`Sensibo API temporarily unavailable (${errorContent.message}) after ${retries + 1} attempt(s), ${outcome}: ${errorContent.errorURL}`)
 				} else {
 					platform.log.error(`Error URL: ${errorContent.errorURL}`)
 					platform.log.error(`Error message: ${errorContent.message}`)
