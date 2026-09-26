@@ -7,6 +7,8 @@ const unified = require('./unified')
 const eventKinds = require('./eventKinds.json')
 const eventReasons = require('./eventReasons.json')
 const minDate = new Date('0001-01-01T00:00:00Z')
+// above StateHandler's 1s debounce, so repeated commands are not collapsed into one
+const minRepeatDelayMilliseconds = 2000
 
 /**
  * @param {any[]} handledLocations
@@ -174,7 +176,11 @@ async function refreshDeviceState(handledLocations, platform, device) {
 
 						// Inline repeat logic: schedule all repeats immediately with different timeouts (first with 0 timeout, i.e. immediately, etc.)
 						if (platform.commandRepeatCount > 0) {
-							platform.easyDebugInfo(`Scheduling ${platform.commandRepeatCount - 1} additional commands with ${platform.commandRepeatDelayMilliseconds / 1000}s intervals`)
+							// StateHandler debounces state changes by 1s, so a repeat that comes sooner would cancel the previous one
+							// before it is sent. Keep repeats at least 2s apart so each one is actually sent.
+							const repeatDelayMilliseconds = Math.max(platform.commandRepeatDelayMilliseconds, minRepeatDelayMilliseconds)
+
+							platform.easyDebugInfo(`Scheduling ${platform.commandRepeatCount - 1} additional commands with ${repeatDelayMilliseconds / 1000}s intervals`)
 
 							for (let i = 0; i < platform.commandRepeatCount; i++) {
 								setTimeout(() => {
@@ -186,7 +192,7 @@ async function refreshDeviceState(handledLocations, platform, device) {
 
 									airConditioner.state['_'] = resultingInternalAcState
 									platform.easyDebugInfo(`Repeating command (#${i + 1} time) for ${airConditioner.name}`)
-								}, platform.commandRepeatDelayMilliseconds * i)
+								}, repeatDelayMilliseconds * i)
 							}
 						}
 					}
