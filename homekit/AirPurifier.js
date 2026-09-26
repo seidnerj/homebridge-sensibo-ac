@@ -158,7 +158,7 @@ class AirPurifier extends SensiboAccessory {
 	}
 
 	updateHomeKit() {
-		if (!(this.state instanceof Classes.InternalAcState)) {
+		if (!(this.state instanceof Classes.InternalAirPurifierState)) {
 			// TODO: log warning
 			return
 		}

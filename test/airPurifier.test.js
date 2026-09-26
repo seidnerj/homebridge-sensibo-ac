@@ -85,15 +85,20 @@ test('ResetFilterIndication resets the filter on Sensibo and in the state', asyn
 	assert.equal(purifier.state.filterLifeLevel, 100)
 })
 
-test('HomeKit filter characteristics are never pushed for a purifier', async () => {
+test('updateHomeKit pushes the purifier state to HomeKit', async () => {
 	const { purifier } = makePurifier({})
+	const service = purifier.AirPurifierService
+
+	assert.equal(service.getCharacteristic(hap.Characteristic.Active).value, 1)
+	assert.equal(service.getCharacteristic(hap.Characteristic.CurrentAirPurifierState).value, hap.Characteristic.CurrentAirPurifierState.PURIFYING_AIR)
+	assert.equal(service.getCharacteristic(hap.Characteristic.RotationSpeed).value, purifier.state.fanSpeed)
+	assert.equal(service.getCharacteristic(FilterChangeIndication).value, FilterChangeIndication.CHANGE_FILTER)
 
 	await homeKitSet(purifier, 'ResetFilterIndication', 1)
 	purifier.updateHomeKit()
 
-	// BUG: AirPurifier.updateHomeKit returns early unless state is an InternalAcState, which a purifier's never is
-	assert.equal(purifier.AirPurifierService.getCharacteristic(FilterChangeIndication).value, FilterChangeIndication.FILTER_OK)
-	assert.equal(purifier.AirPurifierService.getCharacteristic(hap.Characteristic.Active).value, 0)
+	assert.equal(service.getCharacteristic(FilterChangeIndication).value, FilterChangeIndication.FILTER_OK)
+	assert.equal(service.getCharacteristic(hap.Characteristic.FilterLifeLevel).value, 100)
 })
 
 test('PureRotationSpeed does not touch Climate React, even with auto setup on', async () => {
