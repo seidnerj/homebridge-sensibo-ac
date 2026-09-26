@@ -68,6 +68,9 @@ class SensiboACPlatform {
 		this.disableLightSwitch = config['disableLightSwitch'] ?? false
 		this.disableVerticalSwing = config['disableVerticalSwing'] ?? false
 		this.enableClimateReactAutoSetup = config['enableClimateReactAutoSetup'] ?? false
+		this.climateReactAutoSetupOffset = config['climateReactAutoSetupOffset'] ?? 0
+		this.positiveClimateReactAutoSetupMultiplier = config['positiveClimateReactAutoSetupMultiplier'] ?? 1
+		this.negativeClimateReactAutoSetupMultiplier = config['negativeClimateReactAutoSetupMultiplier'] ?? 1
 		this.enableClimateReactSwitch = config['enableClimateReactSwitch'] ?? false
 		this.enableHistoryStorage = config['enableHistoryStorage'] ?? false
 		this.enableOccupancySensor = config['enableOccupancySensor'] ?? false

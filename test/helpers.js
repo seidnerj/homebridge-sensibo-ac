@@ -75,6 +75,9 @@ export function fakePlatform(config) {
 		disableLightSwitch: false,
 		disableVerticalSwing: false,
 		enableClimateReactAutoSetup: false,
+		climateReactAutoSetupOffset: 0,
+		positiveClimateReactAutoSetupMultiplier: 1,
+		negativeClimateReactAutoSetupMultiplier: 1,
 		enableHistoryStorage: false,
 		modesToExclude: [],
 		syncButtonInAccessory: false,
@@ -91,10 +94,11 @@ const temperatures = {
 
 /**
  * A Sensibo AC device as the API returns it, cooling to 24°C at 26.5°C
- * @param   {Object}  acState  acState fields to override
- * @returns {Object}           the device
+ * @param   {Object}  acState    acState fields to override
+ * @param   {Object}  overrides  device fields to override (e.g. temperatureUnit, measurements, remoteCapabilities)
+ * @returns {Object}             the device
  */
-export function acDevice(acState) {
+export function acDevice(acState, overrides) {
 	return {
 		id: 'pod1',
 		productModel: 'skyv2',
@@ -148,19 +152,21 @@ export function acDevice(acState) {
 					swing: ['stopped', 'rangeFull']
 				}
 			}
-		}
+		},
+		...overrides
 	}
 }
 
 /**
  * An AirConditioner accessory built from a device, with the Sensibo API recorded
- * @param   {Object}  platformConfig  platform settings to override
- * @param   {Object}  acState         acState fields to override
+ * @param   {Object}  platformConfig    platform settings to override
+ * @param   {Object}  acState           acState fields to override
+ * @param   {Object}  [deviceOverrides] device fields to override
  * @returns {{ac: AirConditioner, platform: Object, calls: Array}}
  */
-export function makeAirConditioner(platformConfig, acState) {
+export function makeAirConditioner(platformConfig, acState, deviceOverrides) {
 	const platform = fakePlatform(platformConfig)
-	const ac = new AirConditioner(acDevice(acState), platform)
+	const ac = new AirConditioner(acDevice(acState, deviceOverrides), platform)
 
 	// Homebridge pushes the state to HomeKit right after creating the accessory (syncHomeKitCache); setters read it back
 	ac.updateHomeKit()
@@ -197,4 +203,42 @@ export function homeKitGet(ac, characteristic) {
 			resolve(value)
 		})
 	})
+}
+
+/**
+ * The calls of one API method, as argument lists
+ * @param   {Array}   calls
+ * @param   {string}  method
+ * @returns {Array}
+ */
+export function callsTo(calls, method) {
+	return calls.filter(call => {
+		return call[0] === method
+	}).map(call => {
+		return call.slice(1)
+	})
+}
+
+/**
+ * Press a HeaterCooler mode the way HAP does: the characteristic value changes along with the setter call
+ * @param   {AirConditioner}  ac
+ * @param   {number}          value  TargetHeaterCoolerState value
+ * @returns {Promise<void>}
+ */
+export function pressMode(ac, value) {
+	ac.HeaterCoolerService.getCharacteristic(hap.Characteristic.TargetHeaterCoolerState).updateValue(value)
+
+	return homeKitSet(ac, 'TargetHeaterCoolerState', value)
+}
+
+/**
+ * Let pending promise chains run (setImmediate is left unmocked by the tests)
+ * @returns {Promise<void>}
+ */
+export async function settle() {
+	for (let i = 0; i < 20; i++) {
+		await new Promise(resolve => {
+			setImmediate(resolve)
+		})
+	}
 }
