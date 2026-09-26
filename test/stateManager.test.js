@@ -251,3 +251,28 @@ test('both thresholds read the single Sensibo target temperature', async () => {
 	assert.equal(await homeKitGet(ac, 'CoolingThresholdTemperature'), 24)
 	assert.equal(await homeKitGet(ac, 'HeatingThresholdTemperature'), 24)
 })
+
+test('CurrentHeaterCoolerState is INACTIVE in FAN and DRY', async () => {
+	for (const mode of ['fan', 'dry']) {
+		const { ac } = makeAirConditioner({}, { mode })
+
+		assert.equal(await homeKitGet(ac, 'CurrentHeaterCoolerState'), CurrentHeaterCoolerState.INACTIVE)
+	}
+})
+
+test('a cooling-only unit in AUTO below the target is IDLE, never HEATING', async () => {
+	const modes = { ...acDevice({}).remoteCapabilities.modes }
+
+	delete modes.heat
+
+	const { ac } = makeAirConditioner({}, { mode: 'auto' }, {
+		measurements: {
+			temperature: 20,
+			humidity: 50
+		},
+		remoteCapabilities: { modes }
+	})
+
+	assert.equal(await homeKitGet(ac, 'CurrentHeaterCoolerState'), CurrentHeaterCoolerState.IDLE)
+	assert.equal(ac.HeaterCoolerService.getCharacteristic(CurrentHeaterCoolerState).value, CurrentHeaterCoolerState.IDLE)
+})

@@ -594,6 +594,37 @@ class AirConditioner {
 		}
 	}
 
+	/**
+	 * What the HeaterCooler is doing right now, for CurrentHeaterCoolerState
+	 * @returns {number} a CurrentHeaterCoolerState value
+	 */
+	currentHeaterCoolerState() {
+		const state = this.state
+
+		if (!state.active || state.mode === 'FAN' || state.mode === 'DRY') {
+			return Characteristic.CurrentHeaterCoolerState.INACTIVE
+		}
+
+		if (state.mode === 'COOL') {
+			return Characteristic.CurrentHeaterCoolerState.COOLING
+		}
+
+		if (state.mode === 'HEAT') {
+			return Characteristic.CurrentHeaterCoolerState.HEATING
+		}
+
+		// AUTO: guess from the room against the target; a unit that cannot heat is never HEATING
+		if (state.currentTemperature > state.targetTemperature) {
+			return Characteristic.CurrentHeaterCoolerState.COOLING
+		}
+
+		if (state.currentTemperature < state.targetTemperature && this.capabilities.HEAT) {
+			return Characteristic.CurrentHeaterCoolerState.HEATING
+		}
+
+		return Characteristic.CurrentHeaterCoolerState.IDLE
+	}
+
 	updateHomeKit() {
 		// log new state with FakeGato
 		if (this.loggingService) {
@@ -693,22 +724,8 @@ class AirConditioner {
 					}
 
 					// set proper target and current state of HeaterCoolerService
-					if (this.state.mode === 'COOL') {
-						this.Utils.updateValue('HeaterCoolerService', 'TargetHeaterCoolerState', Characteristic.TargetHeaterCoolerState.COOL)
-						this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', Characteristic.CurrentHeaterCoolerState.COOLING)
-					} else if (this.state.mode === 'HEAT') {
-						this.Utils.updateValue('HeaterCoolerService', 'TargetHeaterCoolerState', Characteristic.TargetHeaterCoolerState.HEAT)
-						this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', Characteristic.CurrentHeaterCoolerState.HEATING)
-					} else if (this.state.mode === 'AUTO') {
-						this.Utils.updateValue('HeaterCoolerService', 'TargetHeaterCoolerState', Characteristic.TargetHeaterCoolerState.AUTO)
-						if (this.state.currentTemperature > this.state.targetTemperature) {
-							this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', Characteristic.CurrentHeaterCoolerState.COOLING)
-						} else if (this.state.currentTemperature < this.state.targetTemperature) {
-							this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', Characteristic.CurrentHeaterCoolerState.HEATING)
-						} else {
-							this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', Characteristic.CurrentHeaterCoolerState.IDLE)
-						}
-					}
+					this.Utils.updateValue('HeaterCoolerService', 'TargetHeaterCoolerState', Characteristic.TargetHeaterCoolerState[this.state.mode])
+					this.Utils.updateValue('HeaterCoolerService', 'CurrentHeaterCoolerState', this.currentHeaterCoolerState())
 				}
 
 				if (this.DryService) {
