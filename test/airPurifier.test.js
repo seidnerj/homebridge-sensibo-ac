@@ -229,7 +229,7 @@ test('setting the target state toggles Pure Boost immediately and refreshes stat
 	assert.equal(await homeKitGet(pure, 'TargetAirPurifierState'), 1)
 })
 
-test('resetting the filter calls the API once and stores filterChange as a number', async () => {
+test('resetting the filter calls the API once and marks the filter as OK', async () => {
 	const {
 		pure, calls
 	} = makeAirPurifier({}, {
@@ -244,9 +244,7 @@ test('resetting the filter calls the API once and stores filterChange as a numbe
 	flush()
 
 	assert.deepEqual(calls, [['resetFilterIndicator', 'pure1']])
-	assert.equal(pure.state.filterChange, 0)
+	assert.equal(pure.state.filterChange, 'FILTER_OK')
 	assert.equal(pure.state.filterLifeLevel, 100)
-
-	// Suspicious: filterChange becomes 0 instead of 'FILTER_OK', so the getter maps it to undefined
-	assert.equal(await homeKitGet(pure, 'FilterChangeIndication'), undefined)
+	assert.equal(await homeKitGet(pure, 'FilterChangeIndication'), Characteristic.FilterChangeIndication.FILTER_OK)
 })
