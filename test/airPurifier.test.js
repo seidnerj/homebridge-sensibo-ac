@@ -125,7 +125,7 @@ test('PureRotationSpeed 0 switches the purifier off', async () => {
 	assert.equal(purifier.state.active, false)
 })
 
-test('purifier state changes are not sent to Sensibo', async () => {
+test('purifier state changes are sent to Sensibo after the debounce', async () => {
 	const {
 		purifier, platform, calls
 	} = makePurifier({})
@@ -138,9 +138,17 @@ test('purifier state changes are not sent to Sensibo', async () => {
 	await homeKitSet(purifier, 'PureRotationSpeed', 100)
 	await flushCommands(mock.timers)
 
-	// BUG: StateHandler only sends AC state for AirConditioner instances; the purifier's change is dropped with an error
-	assert.equal(callsTo(calls, 'setDeviceACState').length, 0)
-	assert.match(errors[0], /is not an instance of AirConditioner/)
+	assert.deepEqual(callsTo(calls, 'setDeviceACState'), [['pure1', {
+		on: true,
+		mode: 'fan',
+		temperatureUnit: undefined,
+		targetTemperature: null,
+		swingModes: {},
+		fanLevel: 'high',
+		light: 'on'
+	}]])
+	assert.deepEqual(errors, [])
+	assert.equal(platform.setProcessing, false)
 })
 
 test('PureActive getter and setter never answer HomeKit', () => {
