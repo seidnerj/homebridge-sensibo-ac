@@ -4,7 +4,7 @@ const {
 const assert = require('node:assert/strict')
 const hap = require('hap-nodejs')
 const {
-	callsTo, fakePlatform, flushCommands, homeKitSet
+	callsTo, fakePlatform, flushCommands, homeKitGet, homeKitSet
 } = require('./helpers')
 // after helpers: requiring an accessory first hits a circular require
 const AirPurifier = require('../homekit/AirPurifier')
@@ -151,17 +151,13 @@ test('purifier state changes are sent to Sensibo after the debounce', async () =
 	assert.equal(platform.setProcessing, false)
 })
 
-test('PureActive getter and setter never answer HomeKit', () => {
+test('PureActive getter and setter answer HomeKit', async () => {
 	const { purifier } = makePurifier({})
-	let answered = false
 
-	purifier.StateManager.get.PureActive(() => {
-		answered = true
-	})
-	purifier.StateManager.set.PureActive(1, () => {
-		answered = true
-	})
+	assert.equal(await homeKitGet(purifier, 'PureActive'), 1)
 
-	// BUG: both check for InternalAcState, so HomeKit's request for a purifier is left hanging
-	assert.equal(answered, false)
+	await homeKitSet(purifier, 'PureActive', 0)
+
+	assert.equal(purifier.state.active, false)
+	assert.equal(await homeKitGet(purifier, 'PureActive'), 0)
 })

@@ -251,7 +251,7 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			PureActive: (callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device.state instanceof Classes.InternalAirPurifierState)) {
 					// TODO: log warning
 					return
 				}
@@ -847,7 +847,7 @@ module.exports = (device, platform) => {
 			 * @param {homebridge.CharacteristicGetCallback} callback
 			 */
 			PureActive: (value, callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
+				if (!(device.state instanceof Classes.InternalAirPurifierState)) {
 					// TODO: log warning
 					return
 				}
