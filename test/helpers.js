@@ -11,6 +11,7 @@ const { PlatformAccessory } = require('homebridge/lib/platformAccessory')
  */
 export function fakeSensiboApi() {
 	const calls = []
+	let events = []
 	const record = method => {
 		return async (...args) => {
 			calls.push([method, ...args])
@@ -24,7 +25,15 @@ export function fakeSensiboApi() {
 		syncDeviceState: record('syncDeviceState'),
 		enableDisableClimateReact: record('enableDisableClimateReact'),
 		enableDisablePureBoost: record('enableDisablePureBoost'),
-		resetFilterIndicator: record('resetFilterIndicator')
+		resetFilterIndicator: record('resetFilterIndicator'),
+		getDeviceEvents: async (...args) => {
+			calls.push(['getDeviceEvents', ...args])
+
+			return events
+		},
+		setEvents: newEvents => {
+			events = newEvents
+		}
 	}
 }
 
@@ -75,6 +84,10 @@ export function fakePlatform(config) {
 		disableLightSwitch: false,
 		disableVerticalSwing: false,
 		enableClimateReactAutoSetup: false,
+		enableRepeatClimateReactAction: false,
+		commandRepeatCount: 1,
+		commandRepeatDelayMilliseconds: 1000,
+		repeatClimateReactActionMinGapMilliseconds: 45000,
 		climateReactAutoSetupOffset: 0,
 		positiveClimateReactAutoSetupMultiplier: 1,
 		negativeClimateReactAutoSetupMultiplier: 1,

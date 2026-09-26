@@ -72,6 +72,15 @@ class SensiboACPlatform {
 		this.positiveClimateReactAutoSetupMultiplier = config['positiveClimateReactAutoSetupMultiplier'] ?? 1
 		this.negativeClimateReactAutoSetupMultiplier = config['negativeClimateReactAutoSetupMultiplier'] ?? 1
 		this.enableClimateReactSwitch = config['enableClimateReactSwitch'] ?? false
+		this.enableRepeatClimateReactAction = config['enableRepeatClimateReactAction'] ?? false
+		this.commandRepeatCount = Math.max(1, Math.min(3, config['commandRepeatCount'] ?? 1))
+		// Minimum 1s: HomeKit sends a single user action as several characteristic writes (e.g. Active, mode and
+		// temperature) within about a second, which StateHandler groups with its 1s debounce. Repeated commands skip that
+		// debounce (see StateHandler's '_' property), so keeping them at least 1s apart stops them arriving faster than
+		// HomeKit's own grouping window.
+		this.commandRepeatDelayMilliseconds = Math.max(1, Math.min(60, config['commandRepeatDelaySeconds'] ?? 1)) * 1000
+		// must be shorter than the polling interval, so a missed Climate React action is repeated on the next refresh
+		this.repeatClimateReactActionMinGapMilliseconds = 45000
 		this.enableHistoryStorage = config['enableHistoryStorage'] ?? false
 		this.enableOccupancySensor = config['enableOccupancySensor'] ?? false
 		this.enableSyncButton = config['enableSyncButton'] ?? false

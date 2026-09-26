@@ -50,6 +50,8 @@ class AirConditioner {
 		this.state = this.cachedState.devices[this.id] = this.Utils.airConditionerStateFromDevice(device)
 		this.state = new Proxy(this.state, StateHandler(this, platform))
 		this.stateManager = StateManager(this, platform)
+		// when the repeat Climate React action last looked at the AC's events, see refreshState
+		this.lastStateRefresh = new Date('0001-01-01T00:00:00Z')
 
 		this.UUID = this.api.hap.uuid.generate(this.id)
 		this.accessory = platform.cachedAccessories.find(accessory => {
