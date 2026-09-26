@@ -12,6 +12,7 @@ const { PlatformAccessory } = require('homebridge/lib/platformAccessory')
 export function fakeSensiboApi() {
 	const calls = []
 	let events = []
+	let history = { temperature: [] }
 	const record = method => {
 		return async (...args) => {
 			calls.push([method, ...args])
@@ -33,6 +34,14 @@ export function fakeSensiboApi() {
 		},
 		setEvents: newEvents => {
 			events = newEvents
+		},
+		getDeviceHistoricalMeasurements: async (...args) => {
+			calls.push(['getDeviceHistoricalMeasurements', ...args])
+
+			return history
+		},
+		setHistory: newHistory => {
+			history = newHistory
 		}
 	}
 }
@@ -47,7 +56,7 @@ export function fakePlatform(config) {
 
 	log.info = log.warn = log.error = log.success = log.debug = log.easyDebug = log.devDebug = () => {}
 
-	return {
+	const platform = {
 		api: {
 			hap,
 			platformAccessory: PlatformAccessory,
@@ -76,6 +85,7 @@ export function fakePlatform(config) {
 		carbonDioxideAlertThreshold: 1500,
 		allowRepeatedCommands: false,
 		brokenThermostat: false,
+		climateReactAsAuto: false,
 		climateReactSwitchInAccessory: false,
 		disableAirConditioner: false,
 		disableDry: false,
@@ -97,6 +107,15 @@ export function fakePlatform(config) {
 		syncButtonInAccessory: false,
 		...config
 	}
+
+	// mirrors index.js: Climate React as auto owns Climate React
+	if (platform.climateReactAsAuto) {
+		platform.enableClimateReactAutoSetup = true
+		platform.enableClimateReactSwitch = false
+		platform.climateReactSwitchInAccessory = false
+	}
+
+	return platform
 }
 
 const temperatures = {

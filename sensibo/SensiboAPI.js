@@ -489,6 +489,18 @@ export default async function (platform) {
 			return await apiRequest('get', path)
 		},
 
+		/**
+		 * @param   {string}  deviceId
+		 * @param   {number}  days      Sensibo allows at most 1 without a subscription
+		 * @returns {Promise<{temperature: {time: string, value: number}[], humidity: {time: string, value: number}[]}>}
+		 */
+		getDeviceHistoricalMeasurements: async (deviceId, days) => {
+			const path = `/pods/${deviceId}/historicalMeasurements?days=${days}`
+			const response = await apiRequest('get', path)
+
+			return response.result
+		},
+
 		resetFilterIndicator: async deviceId => {
 			const path = `/pods/${deviceId}/cleanFiltersNotification`
 
