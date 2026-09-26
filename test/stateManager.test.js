@@ -3,8 +3,9 @@ import {
 } from 'node:test'
 import assert from 'node:assert/strict'
 import * as hap from 'hap-nodejs'
+import AirConditioner from '../homekit/AirConditioner.js'
 import {
-	homeKitGet, homeKitSet, makeAirConditioner
+	acDevice, fakePlatform, homeKitGet, homeKitSet, makeAirConditioner
 } from './helpers.js'
 
 const {
@@ -166,6 +167,43 @@ test('Climate React auto setup in HEAT: off above target + 1, on below target - 
 	assert.equal(climateReact.highTemperatureState.on, false)
 	assert.equal(climateReact.lowTemperatureState.on, true)
 	assert.equal(climateReact.lowTemperatureState.mode, 'heat')
+})
+
+test('Climate React auto setup sends the target temperature in Fahrenheit on a Fahrenheit device', async () => {
+	const device = acDevice({
+		targetTemperature: 75,
+		temperatureUnit: 'F'
+	})
+
+	device.temperatureUnit = 'F'
+
+	for (const mode of Object.values(device.remoteCapabilities.modes)) {
+		if (mode.temperatures.C) {
+			mode.temperatures = {
+				F: {
+					isNative: true,
+					values: [61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]
+				}
+			}
+		}
+	}
+
+	const platform = fakePlatform({ enableClimateReactAutoSetup: true })
+	const ac = new AirConditioner(device, platform)
+
+	ac.updateHomeKit()
+
+	// HomeKit always sets Celsius; 24C is 75F
+	await homeKitSet(ac, 'CoolingThresholdTemperature', 24)
+	await Promise.resolve()
+
+	const climateReact = platform.sensiboApi.calls.find(call => {
+		return call[0] === 'setDeviceClimateReactState'
+	})[2]
+
+	assert.equal(climateReact.highTemperatureState.temperatureUnit, 'F')
+	assert.equal(climateReact.highTemperatureState.targetTemperature, 75)
+	assert.equal(climateReact.lowTemperatureState.targetTemperature, 75)
 })
 
 test('Climate React auto setup keeps the existing enabled flag', async () => {
