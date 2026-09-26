@@ -333,7 +333,7 @@ module.exports = (device, platform) => {
 				// FIXME: check on issue / race condition that prevents AC turning off if the previous command was to set fan to 0% (auto)
 
 				if (prop === 'fanSpeed' && value === 0) {
-					if ((device instanceof AirConditioner || device instanceof AirPurifier) && (state instanceof Classes.InternalAcState)) {
+					if ((device instanceof AirConditioner || device instanceof AirPurifier) && (state instanceof Classes.InternalAcState || state instanceof Classes.InternalAirPurifierState)) {
 						if (device.capabilities[state.mode].autoFanSpeed) {
 							preventTurningOff = true
 						}
@@ -354,7 +354,7 @@ module.exports = (device, platform) => {
 
 			clearTimeout(setTimer)
 			setTimer = setTimeout(async function() {
-				if (device instanceof AirConditioner && state instanceof Classes.InternalAcState) {
+				if ((device instanceof AirConditioner || device instanceof AirPurifier) && (state instanceof Classes.InternalAcState || state instanceof Classes.InternalAirPurifierState)) {
 					// Make sure device is not turning off when setting fanSpeed to 0 (AUTO)
 					if (preventTurningOff && state.active === false) {
 						easyDebugInfo(`${device.name} - Auto fan speed, don't turn off when fanSpeed is set to 0%. Prop: ${prop}, Value: ${value}`)
@@ -381,7 +381,7 @@ module.exports = (device, platform) => {
 						return
 					}
 				} else {
-					log.error(`${device.name} - setDeviceACState -  ${device.name} is not an instance of AirConditioner!`)
+					log.error(`${device.name} - setDeviceACState -  ${device.name} is not an instance of AirConditioner or AirPurifier!`)
 				}
 
 				setTimeout(() => {
