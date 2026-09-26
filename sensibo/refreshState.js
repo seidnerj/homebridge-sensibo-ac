@@ -214,6 +214,12 @@ async function refreshAllDevices(platform) {
 				case 'AirConditioner':
 					// Update AC state, note: updateHomeKit gets called within StateHandler.js, e.g. GET when prop === 'update'
 					accessory.state.update(airConditionerStateFromRefresh(platform, accessory, device))
+
+					// Climate React as auto watches the room drift, but only from refreshes that were applied: update()
+					// skips them while a command is being sent
+					if (!platform.setProcessing) {
+						accessory.autoClimateReact?.onRefresh()
+					}
 					pending.push(repeatClimateReactAction(platform, accessory, device)
 						.then(lastStateRefresh => {
 							if (lastStateRefresh) {

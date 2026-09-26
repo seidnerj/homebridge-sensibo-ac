@@ -90,6 +90,15 @@ class SensiboACPlatform {
 		this.externalHumiditySensor = config['externalHumiditySensor'] ?? false
 		this.locationsToInclude = config['locationsToInclude'] ?? []
 
+		this.climateReactAsAuto = config['climateReactAsAuto'] ?? false
+
+		// Climate React as auto: the plugin owns Climate React, so it is always set up and never user-facing
+		if (this.climateReactAsAuto) {
+			this.enableClimateReactAutoSetup = true
+			this.enableClimateReactSwitch = false
+			this.climateReactSwitchInAccessory = false
+		}
+
 		this.modesToExclude = config['modesToExclude']?.map(mode => {
 			return mode.toUpperCase()
 		}) ?? []
