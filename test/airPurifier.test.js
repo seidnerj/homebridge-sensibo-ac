@@ -117,6 +117,14 @@ test('PureRotationSpeed does not touch Climate React, even with auto setup on', 
 	assert.equal(callsTo(calls, 'setDeviceClimateReactState').length, 0)
 })
 
+test('Pure getters answer HomeKit', async () => {
+	const { purifier } = makePurifier({})
+
+	assert.equal(await homeKitGet(purifier, 'PureRotationSpeed'), purifier.state.fanSpeed)
+	assert.equal(await homeKitGet(purifier, 'CurrentAirPurifierState'), hap.Characteristic.CurrentAirPurifierState.PURIFYING_AIR)
+	assert.equal(await homeKitGet(purifier, 'TargetAirPurifierState'), 0)
+})
+
 test('PureRotationSpeed 0 switches the purifier off', async () => {
 	const { purifier } = makePurifier({})
 
