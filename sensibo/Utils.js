@@ -537,6 +537,27 @@ export default (device, platform) => {
 		},
 
 		/**
+		 * The target temperature sent to the AC in broken thermostat mode: its coldest setting in COOL and hottest in HEAT,
+		 * so the AC never stops on its own
+		 * @param   {string}  mode  'COOL' or 'HEAT'
+		 * @returns {number}        the temperature in Celsius
+		 */
+		brokenThermostatTemperature: mode => {
+			const temperatures = device.capabilities[mode]?.temperatures
+			const extreme = mode === 'COOL' ? 'min' : 'max'
+
+			if (temperatures?.C) {
+				return temperatures.C[extreme]
+			}
+
+			if (temperatures?.F) {
+				return toCelsiusPrivate(temperatures.F[extreme])
+			}
+
+			return mode === 'COOL' ? 16 : 30
+		},
+
+		/**
 		 * Returns a simplified object of information - such as id, model and roomName - about the given Sensibo device
 		 * @param   {Object}  deviceFromSensiboResponse  The device details from the Sensibo API response
 		 * @returns {Object}                             The new object containing simplified device information - such as id, model and roomName

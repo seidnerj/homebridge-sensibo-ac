@@ -56,6 +56,7 @@ class SensiboACPlatform {
 
 		this.name = config['name'] ?? PLATFORM_NAME
 		this.allowRepeatedCommands = config['allowRepeatedCommands'] ?? false
+		this.brokenThermostat = config['brokenThermostat'] ?? false
 		this.carbonDioxideAlertThreshold = config['carbonDioxideAlertThreshold'] ?? 1500
 		this.climateReactSwitchInAccessory = config['climateReactSwitchInAccessory'] ?? false
 		this.devicesToExclude = config['devicesToExclude'] ?? []

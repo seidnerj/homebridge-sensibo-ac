@@ -75,6 +75,7 @@ export function fakePlatform(config) {
 		VOCDENSITY_MAX: 10000,
 		carbonDioxideAlertThreshold: 1500,
 		allowRepeatedCommands: false,
+		brokenThermostat: false,
 		climateReactSwitchInAccessory: false,
 		disableAirConditioner: false,
 		disableDry: false,

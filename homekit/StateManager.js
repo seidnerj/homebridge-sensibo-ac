@@ -52,9 +52,15 @@ function updateClimateReact(device, enableClimateReactAutoSetup) {
 	smartModeState.highTemperatureWebhook = null
 	smartModeState.lowTemperatureWebhook = null
 
+	// Broken thermostat: Climate React's states switch the AC on at its extreme setting too, the thresholds above stay
+	// around the user's target
+	const stateTemperature = platformPrivate.brokenThermostat && (device.state.mode === 'COOL' || device.state.mode === 'HEAT')
+		? device.Utils.brokenThermostatTemperature(device.state.mode)
+		: device.state.targetTemperature
+
 	smartModeState.highTemperatureState = {
 		// state is kept in Celsius, but Sensibo reads it in the unit named below
-		targetTemperature: device.usesFahrenheit ? device.Utils.toFahrenheit(device.state.targetTemperature) : device.state.targetTemperature,
+		targetTemperature: device.usesFahrenheit ? device.Utils.toFahrenheit(stateTemperature) : stateTemperature,
 		temperatureUnit: device.temperatureUnit,
 		mode: device.state.mode.toLowerCase()
 	}

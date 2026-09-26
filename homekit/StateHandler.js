@@ -1,11 +1,15 @@
-function sensiboFormattedACState(device, state) {
+function sensiboFormattedACState(device, state, brokenThermostat) {
 	device.log.easyDebug(`${device.name} -> sensiboFormattedACState start`)
 	// device.log.easyDebug(`${device.name} -> sensiboFormattedACState acState: ${JSON.stringify(acState, null, 4)}`)
 
+	// Broken thermostat: the AC gets its extreme setting, the user's target stays in state (and HomeKit)
+	const targetTemperature = brokenThermostat && (state.mode === 'COOL' || state.mode === 'HEAT')
+		? device.Utils.brokenThermostatTemperature(state.mode)
+		: state.targetTemperature
 	const acState = {
 		on: state.active,
 		mode: state.mode.toLowerCase(),
-		targetTemperature: device.usesFahrenheit ? device.Utils.toFahrenheit(state.targetTemperature) : state.targetTemperature,
+		targetTemperature: device.usesFahrenheit ? device.Utils.toFahrenheit(targetTemperature) : targetTemperature,
 		temperatureUnit: device.temperatureUnit
 	}
 	const swingModes = device.Utils.sensiboFormattedSwingModes(device.capabilities[state.mode], state)
@@ -158,7 +162,7 @@ export default (device, platform) => {
 				preventTurningOff = false
 			}
 
-			const sensiboNewACState = sensiboFormattedACState(device, state)
+			const sensiboNewACState = sensiboFormattedACState(device, state, platform.brokenThermostat)
 
 			log.easyDebug(`${device.name} - before calling API to set new state`)
 			// log.easyDebug(JSON.stringify(sensiboNewACState, null, 4))
