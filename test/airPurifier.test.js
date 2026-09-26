@@ -220,6 +220,22 @@ test('setting rotation speed to 0 turns the Pure off, as does PureActive 0', asy
 	assert.equal(second.calls[0][2].on, false)
 })
 
+test('PureActive and PureRotationSpeed leave Climate React alone, even with auto setup on', async () => {
+	const {
+		pure, calls
+	} = makeAirPurifier({ enableClimateReactAutoSetup: true }, {})
+
+	await homeKitSet(pure, 'PureRotationSpeed', 100)
+	await homeKitSet(pure, 'PureActive', 1)
+	flush()
+
+	assert.equal(pure.state.fanSpeed, 100)
+	assert.equal(pure.state.active, true)
+	assert.equal(calls.filter(call => {
+		return call[0] === 'setDeviceClimateReactState'
+	}).length, 0)
+})
+
 test('setting the target state toggles Pure Boost immediately and refreshes state', async () => {
 	const {
 		pure, calls, refreshes

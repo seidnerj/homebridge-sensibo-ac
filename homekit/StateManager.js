@@ -601,9 +601,7 @@ export default (device, platform) => {
 				log.easyDebug(device.name, '(SET) - Pure Active State:', state)
 				device.state.active = state
 
-				// TODO: check if ClimateReact is valid for Pure
-				updateClimateReact(device, enableClimateReactAutoSetup)
-
+				// An air purifier has no Climate React
 				callback()
 			},
 
@@ -625,9 +623,7 @@ export default (device, platform) => {
 					device.state.active = false
 				}
 
-				// TODO: check if ClimateReact is valid for Pure
-				updateClimateReact(device, enableClimateReactAutoSetup)
-
+				// An air purifier has no Climate React
 				callback()
 			},
 
