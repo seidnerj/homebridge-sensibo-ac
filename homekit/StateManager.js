@@ -97,7 +97,8 @@ module.exports = (device, platform) => {
 			return
 		}
 
-		const smartModeState = device.state.smartMode
+		// A new object, so StateHandler's "already equal" check sees the change
+		const smartModeState = { ...device.state.smartMode }
 
 		// Climate React as auto: the plugin owns whether Climate React is on
 		if (device.autoClimateReact) {
@@ -1330,9 +1331,10 @@ module.exports = (device, platform) => {
 				}
 
 				easyDebugInfo(device.name, '(SET) - Climate React Enabled Switch:', value)
-				const smartModeState = device.state.smartMode
-
-				smartModeState.enabled = !!value
+				const smartModeState = {
+					...device.state.smartMode,
+					enabled: !!value
+				}
 
 				// NOTE: we must set the 'smartMode' property directly (and NOT for example like so: device.state.smartMode.enabled = true),
 				//       otherwise the StateHandler's setter code will not be executed and any changes will not take effect.
