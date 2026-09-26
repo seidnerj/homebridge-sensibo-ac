@@ -1,6 +1,7 @@
 {
   "displayName": "Sensibo for Homebridge",
   "name": "homebridge-sensibo-ac",
+  "private": true,
   "platformName": "SensiboAC",
   "version": "2.6.0-alpha.6",
   "description": "Homebridge plugin for Sensibo - Smart AC Control",
