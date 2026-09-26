@@ -124,13 +124,16 @@ test('state without pureBoostConfig leaves pureBoost undefined, and an overdue f
 	assert.equal(pure.state.filterLifeLevel, 0)
 })
 
-test('capabilities throw when a mode has no temperatures object', () => {
+test('capabilities accept a mode with no temperatures object', () => {
 	const platform = fakePlatform({})
+	const pure = new AirPurifier(pureDevice({ remoteCapabilities: { modes: { fan: { fanLevels: ['low'] } } } }), platform)
 
-	// Suspicious: `'C' in undefined` throws, so a Pure payload without `temperatures` cannot be constructed
-	assert.throws(() => {
-		return new AirPurifier(pureDevice({ remoteCapabilities: { modes: { fan: { fanLevels: ['low'] } } } }), platform)
-	}, TypeError)
+	assert.deepEqual(pure.capabilities, {
+		FAN: {
+			fanSpeeds: ['low'],
+			autoFanSpeed: false
+		}
+	})
 })
 
 test('capabilities for the fan mode keep fan levels and light, and do not mark it HomeKit supported', () => {
