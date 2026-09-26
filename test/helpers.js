@@ -29,6 +29,7 @@ function fakeSensiboApi(responses) {
 
 	return {
 		calls,
+		responses,
 		setDeviceACState: record('setDeviceACState'),
 		setDeviceClimateReactState: record('setDeviceClimateReactState'),
 		syncDeviceOnState: record('syncDeviceOnState'),
@@ -302,9 +303,65 @@ function callsTo(calls, method) {
 	})
 }
 
+/**
+ * Let pending promise chains run (setImmediate is left unmocked by the tests)
+ * @returns {Promise<void>}
+ */
+async function settle() {
+	for (let i = 0; i < 20; i++) {
+		await new Promise(resolve => {
+			setImmediate(resolve)
+		})
+	}
+}
+
+/**
+ * Press a HeaterCooler mode the way HAP does: the characteristic value changes along with the setter call
+ * @param   {Object}  ac
+ * @param   {number}  value  TargetHeaterCoolerState value
+ * @returns {Promise<void>}
+ */
+function pressMode(ac, value) {
+	ac.HeaterCoolerService.getCharacteristic(hap.Characteristic.TargetHeaterCoolerState).updateValue(value)
+
+	return homeKitSet(ac, 'TargetHeaterCoolerState', value)
+}
+
+/**
+ * Run one polling refresh (sensibo/refreshState.js) against the given devices
+ * @param   {Object}  platform
+ * @param   {Array}   devices  what getAllDevices returns
+ * @param   {Object}  timers   node:test mock.timers, with setTimeout mocked
+ * @returns {Promise<void>}
+ */
+async function refreshOnce(platform, devices, timers) {
+	platform.sensiboApi.responses.getAllDevices = devices
+	require('../sensibo/refreshState')(platform)()
+	timers.tick(platform.refreshDelay)
+	await settle()
+	// refreshState keeps new refreshes blocked for another refreshDelay; release it without firing other timers
+	platform.processingState = false
+}
+
+/**
+ * Let StateHandler's 1s debounce send the command, then its follow-up 0.5s timer release setProcessing and update HomeKit
+ * @param   {Object}  timers  node:test mock.timers, with setTimeout mocked
+ * @returns {Promise<void>}
+ */
+async function flushCommands(timers) {
+	timers.tick(1000)
+	await settle()
+	timers.tick(500)
+	await settle()
+}
+
 module.exports = {
 	acDevice,
+	flushCommands,
+	refreshOnce,
 	callsTo,
+	pressMode,
+	settle,
 	fakePlatform,
 	fakeSensiboApi,
 	homeKitGet,
