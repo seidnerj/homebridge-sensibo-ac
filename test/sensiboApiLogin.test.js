@@ -174,3 +174,20 @@ test('a token response without access_token leaves requests unauthenticated', as
 		return config.url
 	}), [TOKEN_URL, TOKEN_URL])
 })
+
+test('a token request that fails without a response does not hang setup', async () => {
+	const {
+		platform, saved
+	} = loginPlatform(undefined)
+
+	axios.defaults.adapter = async config => {
+		requests.push(config)
+
+		throw new Error('getaddrinfo ENOTFOUND home.sensibo.com')
+	}
+
+	const api = await SensiboApi(platform)
+
+	await assert.rejects(api.getAllDevices(), { message: 'No valid authentication details found, stopping API request.' })
+	assert.deepEqual(saved, [])
+})
