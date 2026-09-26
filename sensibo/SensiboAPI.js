@@ -482,6 +482,13 @@ export default async function (platform) {
 			return await apiRequest('patch', path, json)
 		},
 
+		getDeviceEvents: async deviceId => {
+			const path = `/pods/${deviceId}/events`
+
+			// Note: events come newest first, but callers should not rely on the order
+			return await apiRequest('get', path)
+		},
+
 		resetFilterIndicator: async deviceId => {
 			const path = `/pods/${deviceId}/cleanFiltersNotification`
 
