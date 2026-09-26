@@ -94,7 +94,7 @@ test('Climate React is not touched when enableClimateReactAutoSetup is off', asy
 	assert.equal(ac.state.smartMode.lowTemperatureThreshold, 23)
 })
 
-test('the new Climate React state is sent to Sensibo only with allowRepeatedCommands', async () => {
+test('the new Climate React state is sent to Sensibo with or without allowRepeatedCommands', async () => {
 	for (const allowRepeatedCommands of [false, true]) {
 		const {
 			ac, calls
@@ -108,14 +108,23 @@ test('the new Climate React state is sent to Sensibo only with allowRepeatedComm
 
 		const sent = callsTo(calls, 'setDeviceClimateReactState')
 
-		// BUG: updateClimateReact mutates state.smartMode in place and re-assigns the same object, so StateHandler's
-		// "already equal" check drops it unless allowRepeatedCommands is on
-		assert.equal(sent.length, allowRepeatedCommands ? 1 : 0)
-
-		if (allowRepeatedCommands) {
-			assert.equal(sent[0][1].highTemperatureThreshold, 23)
-			assert.equal(sent[0][1].highTemperatureState.mode, 'cool')
-			assert.equal(sent[0][1].highTemperatureState.fanLevel, 'medium')
-		}
+		assert.equal(sent.length, 1, `allowRepeatedCommands: ${allowRepeatedCommands}`)
+		assert.equal(sent[0][1].highTemperatureThreshold, 23)
+		assert.equal(sent[0][1].highTemperatureState.mode, 'cool')
+		assert.equal(sent[0][1].highTemperatureState.fanLevel, 'medium')
 	}
+})
+
+test('the Climate React switch sends the new enabled flag without allowRepeatedCommands', async () => {
+	const {
+		ac, calls
+	} = makeAirConditioner({ allowRepeatedCommands: false }, {})
+
+	await homeKitSet(ac, 'ClimateReactSwitch', true)
+	await Promise.resolve()
+
+	const sent = callsTo(calls, 'setDeviceClimateReactState')
+
+	assert.equal(sent.length, 1)
+	assert.equal(sent[0][1].enabled, true)
 })
