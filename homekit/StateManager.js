@@ -472,8 +472,8 @@ module.exports = (device, platform) => {
 
 			/** @param {homebridge.CharacteristicGetCallback} callback */
 			PureRotationSpeed: (callback) => {
-				if (!(device.state instanceof Classes.InternalAcState)) {
-					easyDebugInfo(device.name, `(GET) - Pure Rotation Speed: ${device.state} is not an instance of InternalAcState!`)
+				if (!(device.state instanceof Classes.InternalAirPurifierState)) {
+					easyDebugInfo(device.name, `(GET) - Pure Rotation Speed: ${device.state} is not an instance of InternalAirPurifierState!`)
 
 					return
 				}
