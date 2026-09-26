@@ -4,7 +4,7 @@ const {
 const assert = require('node:assert/strict')
 const hap = require('hap-nodejs')
 const {
-	callsTo, fakePlatform, flushCommands, homeKitSet
+	callsTo, fakePlatform, flushCommands, homeKitGet, homeKitSet
 } = require('./helpers')
 // after helpers: requiring an accessory first hits a circular require
 const AirPurifier = require('../homekit/AirPurifier')
@@ -85,15 +85,20 @@ test('ResetFilterIndication resets the filter on Sensibo and in the state', asyn
 	assert.equal(purifier.state.filterLifeLevel, 100)
 })
 
-test('HomeKit filter characteristics are never pushed for a purifier', async () => {
+test('updateHomeKit pushes the purifier state to HomeKit', async () => {
 	const { purifier } = makePurifier({})
+	const service = purifier.AirPurifierService
+
+	assert.equal(service.getCharacteristic(hap.Characteristic.Active).value, 1)
+	assert.equal(service.getCharacteristic(hap.Characteristic.CurrentAirPurifierState).value, hap.Characteristic.CurrentAirPurifierState.PURIFYING_AIR)
+	assert.equal(service.getCharacteristic(hap.Characteristic.RotationSpeed).value, purifier.state.fanSpeed)
+	assert.equal(service.getCharacteristic(FilterChangeIndication).value, FilterChangeIndication.CHANGE_FILTER)
 
 	await homeKitSet(purifier, 'ResetFilterIndication', 1)
 	purifier.updateHomeKit()
 
-	// BUG: AirPurifier.updateHomeKit returns early unless state is an InternalAcState, which a purifier's never is
-	assert.equal(purifier.AirPurifierService.getCharacteristic(FilterChangeIndication).value, FilterChangeIndication.FILTER_OK)
-	assert.equal(purifier.AirPurifierService.getCharacteristic(hap.Characteristic.Active).value, 0)
+	assert.equal(service.getCharacteristic(FilterChangeIndication).value, FilterChangeIndication.FILTER_OK)
+	assert.equal(service.getCharacteristic(hap.Characteristic.FilterLifeLevel).value, 100)
 })
 
 test('PureRotationSpeed does not touch Climate React, even with auto setup on', async () => {
@@ -112,6 +117,14 @@ test('PureRotationSpeed does not touch Climate React, even with auto setup on', 
 	assert.equal(callsTo(calls, 'setDeviceClimateReactState').length, 0)
 })
 
+test('Pure getters answer HomeKit', async () => {
+	const { purifier } = makePurifier({})
+
+	assert.equal(await homeKitGet(purifier, 'PureRotationSpeed'), purifier.state.fanSpeed)
+	assert.equal(await homeKitGet(purifier, 'CurrentAirPurifierState'), hap.Characteristic.CurrentAirPurifierState.PURIFYING_AIR)
+	assert.equal(await homeKitGet(purifier, 'TargetAirPurifierState'), 0)
+})
+
 test('PureRotationSpeed 0 switches the purifier off', async () => {
 	const { purifier } = makePurifier({})
 
@@ -120,7 +133,7 @@ test('PureRotationSpeed 0 switches the purifier off', async () => {
 	assert.equal(purifier.state.active, false)
 })
 
-test('purifier state changes are not sent to Sensibo', async () => {
+test('purifier state changes are sent to Sensibo after the debounce', async () => {
 	const {
 		purifier, platform, calls
 	} = makePurifier({})
@@ -133,22 +146,26 @@ test('purifier state changes are not sent to Sensibo', async () => {
 	await homeKitSet(purifier, 'PureRotationSpeed', 100)
 	await flushCommands(mock.timers)
 
-	// BUG: StateHandler only sends AC state for AirConditioner instances; the purifier's change is dropped with an error
-	assert.equal(callsTo(calls, 'setDeviceACState').length, 0)
-	assert.match(errors[0], /is not an instance of AirConditioner/)
+	assert.deepEqual(callsTo(calls, 'setDeviceACState'), [['pure1', {
+		on: true,
+		mode: 'fan',
+		temperatureUnit: undefined,
+		targetTemperature: null,
+		swingModes: {},
+		fanLevel: 'high',
+		light: 'on'
+	}]])
+	assert.deepEqual(errors, [])
+	assert.equal(platform.setProcessing, false)
 })
 
-test('PureActive getter and setter never answer HomeKit', () => {
+test('PureActive getter and setter answer HomeKit', async () => {
 	const { purifier } = makePurifier({})
-	let answered = false
 
-	purifier.StateManager.get.PureActive(() => {
-		answered = true
-	})
-	purifier.StateManager.set.PureActive(1, () => {
-		answered = true
-	})
+	assert.equal(await homeKitGet(purifier, 'PureActive'), 1)
 
-	// BUG: both check for InternalAcState, so HomeKit's request for a purifier is left hanging
-	assert.equal(answered, false)
+	await homeKitSet(purifier, 'PureActive', 0)
+
+	assert.equal(purifier.state.active, false)
+	assert.equal(await homeKitGet(purifier, 'PureActive'), 0)
 })
