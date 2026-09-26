@@ -134,7 +134,7 @@ test('re-sends commandRepeatCount times, commandRepeatDelaySeconds apart', async
 	assert.equal(callsTo(calls, 'setDeviceACState').length, 3)
 })
 
-test('with a 1s repeat delay the repeats collapse into StateHandler\'s 1s debounce', async () => {
+test('with a 1s repeat delay the repeats are spaced 2s apart so the 1s debounce does not collapse them', async () => {
 	const { calls } = await refreshTwice({
 		commandRepeatCount: 3,
 		commandRepeatDelayMilliseconds: SECOND
@@ -142,10 +142,9 @@ test('with a 1s repeat delay the repeats collapse into StateHandler\'s 1s deboun
 		return [acEvent(since + 10 * SECOND, 'Trigger', climateReactResult)]
 	}, true)
 
-	await runFor(5)
+	await runFor(7)
 
-	// SUSPICIOUS: 3 repeats configured, but each one resets the 1s debounce before it fires, so only one command is sent
-	assert.equal(callsTo(calls, 'setDeviceACState').length, 1)
+	assert.equal(callsTo(calls, 'setDeviceACState').length, 3)
 })
 
 test('skips when a newer non-Climate React change exists', async () => {
