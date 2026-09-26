@@ -114,6 +114,10 @@ module.exports = (device, platform) => {
 			forcedTemperature = unified.getForcedBrokenThermostatTemp(device, device.state.mode)
 		}
 
+		// Internal temperatures are Celsius; the states carry the device's unit, so convert like sensiboFormattedACState does
+		const stateTemperatureCelsius = (forcedTemperature != null) ? forcedTemperature : device.state.targetTemperature
+		const stateTemperature = device.usesFahrenheit ? unified.toFahrenheit(stateTemperatureCelsius) : stateTemperatureCelsius
+
 		smartModeState.type = 'temperature'
 		smartModeState.highTemperatureWebhook = null
 		smartModeState.lowTemperatureWebhook = null
@@ -122,7 +126,7 @@ module.exports = (device, platform) => {
 			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)*positiveClimateReactAutoSetupMultiplier + climateReactAutoSetupOffset
 			smartModeState.highTemperatureState = {
 				on: true,
-				targetTemperature: (forcedTemperature != null) ? forcedTemperature : device.state.targetTemperature,
+				targetTemperature: stateTemperature,
 				temperatureUnit: device.temperatureUnit,
 				mode: device.state.mode,
 				fanSpeed: device.state.fanSpeed,
@@ -134,7 +138,7 @@ module.exports = (device, platform) => {
 			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)*negativeClimateReactAutoSetupMultiplier + climateReactAutoSetupOffset
 			smartModeState.lowTemperatureState = {
 				on: false,
-				targetTemperature: (forcedTemperature != null) ? forcedTemperature : device.state.targetTemperature,
+				targetTemperature: stateTemperature,
 				temperatureUnit: device.temperatureUnit,
 				mode: device.state.mode,
 				fanSpeed: device.state.fanSpeed,
@@ -146,7 +150,7 @@ module.exports = (device, platform) => {
 			smartModeState.highTemperatureThreshold = device.state.targetTemperature + (device.usesFahrenheit ? 1.8 : 1)*positiveClimateReactAutoSetupMultiplier + climateReactAutoSetupOffset
 			smartModeState.highTemperatureState = {
 				on: false,
-				targetTemperature: (forcedTemperature != null) ? forcedTemperature : device.state.targetTemperature,
+				targetTemperature: stateTemperature,
 				temperatureUnit: device.temperatureUnit,
 				mode: device.state.mode,
 				fanSpeed: device.state.fanSpeed,
@@ -158,7 +162,7 @@ module.exports = (device, platform) => {
 			smartModeState.lowTemperatureThreshold = device.state.targetTemperature - (device.usesFahrenheit ? 1.8 : 1)*negativeClimateReactAutoSetupMultiplier + climateReactAutoSetupOffset
 			smartModeState.lowTemperatureState = {
 				on: true,
-				targetTemperature: (forcedTemperature != null) ? forcedTemperature : device.state.targetTemperature,
+				targetTemperature: stateTemperature,
 				temperatureUnit: device.temperatureUnit,
 				mode: device.state.mode,
 				fanSpeed: device.state.fanSpeed,

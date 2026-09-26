@@ -73,8 +73,8 @@ test('Fahrenheit units scale each multiplier step by 1.8', async () => {
 	assert.ok(Math.abs(smartMode.highTemperatureThreshold - 23.8) < 1e-9)
 	assert.ok(Math.abs(smartMode.lowTemperatureThreshold - 20.2) < 1e-9)
 	assert.equal(smartMode.highTemperatureState.temperatureUnit, 'F')
-	// SUSPICIOUS: the ON-state target stays in Celsius (22) while its unit says F
-	assert.equal(smartMode.highTemperatureState.targetTemperature, 22)
+	assert.equal(smartMode.highTemperatureState.targetTemperature, 72)
+	assert.equal(smartMode.lowTemperatureState.targetTemperature, 72)
 })
 
 test('the existing enabled flag is kept', async () => {
@@ -127,4 +127,19 @@ test('the Climate React switch sends the new enabled flag without allowRepeatedC
 
 	assert.equal(sent.length, 1)
 	assert.equal(sent[0][1].enabled, true)
+})
+
+test('Fahrenheit with brokenThermostat puts the forced temperature in F in the Climate React states', async () => {
+	const { ac } = makeAirConditioner({
+		enableClimateReactAutoSetup: true,
+		brokenThermostat: true
+	}, {
+		temperatureUnit: 'F',
+		targetTemperature: 75
+	}, { temperatureUnit: 'F' })
+
+	await homeKitSet(ac, 'CoolingThresholdTemperature', 22)
+
+	assert.equal(ac.state.smartMode.highTemperatureState.targetTemperature, 61)
+	assert.equal(ac.state.smartMode.lowTemperatureState.targetTemperature, 61)
 })
