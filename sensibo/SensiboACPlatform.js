@@ -117,6 +117,10 @@ class SensiboACPlatform {
 		/** @type {number} */
 		this.commandRepeatCount = Math.max(1, Math.min(3, config['commandRepeatCount'] != null ? config['commandRepeatCount'] : 1))
 		/** @type {number} */
+		// Minimum 1s: HomeKit sends a single user action as several characteristic writes (e.g. Active, mode and
+		// temperature) within about a second, which StateHandler groups with its 1s debounce. Repeated commands skip that
+		// debounce (see StateHandler's '_' property), so keeping them at least 1s apart stops them arriving faster than
+		// HomeKit's own grouping window.
 		this.commandRepeatDelayMilliseconds = Math.max(1, Math.min(60, config['commandRepeatDelaySeconds'] != null ? config['commandRepeatDelaySeconds'] : 1)) * 1000
 		/** @type {boolean} */
 		this.enableHistoryStorage = config['enableHistoryStorage'] != null ? config['enableHistoryStorage'] : false

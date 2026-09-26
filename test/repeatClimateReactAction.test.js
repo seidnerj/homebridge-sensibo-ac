@@ -134,7 +134,7 @@ test('re-sends commandRepeatCount times, commandRepeatDelaySeconds apart', async
 	assert.equal(callsTo(calls, 'setDeviceACState').length, 3)
 })
 
-test('with a 1s repeat delay the repeats are spaced 2s apart so the 1s debounce does not collapse them', async () => {
+test('with a 1s repeat delay every repeat is sent, 1s apart, despite the 1s debounce', async () => {
 	const { calls } = await refreshTwice({
 		commandRepeatCount: 3,
 		commandRepeatDelayMilliseconds: SECOND
@@ -142,8 +142,11 @@ test('with a 1s repeat delay the repeats are spaced 2s apart so the 1s debounce 
 		return [acEvent(since + 10 * SECOND, 'Trigger', climateReactResult)]
 	}, true)
 
-	await runFor(7)
-
+	await runFor(0.5)
+	assert.equal(callsTo(calls, 'setDeviceACState').length, 1)
+	await runFor(1)
+	assert.equal(callsTo(calls, 'setDeviceACState').length, 2)
+	await runFor(1)
 	assert.equal(callsTo(calls, 'setDeviceACState').length, 3)
 })
 

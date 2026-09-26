@@ -352,6 +352,10 @@ module.exports = (device, platform) => {
 				})
 			}
 
+			// Replacing the whole state ('_', used by repeated commands) is sent right away: debouncing it would let the next
+			// repeat cancel this one before it is sent
+			const sendDelay = prop === '_' ? 0 : setTimeoutDelay
+
 			clearTimeout(setTimer)
 			setTimer = setTimeout(async function() {
 				if ((device instanceof AirConditioner || device instanceof AirPurifier) && (state instanceof Classes.InternalAcState || state instanceof Classes.InternalAirPurifierState)) {
@@ -388,7 +392,7 @@ module.exports = (device, platform) => {
 					platform.setProcessing = false
 					device.updateHomeKit()
 				}, (setTimeoutDelay / 2))
-			}, setTimeoutDelay)
+			}, sendDelay)
 
 			return true
 		}
