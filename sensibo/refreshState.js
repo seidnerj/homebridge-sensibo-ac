@@ -170,6 +170,25 @@ function getAllDevicesAndUpdatePlatform(platform) {
 	})
 }
 
+/**
+ * The AC's state from a refresh. In broken thermostat mode Sensibo echoes back the extreme temperature the plugin sent,
+ * which must not replace the user's target that HomeKit shows: it is left out (update() skips null values), except on
+ * a cold start when there is no target yet.
+ * @param   {Object}  platform
+ * @param   {Object}  airConditioner  the AirConditioner accessory
+ * @param   {Object}  device          the device from the Sensibo response
+ * @returns {Object}                  the state to update the accessory with
+ */
+function airConditionerStateFromRefresh(platform, airConditioner, device) {
+	const state = airConditioner.Utils.airConditionerStateFromDevice(device)
+
+	if (platform.brokenThermostat && (state.mode === 'COOL' || state.mode === 'HEAT') && airConditioner.state.targetTemperature != null) {
+		state.targetTemperature = null
+	}
+
+	return state
+}
+
 async function refreshAllDevices(platform) {
 	log.easyDebug('refreshState refreshAllDevices - Starting...')
 
@@ -194,7 +213,7 @@ async function refreshAllDevices(platform) {
 			switch (accessory.type) {
 				case 'AirConditioner':
 					// Update AC state, note: updateHomeKit gets called within StateHandler.js, e.g. GET when prop === 'update'
-					accessory.state.update(accessory.Utils.airConditionerStateFromDevice(device))
+					accessory.state.update(airConditionerStateFromRefresh(platform, accessory, device))
 					pending.push(repeatClimateReactAction(platform, accessory, device)
 						.then(lastStateRefresh => {
 							if (lastStateRefresh) {
