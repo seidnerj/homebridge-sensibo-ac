@@ -36,7 +36,7 @@ export function fakeSensiboApi() {
 export function fakePlatform(config) {
 	const log = () => {}
 
-	log.info = log.warn = log.error = log.debug = log.easyDebug = log.devDebug = () => {}
+	log.info = log.warn = log.error = log.success = log.debug = log.easyDebug = log.devDebug = () => {}
 
 	return {
 		api: {
