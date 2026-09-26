@@ -198,6 +198,7 @@ describe('sensibo/api.js retries', () => {
 			assert.equal(calls.length, 1)
 			assert.equal(error.message, `Request failed with status code ${status}`)
 			assert.equal(error.errorURL, 'https://home.sensibo.com/api/v2/pods/dev1/smartmode')
+			assert.deepEqual(platform.logs.warn, [`Sensibo API temporarily unavailable (Request failed with status code ${status}) after 1 attempt(s), not retried: https://home.sensibo.com/api/v2/pods/dev1/smartmode`])
 		})
 	}
 
@@ -264,7 +265,7 @@ describe('sensibo/api.js retries', () => {
 			status: 'success',
 			result: {}
 		})
-		assert.deepEqual(platform.logs.warn, ['Sensibo API temporarily unavailable (Request failed with status code 429) after 4 attempt(s): https://home.sensibo.com/api/v2/pods/dev1/acStates'])
+		assert.deepEqual(platform.logs.warn, ['Sensibo API temporarily unavailable (Request failed with status code 429) after 4 attempt(s), retries exhausted: https://home.sensibo.com/api/v2/pods/dev1/acStates'])
 		assert.deepEqual(platform.logs.error, [])
 		assert.deepEqual(platform.logs.info, [])
 	})
@@ -324,8 +325,7 @@ describe('sensibo/api.js retries', () => {
 		assert.ok(delay > 18000 && delay <= 20000, line)
 	})
 
-	// wait() bumps retryCount before retryDelay() reads it, so the 1s base tier (0.5-1s) is never used.
-	it('falls back to jittered exponential backoff (1-2s, 2-4s, 4-8s) without Retry-After or with a non-positive one', async () => {
+	it('falls back to jittered exponential backoff (0.5-1s, 1-2s, 2-4s) without Retry-After or with a non-positive one', async () => {
 		scriptResponses([{
 			status: 429,
 			headers: { 'retry-after': '0' }
@@ -339,9 +339,9 @@ describe('sensibo/api.js retries', () => {
 		})
 
 		assert.equal(delays.length, 3)
-		assert.ok(delays[0] >= 1000 && delays[0] <= 2000, String(delays))
-		assert.ok(delays[1] >= 2000 && delays[1] <= 4000, String(delays))
-		assert.ok(delays[2] >= 4000 && delays[2] <= 8000, String(delays))
+		assert.ok(delays[0] >= 500 && delays[0] <= 1000, String(delays))
+		assert.ok(delays[1] >= 1000 && delays[1] <= 2000, String(delays))
+		assert.ok(delays[2] >= 2000 && delays[2] <= 4000, String(delays))
 	})
 
 	it('describes network failures by their code in the retry debug line', async () => {
