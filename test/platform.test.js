@@ -104,6 +104,19 @@ test('configured values override the defaults', () => {
 	assert.deepEqual(platform.devicesToExclude, ['pod1'])
 })
 
+test('explicit 0, false and empty-string values are kept instead of replaced with defaults', () => {
+	const { platform } = construct({
+		apiKey: 'k',
+		name: '',
+		carbonDioxideAlertThreshold: 0,
+		debug: false
+	})
+
+	assert.equal(platform.name, '')
+	assert.equal(platform.carbonDioxideAlertThreshold, 0)
+	assert.equal(platform.debug, false)
+})
+
 test('modesToExclude is uppercased; excluding AUTO, COOL and HEAT disables the AirConditioner', () => {
 	const partial = construct({
 		apiKey: 'k',
