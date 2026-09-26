@@ -25,6 +25,16 @@ test('airConditionerCapabilities maps Sensibo remote modes to HomeKit capabiliti
 	assert.equal(ac.capabilities.FAN.autoFanSpeed, false)
 })
 
+test('airConditionerCapabilities accepts a mode with no temperatures object', () => {
+	const { ac } = makeAirConditioner({}, {})
+	const capabilities = ac.Utils.airConditionerCapabilities({ fan: { fanLevels: ['low', 'high'] } })
+
+	assert.deepEqual(capabilities.FAN, {
+		fanSpeeds: ['low', 'high'],
+		autoFanSpeed: false
+	})
+})
+
 test('airConditionerStateFromDevice converts a Sensibo device to plugin state', () => {
 	const { ac } = makeAirConditioner({}, {})
 	const state = ac.Utils.airConditionerStateFromDevice(acDevice({ swing: 'rangeFull' }))
