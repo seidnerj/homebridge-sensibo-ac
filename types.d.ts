@@ -305,6 +305,17 @@ export declare type PlatformState = {
     devices: { [id: string]: InternalAcState|InternalSensorState|InternalAirQualitySensorState},
     sensors: { [id: string]: InternalSensorState },
     occupancy: { [id: string]: InternalOccupancyState },
+    autoClimateReact?: { [id: string]: AutoClimateReactState },
+}
+
+export declare type AutoClimateReactState = {
+    /** HeaterCooler switched on in COOL/HEAT/AUTO (the AC itself may be off while Climate React holds it) */
+    active: boolean,
+    auto: boolean,
+    /** 'COOL', 'HEAT', or null while still observing the room's drift */
+    direction: null|string,
+    coolTo: number,
+    heatTo: number
 }
 declare module 'axios' {
     interface InternalAxiosRequestConfig {

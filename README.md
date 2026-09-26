@@ -133,6 +133,8 @@ See below the table for additional details on these settings.
 | `climateReactAutoSetupOffset` |  Offset, in degrees, above or below AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled  |          |  `0` |  Integer  |
 | `positiveClimateReactAutoSetupMultiplier` |  Multiplier above AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled  |          |  `1` |  Integer  |
 | `negativeClimateReactAutoSetupMultiplier` |  Multiplier below AC target temperature that will be used to toggle AC when `enableClimateReactAutoSetup` is enabled  |          |  `1` |  Integer  |
+| `climateReactAsAuto` |  When set to `true`, HomeKit AUTO is implemented with Climate React instead of the AC's own auto mode, and COOL/HEAT also run through Climate React. Climate React is fully managed by the plugin (no switch). See below  |          |  `false` |  Boolean  |
+| `brokenThermostat` |  When set to `true`, always sends the AC its coldest setting in COOL and hottest in HEAT, so the AC never stops on its own. Something else (e.g. Climate React) must turn it off  |          |  `false` |  Boolean  |
 | `enableRepeatClimateReactAction` |  When set to `true`, will Repeat the last Climate React action triggered, used to decrease the likelihood of AC State discrepancies  |          |  `false` |  Boolean  |
 | `climateReactSwitchInAccessory` |  When set to `true`, adds a **Climate React** switch (like `enableClimateReactSwitch` above) but within the AC accessory. It will also remove the standalone AC Climate React switch (if one exists). Works only when `enableClimateReactSwitch` is also set to true  |          |  `false` |  Boolean  |
 | `enableHistoryStorage`     |  When set to `true`, temperature & humidity measurements will be stored over time, viewable as History in the Eve app  |          |  `false` |   Boolean |
@@ -289,6 +291,17 @@ Another example, if setting an AC to Heat and 25°C, Climate React will be set u
 The lower/uppers bounds is defined as "targetTemprature +/- 1*positiveClimateReactAutoSetupMultiplier/negativeClimateReactAutoSetupMultiplier + climateReactAutoSetupOffset", for C. For F, positiveClimateReactAutoSetupMultiplier/negativeClimateReactAutoSetupMultiplier is multiplied by 1.8. By changing positiveClimateReactAutoSetupMultiplier/negativeClimateReactAutoSetupMultiplier and climateReactAutoSetupOffset one can influence climate react auto setup's bounds' values.
 
 To enable **Climate React Auto Setup**, add `"enableClimateReactAutoSetup": true` to your config.
+
+#### Climate React as auto
+
+Many ACs have no real auto mode, or a poor one. With `"climateReactAsAuto": true` the plugin implements HomeKit AUTO itself:
+
+- AUTO shows two setpoints, heat-to and cool-to. Climate React cycles the AC around one of them, and the plugin decides which one from how the room drifts while the AC is off: rising past cool-to means cooling, falling past heat-to means heating. Between the two it keeps the current direction, so it never heats a room that would warm up on its own.
+- When no direction is known yet (first use, or it was lost), the plugin reads the last day of Sensibo history for a recent AC-off period, and otherwise keeps the AC off and watches the room for about 30 minutes before deciding.
+- COOL and HEAT work the same way with the direction fixed and a single target.
+- The two setpoints are kept far enough apart that one band's overshoot can't reach the other setpoint.
+
+Requires both COOL and HEAT. AUTO is shown unless it is listed in `modesToExclude`.
 
 #### Repeat Climate React action
 
