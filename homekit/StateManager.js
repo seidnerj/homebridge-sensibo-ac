@@ -150,27 +150,11 @@ export default (device, platform) => {
 			},
 
 			CurrentHeaterCoolerState: callback => {
-				const active = device.state.active
-				const deviceCurrentModeValue = device.HeaterCoolerService.getCharacteristic(Characteristic.CurrentHeaterCoolerState).value
-				const stateCurrentMode = device.state.mode
-				const currentTemp = device.state.currentTemperature
-				const targetTemp = device.state.targetTemperature
+				const currentState = device.currentHeaterCoolerState()
 
-				log.easyDebug(device.name, '(GET) - Current HeaterCooler State:', active ? stateCurrentMode + ' (' + deviceCurrentModeValue + ')' : 'OFF')
+				log.easyDebug(device.name, '(GET) - Current HeaterCooler State:', currentState)
 
-				if (!active || stateCurrentMode === 'FAN' || stateCurrentMode === 'DRY') {
-					callback(null, Characteristic.CurrentHeaterCoolerState.INACTIVE)
-				} else if (stateCurrentMode === 'COOL') {
-					callback(null, Characteristic.CurrentHeaterCoolerState.COOLING)
-				} else if (stateCurrentMode === 'HEAT') {
-					callback(null, Characteristic.CurrentHeaterCoolerState.HEATING)
-				} else if (currentTemp > targetTemp) {
-					callback(null, Characteristic.CurrentHeaterCoolerState.COOLING)
-				} else if (currentTemp < targetTemp) {
-					callback(null, Characteristic.CurrentHeaterCoolerState.HEATING)
-				} else {
-					callback(null, Characteristic.CurrentHeaterCoolerState.IDLE)
-				}
+				callback(null, currentState)
 			},
 
 			TargetHeaterCoolerState: callback => {
