@@ -201,7 +201,7 @@ async function checkAuth(apiKey, username, password) {
 			log.success('SensiboAPI.js checkAuth - Login token found in local storage')
 
 			if (!axios.defaults?.params?.apiKey && !axios.defaults?.headers?.Authorization) {
-				axios.defaults.headers = { Authorization: 'Bearer ' + authKeyFromStoage }
+				axios.defaults.headers = /** @type {any} */ ({ Authorization: 'Bearer ' + authKeyFromStoage })
 			}
 
 			return
@@ -216,7 +216,7 @@ async function checkAuth(apiKey, username, password) {
 
 				if (tokenFromAPI && tokenFromAPI.key) {
 					if (!axios.defaults?.params?.apiKey && !axios.defaults?.headers?.Authorization) {
-						axios.defaults.headers = { Authorization: 'Bearer ' + tokenFromAPI.key }
+						axios.defaults.headers = /** @type {any} */ ({ Authorization: 'Bearer ' + tokenFromAPI.key })
 					}
 
 					saveTokenToStorage(tokenFromAPI)

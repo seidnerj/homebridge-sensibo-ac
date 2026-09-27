@@ -59,12 +59,13 @@ export default (device, platform) => {
 		/**
 		 * Returns a list of 'capabilities' (modes, speeds, swings, temperatures), formed by checking the "remoteCapabilities.modes" object
 		 * of a device from the Sensibo API response.
-		 * @param   {Object}  deviceRemoteModes  The possible modes, speeds, swings and temperatures from the Sensibo API response for the device
-		 * @returns {Object}                     Reformatted list of valid light, modes, fan speeds, swing types and max/min temperatures
+		 * @param   {{[mode: string]: import("../types.js").RemoteMode}}  deviceRemoteModes  The possible modes, speeds, swings and temperatures from the Sensibo API response for the device
+		 * @returns {import("../types.js").Capabilities}                     Reformatted list of valid light, modes, fan speeds, swing types and max/min temperatures
 		 */
 		airConditionerCapabilities: deviceRemoteModes => {
 			log.easyDebug(`${device.name} - Utils airConditionerCapabilities - start`)
 
+			/** @type {import("../types.js").Capabilities} */
 			const capabilities = {}
 
 			for (const [key, modeCapabilities] of Object.entries(deviceRemoteModes)) {
@@ -146,8 +147,8 @@ export default (device, platform) => {
 
 		/**
 		 * Returns a state object of settings and measurements for the given Sensibo device
-		 * @param   {Object}  deviceFromSensiboResponse  The device object from the Sensibo API response
-		 * @returns {Object}                             The new object containing the formatted settings and measurements (state), e.g.
+		 * @param   {import("../types.js").Device}  deviceFromSensiboResponse  The device object from the Sensibo API response
+		 * @returns {import("../types.js").AcStateInternal}                             The new object containing the formatted settings and measurements (state), e.g.
 		 *                                               active, mode, currentTemperature, targetTemperature, relativeHumidity, smartMode,
 		 *                                               pureBoost(?), light, filterChange, filterLifeLevel, horizontalSwing, verticalSwing
 		 *                                               and fanSpeed
@@ -164,6 +165,8 @@ export default (device, platform) => {
 			// The following is used to ensure the device name is correctly set when logging in "private" functions at the top of this file
 			deviceNamePrivate = device.name
 
+			// Built up field by field below, so typed loosely here; the @returns type describes the result
+			/** @type {any} */
 			const state = {
 				active: deviceFromSensiboResponse.acState.on,
 				mode: deviceFromSensiboResponse.acState.mode.toUpperCase(),
@@ -224,14 +227,15 @@ export default (device, platform) => {
 		/**
 		 * Returns a list of 'capabilities' (modes, speeds, swings, temperatures), formed by checking the "remoteCapabilities.modes" object
 		 * of a device from the Sensibo API response.
-		 * @param   {Object}  deviceRemoteModes  The possible modes, speeds, swings and temperatures from the Sensibo API response for the device
-		 * @returns {Object}                     Reformatted list of valid light, modes, fan speeds, swing types and max/min temperatures
+		 * @param   {{[mode: string]: import("../types.js").RemoteMode}}  deviceRemoteModes  The possible modes, speeds, swings and temperatures from the Sensibo API response for the device
+		 * @returns {import("../types.js").Capabilities}                     Reformatted list of valid light, modes, fan speeds, swing types and max/min temperatures
 		 */
 		airPurifierCapabilities: deviceRemoteModes => {
 			// FIXME: need to update this function once we get example payload from Sensibo
 
 			log.easyDebug(`${device.name} - Utils airPurifierCapabilities - start`)
 
+			/** @type {import("../types.js").Capabilities} */
 			const capabilities = {}
 
 			for (const [key, modeCapabilities] of Object.entries(deviceRemoteModes)) {
@@ -313,8 +317,8 @@ export default (device, platform) => {
 
 		/**
 		 * Returns a state object of settings and measurements for the given Sensibo device
-		 * @param   {Object}  deviceFromSensiboResponse  The device object from the Sensibo API response
-		 * @returns {Object}                             The new object containing the formatted settings and measurements (state), e.g.
+		 * @param   {import("../types.js").Device}  deviceFromSensiboResponse  The device object from the Sensibo API response
+		 * @returns {import("../types.js").AcStateInternal}                             The new object containing the formatted settings and measurements (state), e.g.
 		 *                                               active, mode, currentTemperature, targetTemperature, relativeHumidity, smartMode,
 		 *                                               pureBoost(?), light, filterChange, filterLifeLevel, horizontalSwing, verticalSwing
 		 *                                               and fanSpeed
@@ -329,6 +333,8 @@ export default (device, platform) => {
 			// The following is used to ensure the device name is correctly set when logging in "private" functions at the top of this file
 			deviceNamePrivate = device.name
 
+			// Built up field by field below, so typed loosely here; the @returns type describes the result
+			/** @type {any} */
 			const state = {
 				active: deviceFromSensiboResponse.acState.on,
 				mode: deviceFromSensiboResponse.acState.mode.toUpperCase(),
@@ -392,6 +398,7 @@ export default (device, platform) => {
 		 * @returns {Object}                      List of measurements, and if it is homeKitSupported (true/false), e.g. iaq.homeKitSupported: true
 		 */
 		airQualityCapabilities: deviceMeasurements => {
+			/** @type {import("../types.js").Capabilities} */
 			const capabilities = {}
 
 			log.easyDebug(`${device.name} - Utils airQualityCapabilities - start, measurements:`)
@@ -417,8 +424,8 @@ export default (device, platform) => {
 
 		/**
 		 * Returns an object of formatted measurements for the given Sensibo devices measurements object
-		 * @param   {Object}  deviceMeasurements  The measurements/readings from the Sensibo API response for the device
-		 * @returns {Object}                      The new object containing the formatted measurements (state), e.g. VOCDensity, airQuality,
+		 * @param   {import("../types.js").Measurements}  deviceMeasurements  The measurements/readings from the Sensibo API response for the device
+		 * @returns {import("../types.js").AirQualityStateInternal}                      The new object containing the formatted measurements (state), e.g. VOCDensity, airQuality,
 		 *                                        carbonDioxideDetected, carbonDioxideLevel and PM2_5Density
 		 */
 		airQualityStateFromDeviceMeasurements: deviceMeasurements => {
@@ -527,7 +534,6 @@ export default (device, platform) => {
 
 		/**
 		 * Returns the Constants object for easy use in other files, e.g. this.Utils.Constants().VOCDENSITY_MAX
-		 * @param   {void}
 		 * @returns {Object}
 		 */
 		Constants: () => {
@@ -600,10 +606,11 @@ export default (device, platform) => {
 
 		/**
 		 * Returns a formatted state object for the given Sensibo locations occupancy
-		 * @param   {Object}  deviceLocation  The locations occupancy from the Sensibo API response for the device
-		 * @returns {Object}                  The new object containing the occupancy (state)
+		 * @param   {import("../types.js").Location}  deviceLocation  The locations occupancy from the Sensibo API response for the device
+		 * @returns {import("../types.js").OccupancyStateInternal}                  The new object containing the occupancy (state)
 		 */
 		occupancyStateFromDeviceLocation: deviceLocation => {
+			/** @type {import("../types.js").OccupancyStateInternal} */
 			const state = { occupancy: (deviceLocation.occupancy === 'me' || deviceLocation.occupancy === 'someone') ? 'OCCUPANCY_DETECTED' : 'OCCUPANCY_NOT_DETECTED' }
 
 			log.easyDebug(`${device.name} - Utils occupancyStateFromDeviceLocation, state:`)
@@ -701,11 +708,12 @@ export default (device, platform) => {
 
 		/**
 		 * Returns an object of formatted measurements for the given Sensibo sensor measurements object
-		 * @param   {Object}  sensorMeasurements  The measurements/readings from the Sensibo API response for the device
-		 * @returns {Object}                      The new object containing the formatted measurements (state), e.g. currentTemperature,
+		 * @param   {import("../types.js").SensorMeasurements}  sensorMeasurements  The measurements/readings from the Sensibo API response for the device
+		 * @returns {import("../types.js").SensorStateInternal}                      The new object containing the formatted measurements (state), e.g. currentTemperature,
 		 *                                        lowBattery, motionDetected and relativeHumidity
 		 */
 		sensorStateFromSensorMeasurements: sensorMeasurements => {
+			/** @type {import("../types.js").SensorStateInternal} */
 			const formattedMeasurements = {
 				currentTemperature: sensorMeasurements.temperature,
 				lowBattery: sensorMeasurements.batteryVoltage != null && sensorMeasurements.batteryVoltage <= 100 ? 'BATTERY_LEVEL_LOW' : 'BATTERY_LEVEL_NORMAL',
@@ -759,7 +767,7 @@ export default (device, platform) => {
 		 * Checks the given Service for the given Characteristic, if found, validates the newValue and updates the Characteristic with it
 		 * @param   {string}         serviceName         The Service to update
 		 * @param   {string}         characteristicName  The Characteristic to update
-		 * @param   {number|string}  newValue            The value that the Characteristic should be set to
+		 * @param   {number|string|boolean}  newValue    The value that the Characteristic should be set to
 		 * @returns {void}
 		 */
 		updateValue: (serviceName, characteristicName, newValue) => {
