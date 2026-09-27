@@ -176,3 +176,67 @@ test('a non-transient HTTP error is not retried and rejects with the URL and mes
 	})
 	assert.equal(requests.length, 1)
 })
+
+test('getDeviceHistoricalMeasurements GETs the given number of days and returns the result', async () => {
+	const api = await SensiboApi(apiPlatform({}))
+	const result = {
+		temperature: [{
+			time: '2026-01-01T00:00:00Z',
+			value: 21.5
+		}],
+		humidity: [{
+			time: '2026-01-01T00:00:00Z',
+			value: 40
+		}]
+	}
+
+	response.result = result
+
+	assert.deepEqual(await api.getDeviceHistoricalMeasurements('pod1', 1), result)
+	assert.equal(requests[0].method, 'get')
+	assert.equal(requests[0].url, '/pods/pod1/historicalMeasurements?days=1')
+	assert.equal(requests[0].params.apiKey, 'key123')
+})
+
+test('getDeviceEvents GETs the pod events and strips addresses from them', async () => {
+	const api = await SensiboApi(apiPlatform({}))
+
+	response.result = [{
+		id: 'e1',
+		smartMode: null,
+		location: {
+			id: 'l',
+			name: 'Home',
+			occupancy: 'n/a',
+			address: ['secret street']
+		}
+	}]
+
+	assert.deepEqual(await api.getDeviceEvents('pod1'), [{
+		id: 'e1',
+		smartMode: { enabled: false },
+		location: {
+			occupancy: 'n/a',
+			name: 'Home',
+			id: 'l'
+		}
+	}])
+	assert.equal(requests[0].method, 'get')
+	assert.equal(requests[0].url, '/pods/pod1/events')
+})
+
+test('getDeviceEvents rejects with the response body when the status is not success', async () => {
+	const api = await SensiboApi(apiPlatform({}))
+
+	response = {
+		status: 'failure',
+		reason: 'bad',
+		message: 'nope'
+	}
+
+	await assert.rejects(api.getDeviceEvents('pod1'), {
+		status: 'failure',
+		reason: 'bad',
+		message: 'nope'
+	})
+})
