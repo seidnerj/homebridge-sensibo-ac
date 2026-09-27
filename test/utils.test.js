@@ -96,3 +96,18 @@ test('toFahrenheit rounds and toCelsius does not', () => {
 	assert.equal(ac.Utils.toFahrenheit(24), 75)
 	assert.equal(ac.Utils.toCelsius(77), 25)
 })
+
+test('updateValue skips a non-number for a characteristic with minStep instead of sending NaN', () => {
+	const { ac } = makeAirConditioner({}, {})
+	const { CurrentTemperature } = ac.api.hap.Characteristic
+	const before = ac.HeaterCoolerService.getCharacteristic(CurrentTemperature).value
+
+	ac.Utils.updateValue('HeaterCoolerService', 'CurrentTemperature', 'abc')
+
+	assert.equal(ac.HeaterCoolerService.getCharacteristic(CurrentTemperature).value, before)
+
+	ac.Utils.updateValue('HeaterCoolerService', 'CurrentTemperature', 21.26)
+
+	// HAP applies minStep again, so compare with a tolerance
+	assert.ok(Math.abs(ac.HeaterCoolerService.getCharacteristic(CurrentTemperature).value - 21.3) < 0.001)
+})
