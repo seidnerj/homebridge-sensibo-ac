@@ -267,3 +267,17 @@ test('resetting the filter calls the API once and marks the filter as OK', async
 	assert.equal(pure.state.filterLifeLevel, 100)
 	assert.equal(await homeKitGet(pure, 'FilterChangeIndication'), Characteristic.FilterChangeIndication.FILTER_OK)
 })
+
+test('Pure getters answer HomeKit with the state values', async () => {
+	const { pure } = makeAirPurifier({}, {})
+
+	assert.equal(await homeKitGet(pure, 'PureActive'), 1)
+	assert.equal(await homeKitGet(pure, 'CurrentAirPurifierState'), Characteristic.CurrentAirPurifierState.PURIFYING_AIR)
+	assert.equal(await homeKitGet(pure, 'TargetAirPurifierState'), 0)
+	assert.equal(await homeKitGet(pure, 'PureRotationSpeed'), pure.state.fanSpeed)
+
+	await homeKitSet(pure, 'PureActive', 0)
+
+	assert.equal(await homeKitGet(pure, 'PureActive'), 0)
+	assert.equal(await homeKitGet(pure, 'CurrentAirPurifierState'), Characteristic.CurrentAirPurifierState.INACTIVE)
+})
