@@ -15,9 +15,31 @@ const MINIMUM_NODE = Math.min(...[...pjson.engines.node.matchAll(/(\d{2})(?:[.\d
 }))
 const expiringLTSNodeVersion = 18
 
+/**
+ * Logs a config at debug level, one line at a time, with the API key and password redacted
+ * @param   {Object}  log     the Homebridge logger
+ * @param   {Object}  config  the config to log, not modified
+ * @returns {void}
+ */
+function logRedactedConfig(log, config) {
+	const configForLogging = { ...config }
+
+	for (const secret of ['apiKey', 'password']) {
+		if (configForLogging[secret]) {
+			configForLogging[secret] = '[REDACTED]'
+		}
+	}
+
+	JSON.stringify(configForLogging, null, 2).split('\n').forEach(line => {
+		log.debug(line)
+	})
+}
+
 class SensiboACPlatform {
 
 	constructor(log, config, api) {
+		logRedactedConfig(log, config)
+
 		this.activeAccessories = []
 		this.cachedAccessories = []
 		this.log = log
@@ -130,6 +152,50 @@ class SensiboACPlatform {
 		this.pollingTimeout = null
 		this.refreshStateProcessing = false
 		this.setProcessing = false
+
+		// Log the resolved configuration too, so defaults and overrides (e.g. from climateReactAsAuto) are visible
+		logRedactedConfig(log, {
+			name: this.name,
+			debug: this.debug,
+			apiKey: this.apiKey,
+			username: this.username,
+			password: this.password,
+			allowRepeatedCommands: this.allowRepeatedCommands,
+			brokenThermostat: this.brokenThermostat,
+			carbonDioxideAlertThreshold: this.carbonDioxideAlertThreshold,
+			climateReactAsAuto: this.climateReactAsAuto,
+			climateReactSwitchInAccessory: this.climateReactSwitchInAccessory,
+			devicesToExclude: this.devicesToExclude,
+			disableAirConditioner: this.disableAirConditioner,
+			disableAirQuality: this.disableAirQuality,
+			disableCarbonDioxide: this.disableCarbonDioxide,
+			disableDry: this.disableDry,
+			disableFan: this.disableFan,
+			disableHorizontalSwing: this.disableHorizontalSwing,
+			disableHumidity: this.disableHumidity,
+			disableLightSwitch: this.disableLightSwitch,
+			disableVerticalSwing: this.disableVerticalSwing,
+			enableClimateReactAutoSetup: this.enableClimateReactAutoSetup,
+			climateReactAutoSetupOffset: this.climateReactAutoSetupOffset,
+			positiveClimateReactAutoSetupMultiplier: this.positiveClimateReactAutoSetupMultiplier,
+			negativeClimateReactAutoSetupMultiplier: this.negativeClimateReactAutoSetupMultiplier,
+			enableClimateReactSwitch: this.enableClimateReactSwitch,
+			enableRepeatClimateReactAction: this.enableRepeatClimateReactAction,
+			commandRepeatCount: this.commandRepeatCount,
+			commandRepeatDelayMilliseconds: this.commandRepeatDelayMilliseconds,
+			repeatClimateReactActionMinGapMilliseconds: this.repeatClimateReactActionMinGapMilliseconds,
+			enableHistoryStorage: this.enableHistoryStorage,
+			enableOccupancySensor: this.enableOccupancySensor,
+			enableSyncButton: this.enableSyncButton,
+			ignoreHomeKitDevices: this.ignoreHomeKitDevices,
+			syncButtonInAccessory: this.syncButtonInAccessory,
+			externalHumiditySensor: this.externalHumiditySensor,
+			locationsToInclude: this.locationsToInclude,
+			modesToExclude: this.modesToExclude,
+			persistPath: this.persistPath,
+			pollingInterval: this.pollingInterval,
+			refreshDelay: this.refreshDelay
+		})
 
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 

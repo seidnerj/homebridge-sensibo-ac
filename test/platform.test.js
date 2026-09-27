@@ -182,3 +182,106 @@ test('configureAccessory collects cached accessories', () => {
 
 	assert.deepEqual(platform.cachedAccessories, [accessory])
 })
+
+test('explicit Climate React auto setup values, including 0, are kept', () => {
+	const zeros = construct({
+		apiKey: 'k',
+		climateReactAutoSetupOffset: 0,
+		positiveClimateReactAutoSetupMultiplier: 0,
+		negativeClimateReactAutoSetupMultiplier: 0
+	}).platform
+	const custom = construct({
+		apiKey: 'k',
+		climateReactAutoSetupOffset: -1.5,
+		positiveClimateReactAutoSetupMultiplier: 2,
+		negativeClimateReactAutoSetupMultiplier: 0.5
+	}).platform
+	const defaults = construct({ apiKey: 'k' }).platform
+
+	assert.equal(zeros.climateReactAutoSetupOffset, 0)
+	assert.equal(zeros.positiveClimateReactAutoSetupMultiplier, 0)
+	assert.equal(zeros.negativeClimateReactAutoSetupMultiplier, 0)
+	assert.equal(custom.climateReactAutoSetupOffset, -1.5)
+	assert.equal(custom.positiveClimateReactAutoSetupMultiplier, 2)
+	assert.equal(custom.negativeClimateReactAutoSetupMultiplier, 0.5)
+	assert.equal(defaults.climateReactAutoSetupOffset, 0)
+	assert.equal(defaults.positiveClimateReactAutoSetupMultiplier, 1)
+	assert.equal(defaults.negativeClimateReactAutoSetupMultiplier, 1)
+	assert.equal(defaults.commandRepeatCount, 1)
+	assert.equal(defaults.commandRepeatDelayMilliseconds, 1000)
+})
+
+for (const [input, expected] of [[0, 1], [-5, 1], [1, 1], [2, 2], [3, 3], [4, 3], [100, 3]]) {
+	test(`commandRepeatCount ${input} is clamped to ${expected}`, () => {
+		assert.equal(construct({
+			apiKey: 'k',
+			commandRepeatCount: input
+		}).platform.commandRepeatCount, expected)
+	})
+}
+
+for (const [input, expected] of [[0, 1000], [-1, 1000], [1, 1000], [2.5, 2500], [60, 60000], [61, 60000], [3600, 60000]]) {
+	test(`commandRepeatDelaySeconds ${input} is clamped to ${expected}ms`, () => {
+		assert.equal(construct({
+			apiKey: 'k',
+			commandRepeatDelaySeconds: input
+		}).platform.commandRepeatDelayMilliseconds, expected)
+	})
+}
+
+test('climateReactAsAuto forces auto setup on and the Climate React switches off', () => {
+	const withAuto = construct({
+		apiKey: 'k',
+		climateReactAsAuto: true,
+		enableClimateReactAutoSetup: false,
+		enableClimateReactSwitch: true,
+		climateReactSwitchInAccessory: true
+	}).platform
+	const without = construct({
+		apiKey: 'k',
+		enableClimateReactSwitch: true,
+		climateReactSwitchInAccessory: true
+	}).platform
+
+	assert.equal(withAuto.enableClimateReactAutoSetup, true)
+	assert.equal(withAuto.enableClimateReactSwitch, false)
+	assert.equal(withAuto.climateReactSwitchInAccessory, false)
+	assert.equal(without.enableClimateReactAutoSetup, false)
+	assert.equal(without.enableClimateReactSwitch, true)
+	assert.equal(without.climateReactSwitchInAccessory, true)
+})
+
+test('the raw and resolved configs are logged at debug level with apiKey and password redacted', () => {
+	const { log } = construct({
+		apiKey: 'secret-key',
+		username: 'me@example.com',
+		password: 'hunter2'
+	})
+	const debugLines = levels(log, 'debug').map(message => {
+		return message[1]
+	})
+	const logged = log.messages.map(message => {
+		return message.slice(1).join(' ')
+	}).join('\n')
+
+	assert.ok(!logged.includes('secret-key'), logged)
+	assert.ok(!logged.includes('hunter2'), logged)
+	// once for the raw config, once for the resolved config
+	assert.equal(debugLines.filter(line => {
+		return line.includes('"apiKey": "[REDACTED]"')
+	}).length, 2)
+	assert.equal(debugLines.filter(line => {
+		return line.includes('"password": "[REDACTED]"')
+	}).length, 2)
+	assert.ok(debugLines.some(line => {
+		return line.includes('"username": "me@example.com"')
+	}))
+})
+
+test('redacting the logged config does not modify the caller config', () => {
+	const config = { apiKey: 'secret-key' }
+
+	construct(config)
+
+	assert.equal(config.apiKey, 'secret-key')
+})
