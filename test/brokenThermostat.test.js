@@ -198,3 +198,19 @@ test('on a cold start (no stored target) the echoed temperature is accepted', as
 
 	assert.equal(ac.state.targetTemperature, 16)
 })
+
+test('Fahrenheit with Climate React auto setup puts the forced temperature in F in both Climate React states', async () => {
+	const { ac } = makeAirConditioner({
+		enableClimateReactAutoSetup: true,
+		brokenThermostat: true
+	}, {
+		temperatureUnit: 'F',
+		targetTemperature: 75
+	}, { temperatureUnit: 'F' })
+
+	await homeKitSet(ac, 'CoolingThresholdTemperature', 22)
+
+	assert.equal(ac.state.smartMode.highTemperatureState.targetTemperature, 61)
+	assert.equal(ac.state.smartMode.lowTemperatureState.targetTemperature, 61)
+	assert.equal(ac.state.smartMode.highTemperatureState.temperatureUnit, 'F')
+})
