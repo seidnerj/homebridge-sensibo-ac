@@ -812,6 +812,13 @@ export default (device, platform) => {
 			// e.g. CurrentTemperature = "22.60000000000001"
 
 			if (minStep) {
+				// Rounding a non-number would send NaN to HomeKit
+				if (typeof newValue !== 'number') {
+					log.easyDebug(`${device.name} - Utils updateValue - '${newValue}' for characteristic ${characteristicName} on service ${serviceName} is not a number... skipping update`)
+
+					return
+				}
+
 				const roundedValue = minStep < 1 ? Math.round((newValue + Number.EPSILON) * 10) / 10 : Math.round(newValue + Number.EPSILON)
 
 				if (roundedValue !== newValue) {
