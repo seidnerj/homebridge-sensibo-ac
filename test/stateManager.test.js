@@ -276,3 +276,14 @@ test('a cooling-only unit in AUTO below the target is IDLE, never HEATING', asyn
 	assert.equal(await homeKitGet(ac, 'CurrentHeaterCoolerState'), CurrentHeaterCoolerState.IDLE)
 	assert.equal(ac.HeaterCoolerService.getCharacteristic(CurrentHeaterCoolerState).value, CurrentHeaterCoolerState.IDLE)
 })
+
+test('a refresh pushes the vertical swing to the HeaterCooler SwingMode', () => {
+	const { ac } = makeAirConditioner({}, { swing: 'rangeFull' })
+
+	assert.equal(ac.HeaterCoolerService.getCharacteristic(SwingMode).value, SwingMode.SWING_ENABLED)
+
+	ac.state.verticalSwing = 'SWING_DISABLED'
+	ac.updateHomeKit()
+
+	assert.equal(ac.HeaterCoolerService.getCharacteristic(SwingMode).value, SwingMode.SWING_DISABLED)
+})

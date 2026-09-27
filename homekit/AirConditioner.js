@@ -759,7 +759,7 @@ class AirConditioner {
 					this.Utils.updateValue('HeaterCoolerService', 'Active', 1)
 
 					// update vertical swing for HeaterCoolerService
-					if (!this.disableVerticalSwing && this.capabilities[this.state.mode].VerticalSwing) {
+					if (!this.disableVerticalSwing && this.capabilities[this.state.mode].verticalSwing) {
 						this.Utils.updateValue('HeaterCoolerService', 'SwingMode', Characteristic.SwingMode[this.state.verticalSwing])
 					}
 
