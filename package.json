@@ -1,6 +1,7 @@
 {
   "displayName": "Sensibo for Homebridge",
   "name": "homebridge-sensibo-ac",
+  "private": true,
   "version": "3.0.2",
   "config": {
     "pluginName": "homebridge-sensibo-ac",
