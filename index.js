@@ -131,6 +131,7 @@ class SensiboACPlatform {
 
 		this.persistPath = path.join(this.api.user.persistPath(), '/../sensibo-persist')
 
+		/** @type {import("./types.js").PlatformState} */
 		this.emptyState = {
 			airQuality: {},
 			devices: {},

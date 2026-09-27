@@ -257,6 +257,7 @@ class AirConditioner {
 
 			validModes.push(Characteristic.TargetHeaterCoolerState[mode])
 
+			/** @type {false|{minValue: number, maxValue: number, minStep: number}} */
 			let modeProps = false
 
 			if (this.capabilities[mode].temperatures) {
