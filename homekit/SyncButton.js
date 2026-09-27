@@ -1,8 +1,12 @@
+import SensiboAccessory from './SensiboAccessory.js'
+
 let Characteristic, Service
 
-class SyncButton {
+class SyncButton extends SensiboAccessory {
 
 	constructor(airConditioner, platform) {
+		super(platform)
+
 		Service = platform.api.hap.Service
 		Characteristic = platform.api.hap.Characteristic
 
@@ -19,36 +23,12 @@ class SyncButton {
 		this.state = airConditioner.state
 		this.stateManager = airConditioner.stateManager
 
-		this.UUID = this.api.hap.uuid.generate(this.id + '_sync')
-		this.accessory = platform.cachedAccessories.find(accessory => {
-			return accessory.UUID === this.UUID
-		})
-
-		if (!this.accessory) {
-			this.log.info(`Creating New ${platform.PLATFORM_NAME} ${this.type} Accessory in the ${this.roomName}`)
-			this.accessory = new this.api.platformAccessory(this.name, this.UUID)
-			this.accessory.context.type = this.type
-			this.accessory.context.deviceId = this.id
-
-			platform.cachedAccessories.push(this.accessory)
-
-			// register the accessory
-			this.api.registerPlatformAccessories(platform.PLUGIN_NAME, platform.PLATFORM_NAME, [this.accessory])
-		}
+		this.loadAccessory(platform, this.id + '_sync', { deviceId: this.id }, `Creating New ${platform.PLATFORM_NAME} ${this.type} Accessory in the ${this.roomName}`)
 
 		// This isn't with the others above as roomName can change
 		this.accessory.context.roomName = this.roomName
 
-		let informationService = this.accessory.getService(Service.AccessoryInformation)
-
-		if (!informationService) {
-			informationService = this.accessory.addService(Service.AccessoryInformation)
-		}
-
-		informationService
-			.setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
-			.setCharacteristic(Characteristic.Model, this.model)
-			.setCharacteristic(Characteristic.SerialNumber, this.serial)
+		this.addInformationService()
 
 		this.addSyncButtonService()
 	}
