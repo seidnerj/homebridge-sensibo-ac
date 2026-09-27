@@ -1,13 +1,15 @@
-import fakegato from 'fakegato-history'
 import StateHandler from './StateHandler.js'
 import StateManager from './StateManager.js'
 import Utils from '../sensibo/Utils.js'
+import SensiboAccessory from './SensiboAccessory.js'
 
 let Characteristic, Service, FAHRENHEIT_UNIT
 
-class RoomSensor {
+class RoomSensor extends SensiboAccessory {
 
 	constructor(sensor, device, platform) {
+		super(platform)
+
 		Service = platform.api.hap.Service
 		Characteristic = platform.api.hap.Characteristic
 		FAHRENHEIT_UNIT = platform.FAHRENHEIT_UNIT
@@ -17,8 +19,6 @@ class RoomSensor {
 		const deviceInfo = this.Utils.deviceInformation(device)
 		const sensorInfo = this.Utils.sensorInformation(sensor)
 
-		this.log = platform.log
-		this.api = platform.api
 		this.storage = platform.storage
 		this.cachedState = platform.cachedState
 		this.id = sensorInfo.id
@@ -36,47 +36,17 @@ class RoomSensor {
 		this.state = new Proxy(this.state, StateHandler(this, platform))
 		this.stateManager = StateManager(this, platform)
 
-		this.UUID = this.api.hap.uuid.generate(this.id)
-		this.accessory = platform.cachedAccessories.find(accessory => {
-			return accessory.UUID === this.UUID
-		})
-
-		if (!this.accessory) {
-			this.log.info(`Creating New ${platform.PLATFORM_NAME} ${this.type} Accessory in the ${this.roomName}`)
-			this.accessory = new this.api.platformAccessory(this.name, this.UUID)
-			this.accessory.context.type = this.type
-			this.accessory.context.sensorId = this.id
-			this.accessory.context.deviceId = this.deviceId
-
-			platform.cachedAccessories.push(this.accessory)
-
-			// register the accessory
-			this.api.registerPlatformAccessories(platform.PLUGIN_NAME, platform.PLATFORM_NAME, [this.accessory])
-		}
+		this.loadAccessory(platform, this.id, {
+			sensorId: this.id,
+			deviceId: this.deviceId
+		}, `Creating New ${platform.PLATFORM_NAME} ${this.type} Accessory in the ${this.roomName}`)
 
 		// This isn't with the others above as roomName can change
 		this.accessory.context.roomName = this.roomName
 
-		if (platform.enableHistoryStorage) {
-			const FakeGatoHistoryService = fakegato(this.api)
+		this.addHistoryService(platform, 'weather')
 
-			this.loggingService = new FakeGatoHistoryService('weather', this.accessory, {
-				log: this.log,
-				storage: 'fs',
-				path: platform.persistPath
-			})
-		}
-
-		let informationService = this.accessory.getService(Service.AccessoryInformation)
-
-		if (!informationService) {
-			informationService = this.accessory.addService(Service.AccessoryInformation)
-		}
-
-		informationService
-			.setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
-			.setCharacteristic(Characteristic.Model, this.model)
-			.setCharacteristic(Characteristic.SerialNumber, this.serial)
+		this.addInformationService()
 
 		this.addMotionSensor()
 		this.addTemperatureSensor()

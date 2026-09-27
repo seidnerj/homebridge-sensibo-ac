@@ -1,14 +1,16 @@
 import AutoClimateReact from './AutoClimateReact.js'
-import fakegato from 'fakegato-history'
 import StateHandler from './StateHandler.js'
 import StateManager from './StateManager.js'
 import Utils from '../sensibo/Utils.js'
+import SensiboAccessory from './SensiboAccessory.js'
 
 let Characteristic, Service, CELSIUS_UNIT, FAHRENHEIT_UNIT
 
-class AirConditioner {
+class AirConditioner extends SensiboAccessory {
 
 	constructor(device, platform) {
+		super(platform)
+
 		Service = platform.api.hap.Service
 		Characteristic = platform.api.hap.Characteristic
 		CELSIUS_UNIT = platform.CELSIUS_UNIT
@@ -18,8 +20,6 @@ class AirConditioner {
 
 		const deviceInfo = this.Utils.deviceInformation(device)
 
-		this.log = platform.log
-		this.api = platform.api
 		this.storage = platform.storage
 		this.cachedState = platform.cachedState
 		this.id = deviceInfo.id
@@ -56,46 +56,14 @@ class AirConditioner {
 		// when the repeat Climate React action last looked at the AC's events, see refreshState
 		this.lastStateRefresh = new Date('0001-01-01T00:00:00Z')
 
-		this.UUID = this.api.hap.uuid.generate(this.id)
-		this.accessory = platform.cachedAccessories.find(accessory => {
-			return accessory.UUID === this.UUID
-		})
-
-		if (!this.accessory) {
-			this.log.info(`Creating new ${platform.PLATFORM_NAME} ${this.type} accessory in the ${this.roomName}`)
-			this.accessory = new this.api.platformAccessory(this.name, this.UUID)
-			this.accessory.context.type = this.type
-			this.accessory.context.deviceId = this.id
-
-			platform.cachedAccessories.push(this.accessory)
-
-			// register the accessory
-			this.api.registerPlatformAccessories(platform.PLUGIN_NAME, platform.PLATFORM_NAME, [this.accessory])
-		}
+		this.loadAccessory(platform, this.id, { deviceId: this.id }, `Creating new ${platform.PLATFORM_NAME} ${this.type} accessory in the ${this.roomName}`)
 
 		// This isn't with the others above as roomName can change
 		this.accessory.context.roomName = this.roomName
 
-		if (platform.enableHistoryStorage) {
-			const FakeGatoHistoryService = fakegato(this.api)
+		this.addHistoryService(platform, 'weather')
 
-			this.loggingService = new FakeGatoHistoryService('weather', this.accessory, {
-				log: this.log,
-				storage: 'fs',
-				path: platform.persistPath
-			})
-		}
-
-		let informationService = this.accessory.getService(Service.AccessoryInformation)
-
-		if (!informationService) {
-			informationService = this.accessory.addService(Service.AccessoryInformation)
-		}
-
-		informationService
-			.setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
-			.setCharacteristic(Characteristic.Model, this.model)
-			.setCharacteristic(Characteristic.SerialNumber, this.serial)
+		this.addInformationService()
 
 		if (!this.disableAirConditioner && (this.capabilities.AUTO || this.capabilities.COOL || this.capabilities.HEAT)) {
 			this.addHeaterCoolerService()

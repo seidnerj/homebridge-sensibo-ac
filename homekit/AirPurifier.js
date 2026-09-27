@@ -2,12 +2,15 @@
 import StateHandler from './StateHandler.js'
 import StateManager from './StateManager.js'
 import Utils from '../sensibo/Utils.js'
+import SensiboAccessory from './SensiboAccessory.js'
 
 let Characteristic, Service
 
-class AirPurifier {
+class AirPurifier extends SensiboAccessory {
 
 	constructor(device, platform) {
+		super(platform)
+
 		Service = platform.api.hap.Service
 		Characteristic = platform.api.hap.Characteristic
 
@@ -15,8 +18,6 @@ class AirPurifier {
 
 		const deviceInfo = this.Utils.deviceInformation(device)
 
-		this.log = platform.log
-		this.api = platform.api
 		this.storage = platform.storage
 		this.cachedState = platform.cachedState
 		this.id = deviceInfo.id
@@ -36,22 +37,7 @@ class AirPurifier {
 		this.state = new Proxy(this.state, StateHandler(this, platform))
 		this.stateManager = StateManager(this, platform)
 
-		this.UUID = this.api.hap.uuid.generate(this.id)
-		this.accessory = platform.cachedAccessories.find(accessory => {
-			return accessory.UUID === this.UUID
-		})
-
-		if (!this.accessory) {
-			this.log.info(`Creating New ${platform.PLATFORM_NAME} ${this.type} Accessory in the ${this.roomName}`)
-			this.accessory = new this.api.platformAccessory(this.name, this.UUID)
-			this.accessory.context.type = this.type
-			this.accessory.context.deviceId = this.id
-
-			platform.cachedAccessories.push(this.accessory)
-
-			// register the accessory
-			this.api.registerPlatformAccessories(platform.PLUGIN_NAME, platform.PLATFORM_NAME, [this.accessory])
-		}
+		this.loadAccessory(platform, this.id, { deviceId: this.id }, `Creating New ${platform.PLATFORM_NAME} ${this.type} Accessory in the ${this.roomName}`)
 
 		// This isn't with the others above as roomName can change
 		this.accessory.context.roomName = this.roomName
@@ -67,16 +53,7 @@ class AirPurifier {
 		// 	})
 		// }
 
-		let informationService = this.accessory.getService(Service.AccessoryInformation)
-
-		if (!informationService) {
-			informationService = this.accessory.addService(Service.AccessoryInformation)
-		}
-
-		informationService
-			.setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
-			.setCharacteristic(Characteristic.Model, this.model)
-			.setCharacteristic(Characteristic.SerialNumber, this.serial)
+		this.addInformationService()
 
 		this.addAirPurifierService()
 
