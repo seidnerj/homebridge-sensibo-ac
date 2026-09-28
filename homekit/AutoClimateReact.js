@@ -1,5 +1,5 @@
-// Sensibo event kind for an AC state change
-const acStateChangedEventKind = 1000000
+import eventKinds from '../sensibo/eventKinds.json' with { type: 'json' }
+
 // Direction (COOL/HEAT) is decided from how the room drifts while the AC is off, using the pod's readings (~every 90s).
 // Readings right after the AC stops are skipped, since the room still coasts on the last cycle.
 const SETTLE_MILLISECONDS = 5 * 60 * 1000
@@ -105,7 +105,7 @@ export function nextDirection(direction, temperature, slope, heatTo, coolTo) {
 export function historicalDriftSlope(events, measurements, now) {
 	const acStateChanges = events
 		.filter(event => {
-			return event.eventKind == acStateChangedEventKind && event.details?.resultingAcState
+			return event.eventKind == eventKinds.AC_STATE.CHANGED && event.details?.resultingAcState
 		})
 		.map(event => {
 			return {

@@ -1,7 +1,7 @@
+import eventKinds from './eventKinds.json' with { type: 'json' }
+import eventReasons from './eventReasons.json' with { type: 'json' }
+
 let log
-// Sensibo event kind for an AC state change, and the event reason Climate React uses
-const acStateChangedEventKind = 1000000
-const climateReactEventReason = 'Trigger'
 const minDate = new Date('0001-01-01T00:00:00Z')
 
 /**
@@ -34,13 +34,13 @@ async function repeatClimateReactAction(platform, airConditioner, device) {
 	const events = await platform.sensiboApi.getDeviceEvents(device.id)
 	const acStateChanges = events
 		.filter(event => {
-			return event.eventKind == acStateChangedEventKind
+			return event.eventKind == eventKinds.AC_STATE.CHANGED
 		})
 		.sort((a, b) => {
 			return Date.parse(b.timestamp) - Date.parse(a.timestamp)
 		})
 	const lastClimateReactChange = acStateChanges.find(event => {
-		return event.details?.reason == climateReactEventReason && Date.parse(event.timestamp) >= since
+		return event.details?.reason == eventReasons.CLIMATE_REACT && Date.parse(event.timestamp) >= since
 	})
 	const now = new Date()
 
