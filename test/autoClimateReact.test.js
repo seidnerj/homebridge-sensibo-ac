@@ -447,7 +447,7 @@ describe('climateReactAsAuto in v3', () => {
 
 		assert.equal(saved.state.autoClimateReact.pod1.direction, 'HEAT')
 
-		// a restart reads the cached state back from storage (index.js getItem('state'))
+		// a restart reads the cached state back from storage (SensiboACPlatform.js getItem('state'))
 		const second = makeAirConditioner({
 			climateReactAsAuto: true,
 			cachedState: saved.state
