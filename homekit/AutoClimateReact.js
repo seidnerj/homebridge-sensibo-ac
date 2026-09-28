@@ -171,12 +171,14 @@ export default class AutoClimateReact {
 		this.platform = platform
 
 		const unit = device.usesFahrenheit ? 1.8 : 1 // mirrors the Climate React band formula in StateManager
-
-		/** @type {number} */
-		this.minimumGap = Math.max(
+		const gap = Math.max(
 			platform.negativeClimateReactAutoSetupMultiplier * unit - platform.climateReactAutoSetupOffset,
 			platform.positiveClimateReactAutoSetupMultiplier * unit + platform.climateReactAutoSetupOffset
 		) + GAP_MARGIN
+
+		// Sensibo rejects fractional Celsius setpoints, and a setpoint moved by the gap is sent to the AC, so keep it whole
+		/** @type {number} */
+		this.minimumGap = device.usesFahrenheit ? gap : Math.ceil(gap)
 
 		const acState = this.acState
 		const targetTemperature = acState.targetTemperature ?? 25

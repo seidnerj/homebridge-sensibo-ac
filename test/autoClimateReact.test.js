@@ -254,7 +254,9 @@ describe('climateReactAsAuto integration', () => {
 	})
 
 	test('AUTO with a falling room picks HEAT around heat-to', async () => {
-		const { ac } = autoAc(-1, {})
+		const {
+			ac, calls
+		} = autoAc(-1, {})
 
 		await pressMode(ac, TargetHeaterCoolerState.AUTO)
 		await settle()
@@ -263,26 +265,30 @@ describe('climateReactAsAuto integration', () => {
 		const smartMode = ac.state.smartMode
 
 		assert.equal(ac.autoClimateReact.state.direction, 'HEAT')
-		assert.equal(ac.state.targetTemperature, 22.5)
+		// heat-to is cool-to minus the gap, kept whole because Sensibo rejects fractional Celsius setpoints
+		assert.equal(ac.state.targetTemperature, 22)
+		for (const call of callsTo(calls, 'setDeviceACState')) {
+			assert.ok(Number.isInteger(call[1].targetTemperature), `fractional setpoint sent: ${call[1].targetTemperature}`)
+		}
 		assert.equal(smartMode.enabled, true)
-		assert.equal(smartMode.highTemperatureThreshold, 23.5)
-		assert.equal(smartMode.lowTemperatureThreshold, 21.5)
+		assert.equal(smartMode.highTemperatureThreshold, 23)
+		assert.equal(smartMode.lowTemperatureThreshold, 21)
 		assert.equal(smartMode.lowTemperatureState.on, true)
 		// the room (26.5) is above the heat band, so the AC is not started
 		assert.equal(ac.state.active, false)
 	})
 
-	test('cool-to and heat-to keep the minimum gap (band + 0.5) apart', () => {
+	test('cool-to and heat-to keep the minimum gap (band + 0.5, rounded up to a whole degree) apart', () => {
 		const { ac } = makeAirConditioner({ climateReactAsAuto: true }, {})
 		const auto = ac.autoClimateReact
 
-		assert.equal(auto.minimumGap, 1.5)
+		assert.equal(auto.minimumGap, 2)
 		auto.setCoolTo(22)
-		assert.equal(auto.state.heatTo, 20.5)
+		assert.equal(auto.state.heatTo, 20)
 		auto.setHeatTo(23)
-		assert.equal(auto.state.coolTo, 24.5)
+		assert.equal(auto.state.coolTo, 25)
 		auto.setHeatTo(20)
-		assert.equal(auto.state.coolTo, 24.5)
+		assert.equal(auto.state.coolTo, 25)
 	})
 
 	test('the minimum gap follows the multipliers and offset', () => {
@@ -305,9 +311,9 @@ describe('climateReactAsAuto integration', () => {
 		await settle()
 
 		assert.equal(ac.autoClimateReact.state.coolTo, 23)
-		assert.equal(ac.autoClimateReact.state.heatTo, 21.5)
+		assert.equal(ac.autoClimateReact.state.heatTo, 21)
 		assert.equal(ac.state.targetTemperature, 23)
-		assert.equal(await homeKitGet(ac, 'HeatingThresholdTemperature'), 21.5)
+		assert.equal(await homeKitGet(ac, 'HeatingThresholdTemperature'), 21)
 	})
 
 	test('manual COOL/HEAT pin the direction and run through Climate React', async () => {
