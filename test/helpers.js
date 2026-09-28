@@ -108,7 +108,7 @@ export function fakePlatform(config) {
 		...config
 	}
 
-	// mirrors index.js: Climate React as auto owns Climate React
+	// mirrors SensiboACPlatform.js: Climate React as auto owns Climate React
 	if (platform.climateReactAsAuto) {
 		platform.enableClimateReactAutoSetup = true
 		platform.enableClimateReactSwitch = false
