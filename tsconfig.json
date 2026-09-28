@@ -8,7 +8,8 @@
 		"moduleResolution": "NodeNext",
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
-		"strict": false
+		"strict": false,
+		"types": ["node"]
 	},
 	"include": ["index.js", "homekit", "sensibo", "types.d.ts"]
 }
