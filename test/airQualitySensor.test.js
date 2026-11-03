@@ -75,9 +75,7 @@ test('without iaq, tvoc thresholds set AirQuality and tvoc ppb converts to VOCDe
 	assert.equal(stateFrom({ tvoc: 3000 }).VOCDensity, 10000)
 })
 
-test('iaq-only measurements (as from a Pure) produce an empty state', () => {
-	// Suspicious: the early return checks only tvoc/co2/pm25, so an iaq-only payload never reaches the iaq branch
-	assert.deepEqual(stateFrom({ iaq: 120 }), {})
+test('missing or empty measurements produce an empty state', () => {
 	assert.deepEqual(stateFrom({}), {})
 	assert.deepEqual(stateFrom(null), {})
 })

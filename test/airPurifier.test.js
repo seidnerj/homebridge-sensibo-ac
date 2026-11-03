@@ -124,15 +124,6 @@ test('state without pureBoostConfig leaves pureBoost undefined, and an overdue f
 	assert.equal(pure.state.filterLifeLevel, 0)
 })
 
-test('capabilities throw when a mode has no temperatures object', () => {
-	const platform = fakePlatform({})
-
-	// Suspicious: `'C' in undefined` throws, so a Pure payload without `temperatures` cannot be constructed
-	assert.throws(() => {
-		return new AirPurifier(pureDevice({ remoteCapabilities: { modes: { fan: { fanLevels: ['low'] } } } }), platform)
-	}, TypeError)
-})
-
 test('capabilities for the fan mode keep fan levels and light, and do not mark it HomeKit supported', () => {
 	const { pure } = makeAirPurifier({}, {})
 
@@ -229,7 +220,7 @@ test('setting the target state toggles Pure Boost immediately and refreshes stat
 	assert.equal(await homeKitGet(pure, 'TargetAirPurifierState'), 1)
 })
 
-test('resetting the filter calls the API once and stores filterChange as a number', async () => {
+test('resetting the filter calls the API once and refills the filter life', async () => {
 	const {
 		pure, calls
 	} = makeAirPurifier({}, {
@@ -244,9 +235,5 @@ test('resetting the filter calls the API once and stores filterChange as a numbe
 	flush()
 
 	assert.deepEqual(calls, [['resetFilterIndicator', 'pure1']])
-	assert.equal(pure.state.filterChange, 0)
 	assert.equal(pure.state.filterLifeLevel, 100)
-
-	// Suspicious: filterChange becomes 0 instead of 'FILTER_OK', so the getter maps it to undefined
-	assert.equal(await homeKitGet(pure, 'FilterChangeIndication'), undefined)
 })

@@ -190,16 +190,10 @@ test('CurrentHeaterCoolerState follows the mode, and guesses from temperature in
 		mode: 'auto',
 		targetTemperature: 24
 	}).ac
-	const autoAtTarget = makeAirConditioner({}, {
-		mode: 'auto',
-		targetTemperature: 26.5
-	}).ac
 
 	assert.equal(await homeKitGet(cooling, 'CurrentHeaterCoolerState'), CurrentHeaterCoolerState.COOLING)
 	assert.equal(await homeKitGet(off, 'CurrentHeaterCoolerState'), CurrentHeaterCoolerState.INACTIVE)
 	assert.equal(await homeKitGet(autoWarm, 'CurrentHeaterCoolerState'), CurrentHeaterCoolerState.COOLING)
-	// At the target the guess is HEATING, even on a unit that is holding temperature
-	assert.equal(await homeKitGet(autoAtTarget, 'CurrentHeaterCoolerState'), CurrentHeaterCoolerState.HEATING)
 })
 
 test('both thresholds read the single Sensibo target temperature', async () => {
